@@ -1,0 +1,28 @@
+{
+  "compilerOptions": {
+    "baseUrl": "./src",
+    "outDir": "./dist",
+    "module": "es6",
+    "moduleResolution": "node",
+    "allowJs": true,
+    "target": "es5",
+    "sourceMap": true,
+    "forceConsistentCasingInFileNames": false,
+    "removeComments": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noImplicitReturns": true,
+    "traceResolution": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "allowSyntheticDefaultImports": true
+  },
+  "include": [
+    "./src/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "config"
+  ]
+}
