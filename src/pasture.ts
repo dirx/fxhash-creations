@@ -23,7 +23,7 @@ export class Pasture {
         document.body.prepend(canvas);
         this.zebra = new Zebra(canvas, window.innerWidth, window.innerHeight);
 
-        window.$fxhashFeatures = this.zebra.config.getFeatures();
+        window.$fxhashFeatures = this.zebra.state.getFeatures();
         console.log(window.$fxhashFeatures);
     }
 
@@ -43,6 +43,7 @@ export class Pasture {
 
     private initInfo() {
         this.info = new Info(document);
+        this.initInfoUpdate();
     }
 
     private initHelp() {
@@ -62,38 +63,42 @@ export class Pasture {
     private initLoop() {
         let fxpreviewCalled: boolean = false;
         let zebra = this.zebra;
-        let info = this.info;
-        this.loop = createLoop((currentFps: number) => {
-            zebra.loop();
+        this.loop = createLoop(() => {
+            zebra.tick();
 
             if (window.isFxpreview) {
                 if (!fxpreviewCalled && !zebra.inPreviewPhase) {
-                    console.log('screenshot');
                     window.fxpreview();
                     fxpreviewCalled = true;
 
-                    // this.zebra.printImage(zebra.config.getFeatureName());
-
-                    // to collect screenshots
+                    // collect screenshots
                     let search = new URLSearchParams(window.location.search);
                     let fxrand = search.get('fxrand') || '';
-                    let fxrandSteps = search.get('fxrandSteps') || '100';
+                    let fxrandSteps = search.get('fxrandSteps') || '150';
                     if (fxrand != '') {
+                        this.zebra.printImage(zebra.state.getFeatureName());
                         let nextFxrand = parseInt(fxrand) + 1;
                         search.set('fxrand', `${nextFxrand}`);
                         if (fxrand != fxrandSteps) {
                             window.location.search = search.toString();
                         }
-                    } else {
-                        // window.location.reload();
                     }
                 }
             }
+        });
 
+        this.loop.runWith(this.zebra.state.fps);
+    }
+
+    private initInfoUpdate() {
+        let zebra = this.zebra;
+        let info = this.info;
+
+        setInterval(() => {
             let addingMovingPartsInMs =
-                (zebra.addingMovingPartsInMs - Date.now()) << 0;
+                zebra.addingMovingPartsIn.ms(zebra.state.fps) << 0;
             info.update({
-                movingParts: `${zebra.movingParts} / ${zebra.config.maxMovingParts} / ${zebra.movingPartsTotal}`,
+                movingParts: `${zebra.movingParts} / ${zebra.state.maxMovingParts} / ${zebra.movingPartsTotal}`,
                 addingMovingPartsIn: `${
                     addingMovingPartsInMs <= 0 ? '-' : addingMovingPartsInMs
                 } ms`,
@@ -102,26 +107,27 @@ export class Pasture {
                 previewPhase: zebra.inPreviewPhase,
                 saturationDirection:
                     zebra.sDir > 0 ? 'up' : zebra.sDir < 0 ? 'down' : '-',
-                saturationMin: zebra.config.colorSaturationMin,
-                saturationMax: zebra.config.colorSaturationMax,
+                saturationMin: zebra.state.colorSaturationMin,
+                saturationMax: zebra.state.colorSaturationMax,
                 valueDirection:
                     zebra.vDir > 0 ? 'up' : zebra.vDir < 0 ? 'down' : '-',
-                valueMin: zebra.config.colorValueMin,
-                valueMax: zebra.config.colorValueMax,
-                color: zebra.config.getColor(),
-                colorRange: zebra.config.getColorRange(),
-                colorRangeSize: zebra.config.getColorRangeSize(),
-                saturation: zebra.config.getColorSaturation(),
-                isGray: zebra.config.isGray,
-                isGold: zebra.config.isGold,
-                isRainbow: zebra.config.isRainbow,
-                combination: `${zebra.config.combination} / ${zebra.config.combinationsTotal}`,
+                valueMin: zebra.state.colorValueMin,
+                valueMax: zebra.state.colorValueMax,
+                color: zebra.state.getColor(),
+                colorRange: zebra.state.getColorRange(),
+                colorRangeSize: zebra.state.getColorRangeSize(),
+                colorGlitch: zebra.hGlitch,
+                isGray: zebra.state.isGray,
+                isGold: zebra.state.isGold,
+                isRainbow: zebra.state.isRainbow,
+                combination: `${zebra.state.combination} / ${zebra.state.combinations}`,
                 size: `${zebra.canvas.width} / ${zebra.canvas.height}`,
-                pixelRatio: `${zebra.config.pixelRatio}`,
-                currentFps: `${currentFps} / ${zebra.config.fps}`,
+                pixelRatio: `${zebra.state.pixelRatio}`,
+                currentFps: `${this.loop.currentFps() << 0} / ${
+                    zebra.state.fps
+                }`,
             });
-        });
-        this.loop.runWith(this.zebra.config.fps);
+        }, 250);
     }
 }
 
@@ -177,14 +183,14 @@ export class Intercom {
 
                 case '+':
                     this.zebra.increaseFps();
-                    this.loop.runWith(this.zebra.config.fps);
-                    this.display.show('fps ' + this.zebra.config.fps);
+                    this.loop.runWith(this.zebra.state.fps);
+                    this.display.show('fps ' + this.zebra.state.fps);
                     break;
 
                 case '-':
                     this.zebra.decreaseFps();
-                    this.loop.runWith(this.zebra.config.fps);
-                    this.display.show('fps ' + this.zebra.config.fps);
+                    this.loop.runWith(this.zebra.state.fps);
+                    this.display.show('fps ' + this.zebra.state.fps);
                     break;
 
                 case 'f':

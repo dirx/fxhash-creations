@@ -1,6 +1,7 @@
 export type Loop = {
     runWith: (fps: number) => void;
     stop: () => void;
+    currentFps: () => number;
 };
 
 export const createLoop = (
@@ -42,5 +43,6 @@ export const createLoop = (
             intervalId = setInterval(intervalFunc, 1000 / fps);
         },
         stop: () => stopFunc,
+        currentFps: () => currentFps,
     };
 };

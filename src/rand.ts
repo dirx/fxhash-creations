@@ -37,20 +37,3 @@ export const randPoint = (
         y: randInt(maxY, fx),
     };
 };
-
-export const randArea = (
-    maxX: number,
-    maxY: number,
-    maxW: number,
-    maxH: number,
-    fx: boolean = false
-): Area => {
-    let w = randInt(maxW, fx);
-    let h = randInt(maxH, fx);
-    return {
-        x: randInt(maxX - w, fx),
-        y: randInt(maxY - h, fx),
-        w: w,
-        h: h,
-    };
-};

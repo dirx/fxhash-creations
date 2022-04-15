@@ -5,7 +5,6 @@ import {
     randElement,
     randPoint,
     randBoolean,
-    rand,
 } from './rand';
 import { createLoop, Loop } from './frame';
 import { color } from './color';
@@ -13,12 +12,11 @@ import { color } from './color';
 export type ZebraFeatures = {
     Colors: string;
     'Color Range Size': string;
-    Saturation: string;
     Grayish: string;
 };
 
-export class ZebraConfig {
-    public combinationsTotal: number = 1;
+export class ZebraState {
+    public combinations: number = 1;
     public combination: number = 1;
     public readonly colorHue: number;
     public readonly colorHueMinMaxBase: number;
@@ -29,48 +27,39 @@ export class ZebraConfig {
     public readonly isGray: boolean;
     public readonly isGold: boolean;
     public readonly isRainbow: boolean;
-    public readonly blocks: number;
     public maxMovingParts: number = 7;
     public readonly allColors: Array<number> = [
         10, 20, 40, 50, 60, 80, 130, 160, 200, 220, 250, 265, 285, 320, 350,
     ];
     public readonly colors: Array<number> = [];
     public readonly colorHueBase: number;
-    public readonly colorSaturationBase: number;
     public readonly isGrayBase: number;
-    public readonly blocksBase: number;
-    public readonly blockSizes: Array<number>;
+    public readonly blocks: number = 144;
+    public readonly blockSizes: Array<number> = [
+        1, 2, 3, 5, 8, 13, 21, 34, 55, 89,
+    ];
     public readonly blockSizeMax: number;
     public readonly blockSizeMin: number;
     public readonly blockSizeBigMin: number;
     public readonly colorValueMinBase: number;
     public readonly colorValueMin: number;
     public readonly colorValueMax: number;
-    public fps: number = 25;
+    public fps: number = 30;
     public pixelRatio: number = 2;
     public padding: number = 0;
 
     public constructor() {
-        this.isGrayBase = randInt((this.combinationsTotal *= 2), true) % 2;
+        // special combinations: gold 18 / 180, rainbow 137 / 180
+        this.isGrayBase = randInt((this.combinations *= 2), true) % 2;
         this.isGray = this.isGrayBase === 0;
 
-        // this.isGray = true; // test gold
-        // this.isGray = false; // test rainbow
-
         this.colorHueBase =
-            randInt((this.combinationsTotal *= this.allColors.length), true) %
+            randInt((this.combinations *= this.allColors.length), true) %
             this.allColors.length;
-
-        // this.colorHueBase = 3; // test gold
-        // this.colorHueBase = 7; // test rainbow
 
         this.colorHue = this.allColors[this.colorHueBase];
 
-        this.colorHueMinMaxBase =
-            randInt((this.combinationsTotal *= 6), true) % 6;
-
-        // this.colorHueMinMaxBase = 0; // test gold
-        // this.colorHueMinMaxBase = 5; // test rainbow
+        this.colorHueMinMaxBase = randInt((this.combinations *= 5), true) % 5;
 
         let hueMin = this.colorHueBase - this.colorHueMinMaxBase - 1;
         hueMin = hueMin < 0 ? this.allColors.length + hueMin : hueMin;
@@ -83,7 +72,6 @@ export class ZebraConfig {
                 : hueMax;
         this.colorHueMax = this.allColors[hueMax];
 
-        // set colors
         hueMin = this.colorHueBase - this.colorHueMinMaxBase - 1;
         hueMax = this.colorHueBase + this.colorHueMinMaxBase + 1;
         for (let i = hueMin; i <= hueMax; i++) {
@@ -92,8 +80,6 @@ export class ZebraConfig {
             p = p >= this.allColors.length ? p - this.allColors.length : p;
             this.colors.push(this.allColors[p]);
         }
-        console.log(this.allColors);
-        console.log(this.colors);
 
         this.isGold =
             this.isGray &&
@@ -103,33 +89,19 @@ export class ZebraConfig {
         this.isRainbow =
             !this.isGray &&
             this.colorHueBase === 7 &&
-            this.colorHueMinMaxBase === 5;
+            this.colorHueMinMaxBase === 4;
 
-        this.colorSaturationBase =
-            randInt((this.combinationsTotal *= 2), true) % 2;
-
-        console.log(
-            rand(true) * this.combinationsTotal,
-            this.colorSaturationBase,
-            this.combinationsTotal
-        );
-
-        this.colorSaturationMin =
-            this.isGray && !this.isGold
-                ? (this.colorSaturationBase * 20 + 10) / 100
-                : (this.colorSaturationBase * 50 + 30) / 100;
-        this.colorSaturationMax =
-            this.isGray && !this.isGold
-                ? (this.colorSaturationBase * 30 + 20) / 100
-                : (this.colorSaturationBase * 50 + 40) / 100;
+        this.colorSaturationMin = this.isGray && !this.isGold ? 0.3 : 0.8;
+        this.colorSaturationMax = this.isGray && !this.isGold ? 0.5 : 0.9;
 
         this.colorValueMinBase = 0;
-        this.colorValueMin = this.isGray && !this.isGold ? 0.3 : 0.6;
-        this.colorValueMax = this.isGray && !this.isGold ? 0.8 : 0.9;
+        this.colorValueMin = this.isGray && !this.isGold ? 0.3 : 1;
+        this.colorValueMax = this.isGray && !this.isGold ? 0.8 : 1;
 
         if (this.isGold) {
-            this.colorSaturationMax += 0.1;
-            this.colorValueMin += 0.1;
+            this.colorSaturationMin = 0.9;
+            this.colorSaturationMax = 1;
+            this.colorValueMin = 1;
             this.maxMovingParts = 5;
         }
 
@@ -141,70 +113,33 @@ export class ZebraConfig {
             this.colorHueMinMaxBase += 1;
         }
 
-        console.log('colorSaturationMin', this.colorSaturationMin);
-        console.log('colorSaturationMax', this.colorSaturationMax);
-        console.log('colorValueMin', this.colorValueMin);
-        console.log('colorValueMax', this.colorValueMax);
-
-        // this.blocksBase = randInt((this.combinationsTotal *= 2), true) % 2;
-        this.blocksBase = 1;
-        this.blocks = [8, /*55,*/ 377][this.blocksBase];
-        // this.blocks = 3 ** (this.blocksBase + 2);
-        // this.blockSizeMax = (this.blocks - 1) << 0;
-        // this.blockSizeMin = (this.blocks / 3) << 0;
-        this.blockSizes = [
-            [1, 2, 3, 5],
-            // [1, 2, 5, 13, 34, 55],
-            // [1, 2, 3, 5, 8, 13, 21, 34],
-            // [1, 2, 5, 13, 34, 89, 233],
-            [1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233],
-            // [1, 2, 3],
-            // [5, 8, 13, 21],
-            // [21, 34, 55, 89, 144],
-        ][this.blocksBase];
-
         this.blockSizeMin = this.blockSizes[0];
         this.blockSizeBigMin =
             this.blockSizes[(this.blockSizes.length * 0.666) << 0];
         this.blockSizeMax = this.blockSizes[this.blockSizes.length - 1];
 
-        console.log(
-            'combination',
-            this.isGrayBase + 1,
-            this.colorHueBase + 1,
-            this.colorHueMinMaxBase + 1,
-            this.colorSaturationBase + 1
-        );
-
         this.combination =
-            (this.isGrayBase * this.combinationsTotal) / 2 +
-            (this.colorHueBase * this.combinationsTotal) /
+            (this.isGrayBase * this.combinations) / 2 +
+            (this.colorHueBase * this.combinations) /
                 2 /
                 this.allColors.length +
-            (this.colorHueMinMaxBase * this.combinationsTotal) /
+            (this.colorHueMinMaxBase * this.combinations) /
                 2 /
                 this.allColors.length /
-                6 +
-            (this.colorSaturationBase * this.combinationsTotal) /
-                2 /
-                this.allColors.length /
-                6 /
-                2;
+                5;
     }
 
     public getFeatures(): ZebraFeatures {
         return {
             Colors: this.getColorRange(),
             'Color Range Size': this.getColorRangeSize(),
-            Saturation: this.getColorSaturation(),
-            Grayish: this.isGray ? 'oh yes' : 'nope',
+            Grayish: this.isGray ? 'yes' : 'no',
         };
     }
 
     public getFeatureName(): string {
         return [
             this.getColorRange(),
-            this.getColorSaturation(),
             this.isGray ? 'gray' : 'normal',
             this.combination,
             window.fxrand(),
@@ -227,10 +162,6 @@ export class ZebraConfig {
         return ['xs', 's', 'm', 'l', 'xl', 'xxl', 'xxxl'][
             this.colorHueMinMaxBase
         ];
-    }
-
-    public getColorSaturation(): string {
-        return ['low', 'high'][this.colorSaturationBase];
     }
 
     public getColor(): string {
@@ -276,8 +207,34 @@ export class ZebraConfig {
     }
 }
 
+export class AddingMovingPart {
+    public ts!: number;
+    public in!: number;
+
+    public constructor() {
+        this.setIn(0);
+    }
+
+    public setIn(value: number) {
+        this.ts = Date.now();
+        this.in = value;
+    }
+
+    public ms(currentFps: number): number {
+        return this.nextMs(currentFps) - Date.now();
+    }
+
+    public nextMs(currentFps: number): number {
+        return this.ts + this.in / currentFps;
+    }
+
+    public next(currentFps: number): boolean {
+        return Date.now() < this.nextMs(currentFps);
+    }
+}
+
 export class Zebra {
-    public readonly config: ZebraConfig;
+    public readonly state: ZebraState;
 
     public width: number = 0;
     public height: number = 0;
@@ -287,7 +244,7 @@ export class Zebra {
 
     public movingParts: number = 0;
     public movingPartsTotal: number = 0;
-    public addingMovingPartsInMs!: number;
+    public addingMovingPartsIn!: AddingMovingPart;
     public move: Array<'left' | 'up' | 'down' | 'right'> = [
         'left',
         'up',
@@ -295,16 +252,14 @@ export class Zebra {
         'down',
     ];
 
-    public mouseDown: boolean = false;
-    public mouseX: number = 0;
-    public mouseY: number = 0;
-
     public dir!: number;
     public isDirX!: boolean;
     public isBig!: boolean;
 
     public vDir: number = 0;
     public sDir: number = 0;
+
+    public hGlitch: number = 0;
 
     public inPreviewPhase!: boolean;
     public previewPhaseEndsAfter!: number;
@@ -314,43 +269,25 @@ export class Zebra {
         width: number,
         height: number
     ) {
-        this.config = new ZebraConfig();
+        this.state = new ZebraState();
         this.canvas = canvas;
         this.context = canvas.getContext('2d') as CanvasRenderingContext2D;
 
         this.updateSize(width, height);
         this.setSmoothing(false);
-
-        this.initMouseHandler();
     }
 
     private init() {
-        this.addingMovingPartsInMs = Date.now();
+        this.addingMovingPartsIn = new AddingMovingPart();
         this.movingPartsTotal = 0;
         this.inPreviewPhase = true;
-        this.previewPhaseEndsAfter = this.config.maxMovingParts * 4;
+        this.previewPhaseEndsAfter = this.state.maxMovingParts * 4;
 
         this.dir = randInt(2) === 0 ? 1 : -1;
         this.isDirX = randInt(2) === 0;
         this.isBig = true;
         this.sDir = 0;
-        this.vDir = this.config.isGray ? 1 : 0;
-    }
-
-    private initMouseHandler() {
-        let mouseMoveHandler = (ev: MouseEvent) => {
-            this.mouseX = ev.x;
-            this.mouseY = ev.y;
-        };
-        this.mouseDown = false;
-        this.canvas.addEventListener('mousedown', (_ev: MouseEvent) => {
-            this.mouseDown = true;
-            this.canvas.addEventListener('mousemove', mouseMoveHandler);
-        });
-        this.canvas.addEventListener('mouseup', (_ev: MouseEvent) => {
-            this.mouseDown = false;
-            this.canvas.removeEventListener('mousemove', mouseMoveHandler);
-        });
+        this.vDir = this.state.isGray ? 1 : 0;
     }
 
     public updateSize(
@@ -359,30 +296,29 @@ export class Zebra {
         pixelRatio: number | null = null
     ) {
         if (pixelRatio === null) {
-            this.config.pixelRatio =
-                2 + (((Math.max(width, height) + 800) / 1600) << 0);
+            this.state.pixelRatio = Math.ceil((width + height) / 2 / 640);
         } else {
-            this.config.pixelRatio = pixelRatio;
+            this.state.pixelRatio = pixelRatio;
         }
-        this.context.scale(this.config.pixelRatio, this.config.pixelRatio);
-        this.width = (width / this.config.pixelRatio) << 0;
-        this.height = (height / this.config.pixelRatio) << 0;
+        this.context.scale(this.state.pixelRatio, this.state.pixelRatio);
+        this.width = (width / this.state.pixelRatio) << 0;
+        this.height = (height / this.state.pixelRatio) << 0;
         this.canvas.width = this.width;
         this.canvas.height = this.height;
-        this.config.padding = 0;
+        this.state.padding = 0;
         this.canvas.dispatchEvent(new Event('zebra.updateSize'));
         this.init();
         this.initImage();
     }
 
     public increaseFps() {
-        this.config.fps++;
+        this.state.fps++;
         this.canvas.dispatchEvent(new Event('zebra.updateFps'));
     }
 
     public decreaseFps() {
-        if (this.config.fps > 1) {
-            this.config.fps--;
+        if (this.state.fps > 1) {
+            this.state.fps--;
             this.canvas.dispatchEvent(new Event('zebra.updateFps'));
         }
     }
@@ -404,70 +340,74 @@ export class Zebra {
 
     public initImage() {
         let gradient = this.context.createLinearGradient(0, 0, this.width, 0);
-        let times = 4;
-        let vRange = this.config.isRainbow
+        let times = 1;
+        let vRange = this.state.isRainbow
             ? 0
-            : this.config.colorValueMax - this.config.colorValueMin;
+            : this.state.colorValueMax - this.state.colorValueMin;
 
         let colorStops = [];
-        let oTotal = times * this.config.colors.length;
+        let oTotal = times * this.state.colors.length;
         for (let o = 0; o <= oTotal; o++) {
-            let c = o % this.config.colors.length;
+            let c = o % this.state.colors.length;
             let v = ((o + times * 1.5) % (times * 2)) / (times * 2);
-            let s = o / times / this.config.colors.length;
-            // let s = (((this.width * o) / oTotal) << 0) / this.width;
+            let s = o / times / this.state.colors.length;
             if (c === 0 || v === 0) {
                 colorStops.push({
                     width: ((this.width * o) / oTotal) << 0,
                     color: color.hsvCss(
-                        this.config.colors[
-                            c === 0 ? this.config.colors.length - 1 : c
+                        this.state.colors[
+                            c === 0 ? this.state.colors.length - 1 : c
                         ],
-                        this.config.colorSaturationMin,
-                        this.config.colorValueMin + vRange * (v === 0 ? 1 : v)
+                        this.state.colorSaturationMin,
+                        this.state.colorValueMin + vRange * (v === 0 ? 1 : v)
                     ),
                 });
                 gradient.addColorStop(
                     s,
                     color.hsvCss(
-                        this.config.colors[
-                            c === 0 ? this.config.colors.length - 1 : c
+                        this.state.colors[
+                            c === 0 ? this.state.colors.length - 1 : c
                         ],
-                        this.config.colorSaturationMin,
-                        this.config.colorValueMin + vRange * (v === 0 ? 1 : v)
+                        this.state.colorSaturationMin,
+                        this.state.colorValueMin + vRange * (v === 0 ? 1 : v)
                     )
                 );
             }
             colorStops.push({
                 width: ((this.width * o) / oTotal) << 0,
                 color: color.hsvCss(
-                    this.config.colors[c],
-                    this.config.colorSaturationMin,
-                    this.config.colorValueMin + v * vRange
+                    this.state.colors[c],
+                    this.state.colorSaturationMin,
+                    this.state.colorValueMin + v * vRange
                 ),
             });
             gradient.addColorStop(
                 s,
                 color.hsvCss(
-                    this.config.colors[c],
-                    this.config.colorSaturationMin,
-                    this.config.colorValueMin + v * vRange
+                    this.state.colors[c],
+                    this.state.colorSaturationMin,
+                    this.state.colorValueMin + v * vRange
                 )
             );
         }
-
-        console.log(this.width, colorStops);
 
         this.context.fillStyle = gradient;
         this.context.fillRect(0, 0, this.width, this.height);
     }
 
-    public loop() {
-        // return;
-        if (this.movingParts >= this.config.maxMovingParts) {
+    public tick() {
+        this.hGlitch =
+            !this.state.isGold && !this.state.isRainbow
+                ? (this.state.colorHueMinMaxBase + 2) *
+                  5 *
+                  (Math.sin(Date.now() * 0.0005) * 0.5 + 0.5)
+                : 0;
+
+        if (this.movingParts >= this.state.maxMovingParts) {
             return;
         }
-        if (this.addingMovingPartsInMs > Date.now()) {
+
+        if (this.addingMovingPartsIn.next(this.state.fps)) {
             return;
         }
 
@@ -478,11 +418,10 @@ export class Zebra {
             this.inPreviewPhase &&
             this.movingPartsTotal > this.previewPhaseEndsAfter
         ) {
-            console.log('init done');
             this.inPreviewPhase = false;
         }
 
-        if (this.movingParts === this.config.maxMovingParts) {
+        if (this.movingParts === this.state.maxMovingParts) {
             this.move = randElement([
                 ['left', 'up'],
                 ['left', 'down'],
@@ -499,55 +438,29 @@ export class Zebra {
                 /*this.movingParts < this.config.maxMovingParts / 3 &&*/ !this
                     .isBig
             ) {
-                this.sDir = this.config.isGray
-                    ? randElement([
-                          -1 / 255,
-                          -1 / 255,
-                          0,
-                          0,
-                          0,
-                          1 / 255,
-                          1 / 255,
-                      ])
-                    : randElement([-1 / 255, -1 / 255, 0, 0, 0, 1 / 255]);
-                this.vDir = this.config.isGray
-                    ? 1
-                    : randElement([-1, -1, 0, 0, 0, 1, 1]);
-
-                if (!this.config.isGray) {
-                    if (this.vDir === -1) {
-                        console.warn('v down');
-                    } else if (this.vDir === 1) {
-                        console.warn('v up');
-                    } else {
-                        console.log('v none');
-                    }
-                }
-
-                // if (this.config.isGray) {
-                if (this.sDir < 0) {
-                    console.warn('s down');
-                } else if (this.sDir > 0) {
-                    console.warn('s up');
-                } else {
-                    console.log('s none');
-                }
-                // }
+                this.sDir = randElement([
+                    -1 / 255,
+                    -1 / 255,
+                    0,
+                    0,
+                    0,
+                    1 / 255,
+                    1 / 255,
+                ]);
+                this.vDir = this.state.isGray ? 1 : 0;
             }
 
-            this.addingMovingPartsInMs =
-                Date.now() +
-                (this.inPreviewPhase
+            this.addingMovingPartsIn.setIn(
+                this.inPreviewPhase
                     ? 0
                     : randInt(
-                          (this.config.maxMovingParts *
-                              (this.width + this.height) *
-                              50) /
-                              this.config.fps
-                      ));
+                          this.state.maxMovingParts *
+                              25 *
+                              (this.width + this.height)
+                      )
+            );
         } else {
-            this.addingMovingPartsInMs =
-                Date.now() + (this.width + this.height) / 2 / this.config.fps;
+            this.addingMovingPartsIn.setIn((this.width + this.height) / 2);
         }
     }
 
@@ -558,8 +471,8 @@ export class Zebra {
             return;
         }
 
-        resizedCanvas.height = this.height * this.config.pixelRatio;
-        resizedCanvas.width = this.width * this.config.pixelRatio;
+        resizedCanvas.height = this.height * this.state.pixelRatio;
+        resizedCanvas.width = this.width * this.state.pixelRatio;
 
         resizedContext.imageSmoothingEnabled =
             this.context.imageSmoothingEnabled;
@@ -605,17 +518,17 @@ export class ZebraMovingBlock {
 
         if (this.isBig) {
             wh = randElement(
-                zebra.config.blockSizes.slice(
-                    (zebra.config.blockSizes.length * -0.333) << 0
+                zebra.state.blockSizes.slice(
+                    (zebra.state.blockSizes.length * -0.333) << 0
                 )
             );
         } else {
-            wh = randElement(zebra.config.blockSizes);
+            wh = randElement(zebra.state.blockSizes);
         }
 
         let xy: Point = randPoint(
-            zebra.config.blocks + 1 - wh,
-            zebra.config.blocks + 1 - wh
+            zebra.state.blocks + 1 - wh,
+            zebra.state.blocks + 1 - wh
         );
 
         s = {
@@ -626,60 +539,48 @@ export class ZebraMovingBlock {
         };
 
         // force use of corners: todo - still not 100% sure if this works
-        if (s.x <= zebra.config.blocks * 0.2) {
+        if (s.x <= zebra.state.blocks * 0.2) {
             s.x = 0;
             // s.y = 0;
         }
 
-        if (s.y <= zebra.config.blocks * 0.2) {
+        if (s.y <= zebra.state.blocks * 0.2) {
             // s.x = 0;
             s.y = 0;
         }
 
-        if (s.x + s.w >= zebra.config.blocks * 0.8) {
-            s.w = zebra.config.blocks - s.x;
+        if (s.x + s.w >= zebra.state.blocks * 0.8) {
+            s.w = zebra.state.blocks - s.x;
             // s.h = zebra.config.blocks - s.y;
         }
 
-        if (s.y + s.h >= zebra.config.blocks * 0.8) {
+        if (s.y + s.h >= zebra.state.blocks * 0.8) {
             // s.w = zebra.config.blocks - s.x;
-            s.h = zebra.config.blocks - s.y;
+            s.h = zebra.state.blocks - s.y;
         }
 
         s.x =
-            (s.x * (zebra.width - zebra.config.padding * 2)) /
-                zebra.config.blocks +
-            zebra.config.padding;
+            (s.x * (zebra.width - zebra.state.padding * 2)) /
+                zebra.state.blocks +
+            zebra.state.padding;
         s.y =
-            (s.y * (zebra.height - zebra.config.padding * 2)) /
-                zebra.config.blocks +
-            zebra.config.padding;
+            (s.y * (zebra.height - zebra.state.padding * 2)) /
+                zebra.state.blocks +
+            zebra.state.padding;
         s.w =
-            ((s.w + 1) * (zebra.width - zebra.config.padding * 2)) /
-            zebra.config.blocks;
+            ((s.w + 1) * (zebra.width - zebra.state.padding * 2)) /
+            zebra.state.blocks;
         s.h =
-            ((s.h + 1) * (zebra.height - zebra.config.padding * 2)) /
-            zebra.config.blocks;
+            ((s.h + 1) * (zebra.height - zebra.state.padding * 2)) /
+            zebra.state.blocks;
 
         s.x = s.x << 0;
         s.y = s.y << 0;
         s.w = s.w << 0;
         s.h = s.h << 0;
 
-        // console.log(zebra.mouseDown, zebra.mouseX, zebra.mouseY);
-        if (zebra.mouseDown) {
-            let dx = s.x - zebra.mouseX;
-            let dy = s.y - zebra.mouseY;
-            this.isDirX = dx > dy;
-            if (this.isDirX) {
-                this.dir = zebra.mouseX > s.x ? 1 : -1;
-            } else {
-                this.dir = zebra.mouseY > s.y ? 1 : -1;
-            }
-        } else {
-            this.dir = this.zebra.dir;
-            this.isDirX = this.zebra.isDirX;
-        }
+        this.dir = this.zebra.dir;
+        this.isDirX = this.zebra.isDirX;
 
         this.s = s;
 
@@ -688,12 +589,12 @@ export class ZebraMovingBlock {
         if (this.isBig) {
             m =
                 randInt(
-                    zebra.config.blockSizeMax - zebra.config.blockSizeBigMin
-                ) + zebra.config.blockSizeBigMin;
+                    zebra.state.blockSizeMax - zebra.state.blockSizeBigMin
+                ) + zebra.state.blockSizeBigMin;
         } else {
             m =
-                randInt(zebra.config.blockSizeMax - zebra.config.blockSizeMin) +
-                zebra.config.blockSizeMin;
+                randInt(zebra.state.blockSizeMax - zebra.state.blockSizeMin) +
+                zebra.state.blockSizeMin;
         }
 
         let move: string = randElement(zebra.move);
@@ -718,53 +619,29 @@ export class ZebraMovingBlock {
         }
         if (this.isDirX) {
             this.movingDistance =
-                ((m * (this.zebra.width - this.zebra.config.padding * 2)) /
-                    this.zebra.config.blocks) <<
+                ((m * (this.zebra.width - this.zebra.state.padding * 2)) /
+                    this.zebra.state.blocks) <<
                 0;
         } else {
             this.movingDistance =
-                ((m * (this.zebra.height - this.zebra.config.padding * 2)) /
-                    this.zebra.config.blocks) <<
+                ((m * (this.zebra.height - this.zebra.state.padding * 2)) /
+                    this.zebra.state.blocks) <<
                 0;
         }
 
         let big = s.w > this.zebra.width / 2 || s.h > this.zebra.height / 2;
 
-        this.hDir = zebra.config.isGray && !zebra.config.isGold ? 2 : 1;
-        this.vDir = zebra.config.isGray ? true : big ? false : randBoolean();
+        this.hDir = zebra.state.isGray && !zebra.state.isGold ? 2 : 1;
+        this.vDir = zebra.state.isGray;
         this.sDir = big ? false : randBoolean();
 
-        this.vMin = 255 * this.zebra.config.colorValueMin;
-        this.vMax = 255 * this.zebra.config.colorValueMax;
+        this.vMin = 255 * this.zebra.state.colorValueMin;
+        this.vMax = 255 * this.zebra.state.colorValueMax;
 
-        this.sMin = this.zebra.config.colorSaturationMin;
+        this.sMin = this.zebra.state.colorSaturationMin;
 
-        let colorGlitch =
-            this.sDir && !big && !this.zebra.config.isGold
-                ? (this.zebra.config.colorHueMinMaxBase + 2) * 5
-                : 0;
-        this.hMin = this.zebra.config.colorHueMin - colorGlitch;
-        if (this.hMin < 0) this.hMin += 360;
-        this.hMax = this.zebra.config.colorHueMax + colorGlitch;
-        if (this.hMax > 360) this.hMax -= 360;
-        if (
-            this.hMin <= this.hMax &&
-            this.zebra.config.colorHueMin > this.zebra.config.colorHueMax
-        ) {
-            this.hMin =
-                (this.zebra.config.colorHueMax +
-                    this.zebra.config.colorHueMin) /
-                2;
-            this.hMax = this.hMin - 1;
-        }
-
-        console.log(
-            'glitch',
-            this.hMin,
-            this.hMax,
-            this.zebra.config.colorHueMin,
-            this.zebra.config.colorHueMax
-        );
+        this.hMin = this.zebra.state.colorHueMin;
+        this.hMax = this.zebra.state.colorHueMax;
 
         this.updateSizeHandler = () => {
             this.onUpdateSize();
@@ -781,13 +658,11 @@ export class ZebraMovingBlock {
     }
 
     private onUpdateSize() {
-        console.log('onUpdateSize block');
         this.loop?.stop();
     }
 
     private onUpdateFps() {
-        console.log('onUpdateFps');
-        this.loop?.runWith(this.zebra.config.fps);
+        this.loop?.runWith(this.zebra.state.fps);
     }
 
     private start() {
@@ -799,7 +674,7 @@ export class ZebraMovingBlock {
                 this.onLoop(currentFps, targetFps, intervalId),
             () => this.onLoopStop()
         );
-        this.loop.runWith(this.zebra.config.fps);
+        this.loop.runWith(this.zebra.state.fps);
     }
 
     private onLoop(
@@ -817,7 +692,7 @@ export class ZebraMovingBlock {
         let sh: number = this.s.h;
         let tx: number;
         let ty: number;
-        let padding: number = this.zebra.config.padding;
+        let padding: number = this.zebra.state.padding;
 
         if (this.isDirX) {
             let maxWidth =
@@ -840,15 +715,6 @@ export class ZebraMovingBlock {
 
             tx = sx + this.dir;
             ty = sy;
-
-            // if (tx < padding) {
-            //     sw -= this.dir;
-            //     tx = padding;
-            // }
-            //
-            // if (tx + sw > maxWidth) {
-            //     sw = maxWidth - tx;
-            // }
         } else {
             let maxHeight =
                 this.zebra.height - padding - (this.dir > 0 ? this.dir : 0);
@@ -870,23 +736,7 @@ export class ZebraMovingBlock {
 
             tx = sx;
             ty = sy + this.dir;
-
-            // if (ty < padding) {
-            //     sh -= this.dir;
-            //     ty = padding;
-            // }
-            //
-            // if (ty + sh > maxHeight) {
-            //     sh = maxHeight - ty;
-            // }
         }
-
-        // sx = sx << 0;
-        // sy = sy << 0;
-        // sw = sw << 0;
-        // sh = sh << 0;
-        // tx = tx << 0;
-        // ty = ty << 0;
 
         if (sw <= 0 || sh <= 0) {
             return false;
@@ -927,6 +777,11 @@ export class ZebraMovingBlock {
     private shiftColor(data: ImageData) {
         let l: number = data.data.length;
 
+        let hMin = this.hMin - this.zebra.hGlitch;
+        hMin = hMin < 0 ? hMin + 360 : hMin;
+        let hMax = this.hMax + this.zebra.hGlitch;
+        hMax = hMax > 360 ? hMax - 360 : hMax;
+
         for (let i: number = 0; i < l; i += 4) {
             let r = data.data[i];
             let g = data.data[i + 1];
@@ -937,18 +792,18 @@ export class ZebraMovingBlock {
                 g,
                 b,
                 this.hDir,
-                this.hMin,
-                this.hMax,
-                this.vDir ? this.zebra.vDir : 0,
+                hMin,
+                hMax,
+                this.zebra.vDir,
                 this.vMin,
                 this.vMax,
-                this.zebra.config.isGray, //|| this.zebra.vDir < 0,
+                this.zebra.state.isGray,
                 this.sDir ? this.zebra.sDir : 0,
                 this.sMin,
-                this.zebra.config.colorSaturationMax,
+                this.zebra.state.colorSaturationMax,
                 false,
-                this.zebra.config.isGray ? null : this.zebra.config.colorHue,
-                this.zebra.config.colorHueMinMaxBase * 5 + 10
+                this.zebra.state.isGray ? null : this.zebra.state.colorHue,
+                this.zebra.state.colorHueMinMaxBase * 5 + 10
             );
 
             data.data[i] = r;
