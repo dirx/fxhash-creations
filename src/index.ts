@@ -29,3 +29,7 @@ console.log('Dirk Adler, https://twitter.com/d_rx');
 console.log(`FXHASH: ${window.fxhash}`); // the 64 chars hex number fed to your algorithm
 
 window.pasture = new Pasture();
+
+console.log(`Color Range: ${window.$fxhashFeatures['Color Range']}`);
+console.log(`Color Range Size: ${window.$fxhashFeatures['Color Range Size']}`);
+console.log(`Grayish: ${window.$fxhashFeatures.Grayish}`);

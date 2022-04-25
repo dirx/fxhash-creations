@@ -10,7 +10,7 @@ import { createLoop, Loop } from './frame';
 import { color } from './color';
 
 export type ZebraFeatures = {
-    Colors: string;
+    'Color Range': string;
     'Color Range Size': string;
     Grayish: string;
 };
@@ -91,8 +91,8 @@ export class ZebraState {
             this.colorHueBase === 7 &&
             this.colorHueMinMaxBase === 4;
 
-        this.colorSaturationMin = this.isGray && !this.isGold ? 0.3 : 0.8;
-        this.colorSaturationMax = this.isGray && !this.isGold ? 0.5 : 0.9;
+        this.colorSaturationMin = this.isGray && !this.isGold ? 0.4 : 0.8;
+        this.colorSaturationMax = this.isGray && !this.isGold ? 0.6 : 0.9;
 
         this.colorValueMinBase = 0;
         this.colorValueMin = this.isGray && !this.isGold ? 0.3 : 1;
@@ -131,7 +131,7 @@ export class ZebraState {
 
     public getFeatures(): ZebraFeatures {
         return {
-            Colors: this.getColorRange(),
+            'Color Range': this.getColorRange(),
             'Color Range Size': this.getColorRangeSize(),
             Grayish: this.isGray ? 'yes' : 'no',
         };
@@ -159,7 +159,7 @@ export class ZebraState {
     }
 
     public getColorRangeSize(): string {
-        return ['xs', 's', 'm', 'l', 'xl', 'xxl', 'xxxl'][
+        return ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'][
             this.colorHueMinMaxBase
         ];
     }
@@ -344,24 +344,13 @@ export class Zebra {
         let vRange = this.state.isRainbow
             ? 0
             : this.state.colorValueMax - this.state.colorValueMin;
-
-        let colorStops = [];
         let oTotal = times * this.state.colors.length;
+
         for (let o = 0; o <= oTotal; o++) {
             let c = o % this.state.colors.length;
             let v = ((o + times * 1.5) % (times * 2)) / (times * 2);
             let s = o / times / this.state.colors.length;
             if (c === 0 || v === 0) {
-                colorStops.push({
-                    width: ((this.width * o) / oTotal) << 0,
-                    color: color.hsvCss(
-                        this.state.colors[
-                            c === 0 ? this.state.colors.length - 1 : c
-                        ],
-                        this.state.colorSaturationMin,
-                        this.state.colorValueMin + vRange * (v === 0 ? 1 : v)
-                    ),
-                });
                 gradient.addColorStop(
                     s,
                     color.hsvCss(
@@ -373,14 +362,6 @@ export class Zebra {
                     )
                 );
             }
-            colorStops.push({
-                width: ((this.width * o) / oTotal) << 0,
-                color: color.hsvCss(
-                    this.state.colors[c],
-                    this.state.colorSaturationMin,
-                    this.state.colorValueMin + v * vRange
-                ),
-            });
             gradient.addColorStop(
                 s,
                 color.hsvCss(
@@ -538,24 +519,20 @@ export class ZebraMovingBlock {
             h: wh,
         };
 
-        // force use of corners: todo - still not 100% sure if this works
+        // force use of corners
         if (s.x <= zebra.state.blocks * 0.2) {
             s.x = 0;
-            // s.y = 0;
         }
 
         if (s.y <= zebra.state.blocks * 0.2) {
-            // s.x = 0;
             s.y = 0;
         }
 
         if (s.x + s.w >= zebra.state.blocks * 0.8) {
             s.w = zebra.state.blocks - s.x;
-            // s.h = zebra.config.blocks - s.y;
         }
 
         if (s.y + s.h >= zebra.state.blocks * 0.8) {
-            // s.w = zebra.config.blocks - s.x;
             s.h = zebra.state.blocks - s.y;
         }
 
