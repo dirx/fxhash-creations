@@ -1,3 +1,5 @@
+import Prando from "prando";
+
 export type Point = {
     x: number;
     y: number;
@@ -10,12 +12,15 @@ export type Area = {
     h: number;
 };
 
-export const rand = (fx: boolean = false) => {
+export const rng = new Prando(window.fxhash);
+
+export const rand = (fx: boolean = false):number => {
     if (fx) {
         return window.fxrand();
     }
-    return Math.random();
+    return rng.next();
 };
+
 export const randBoolean = (fx: boolean = false): boolean => {
     return randInt(2, fx) == 0;
 };

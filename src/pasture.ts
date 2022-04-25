@@ -1,5 +1,6 @@
 import { Zebra } from './zebra';
 import { createLoop, Loop } from './frame';
+import { rng } from './rand';
 
 export class Pasture {
     public zebra!: Zebra;
@@ -24,7 +25,6 @@ export class Pasture {
         this.zebra = new Zebra(canvas, window.innerWidth, window.innerHeight);
 
         window.$fxhashFeatures = this.zebra.state.getFeatures();
-        console.log(window.$fxhashFeatures);
     }
 
     private initResizeHandler() {
@@ -116,7 +116,7 @@ export class Pasture {
                 color: zebra.state.getColor(),
                 colorRange: zebra.state.getColorRange(),
                 colorRangeSize: zebra.state.getColorRangeSize(),
-                colorGlitch: zebra.hGlitch,
+                hueGlitch: zebra.hGlitch,
                 isGray: zebra.state.isGray,
                 isGold: zebra.state.isGold,
                 isRainbow: zebra.state.isRainbow,
@@ -220,6 +220,11 @@ export class Intercom {
                     this.display.show('info ' + (info ? 'on' : 'off'));
                     break;
 
+                case 'b':
+                    this.display.show('butterfly wing');
+                    rng.skip();
+                    break;
+
                 case 'v':
                     this.zebra.vDir += 1;
                     if (this.zebra.vDir > 1) this.zebra.vDir = -1;
@@ -296,10 +301,11 @@ export class Help {
         this.element.innerHTML = `
           <p><em>+</em> increase fps</p>
           <p><em>-</em> decrease fps</p>
-          <p><em>0 - 9</em> change pixelratio</p>
+          <p><em>0 - 9</em> change pixel ratio</p>
+          <p><em>b</em> butterfly wing</p>
           <p><em>i</em> info</p>
-          <p><em>s</em> toggle smoothness</p>
           <p><em>f</em> toggle fullscreen</p>
+          <p><em>s</em> toggle smoothness</p>
           <p><em>c</em> capture image</p>
           <p><em>h</em> show help</p>
         `;
