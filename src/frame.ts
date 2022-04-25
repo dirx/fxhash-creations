@@ -42,7 +42,7 @@ export const createLoop = (
             }
             intervalId = setInterval(intervalFunc, 1000 / fps);
         },
-        stop: () => stopFunc,
+        stop: () => stopFunc(),
         currentFps: () => currentFps,
     };
 };
