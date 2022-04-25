@@ -398,7 +398,7 @@ export class Zebra {
     public tick() {
         this.hGlitch =
             !this.state.isGold && !this.state.isRainbow
-                ? (this.state.colorHueMinMaxBase + 2) *
+                ? (this.state.colorHueMinMaxBase + 1) *
                   5 *
                   (Math.sin(Date.now() * 0.0005) * 0.5 + 0.5)
                 : 0;
