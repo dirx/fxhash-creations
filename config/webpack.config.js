@@ -43,6 +43,11 @@ module.exports = {
                 '@fontsource/vt323': 'OFL-1.1',
             },
         }),
+        new webpack.BannerPlugin({
+            banner: `Zebra
+Real-time animation based on vanilla js & 2d rendering context, variable size, 2022
+Dirk Adler, https://twitter.com/d_rx`,
+        }),
     ],
     optimization: {
         minimizer: [
