@@ -37,9 +37,9 @@ export class ZebraState {
     public readonly colors: Array<number> = [];
     public readonly colorHueBase: number;
     public readonly isGrayBase: number;
-    public readonly blocks: number = 144;
+    public readonly blocks: number = 233;
     public readonly blockSizes: Array<number> = [
-        1, 2, 3, 5, 8, 13, 21, 34, 55, 89,
+        1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144,
     ];
     public readonly blockSizeMax: number;
     public readonly blockSizeMin: number;
@@ -51,7 +51,7 @@ export class ZebraState {
     public padding: number = 0;
 
     public constructor() {
-        // special combinations: gold 30&31/ 300, rainbow 228&229 / 300
+        // special combinations: gold 180&181/ 300, rainbow 228&229 / 300
         this.isGrayBase = randInt((this.combinations *= 2), true) % 2;
         this.isGray = this.isGrayBase === 0;
 
@@ -89,7 +89,7 @@ export class ZebraState {
             (this.colorHueSpeedBase === 0 ? 1 : this.colorHueMinMaxBase + 2);
 
         this.isGold =
-            this.isGray &&
+            !this.isGray &&
             this.colorHueBase === 3 &&
             this.colorHueMinMaxBase === 0;
 
@@ -431,20 +431,11 @@ export class Zebra {
                 this.movingPartsTotal <= this.previewPhaseEndsAfter / 2 ||
                 randInt(3) === 0;
 
-            if (
-                /*this.movingParts < this.config.maxMovingParts / 3 &&*/ !this
-                    .isBig
-            ) {
-                this.sDir = randElement([
-                    -1 / 255,
-                    -1 / 255,
-                    0,
-                    0,
-                    0,
-                    1 / 255,
-                    1 / 255,
-                ]);
+            if (!this.isBig) {
+                this.sDir = randElement([-1 / 255, -1 / 255, 0, 0, 0, 1 / 255]);
                 this.vDir = this.state.isGray ? 1 : 0;
+            } else {
+                this.sDir = randElement([-1 / 255, 0, 0]);
             }
 
             this.addingMovingPartsIn.setIn(
