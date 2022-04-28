@@ -1,11 +1,3 @@
-/**
- * Zebra
- * Real-time animation based on vanilla js & 2d rendering context, variable size, 2022
- * © 2022 Dirk Adler, https://twitter.com/d_rx
- */
-
-// todo: register fxhash & twitter & setup some website...
-
 import { Pasture } from './pasture';
 import '@fontsource/vt323/latin.css';
 
@@ -23,7 +15,7 @@ if (fxrand !== '' && fxrandOff === '') {
 
 console.log('Zebra');
 console.log(
-    'Real-time animation based on vanilla js & 2d rendering context, variable size, 2022'
+    'Real-time deterministic animation based on vanilla js & 2d rendering context, variable size, 2022'
 );
 console.log('Dirk Adler, https://twitter.com/d_rx');
 console.log(`FXHASH: ${window.fxhash}`); // the 64 chars hex number fed to your algorithm
