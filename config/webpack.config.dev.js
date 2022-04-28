@@ -3,6 +3,7 @@ const config = require('./webpack.config');
 module.exports = {
     ...config,
     mode: 'development',
+    devtool: 'source-map',
     devServer: {
         hot: false,
         port: 8080,

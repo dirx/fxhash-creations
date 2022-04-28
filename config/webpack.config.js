@@ -16,7 +16,6 @@ module.exports = {
         extensions: ['.tsx', '.ts', '.js', '.d.ts'],
         modules: [path.resolve('./src'), path.resolve('./node_modules')],
     },
-    devtool: 'source-map',
     module: {
         rules: [
             {
@@ -45,7 +44,8 @@ module.exports = {
         }),
         new webpack.BannerPlugin({
             banner: `Zebra
-Real-time animation based on vanilla js & 2d rendering context, variable size, 2022
+Real-time deterministic animation based on vanilla js & 2d rendering context, variable size, 2022
+If you need help please press 'h'.
 Dirk Adler, https://twitter.com/d_rx`,
         }),
     ],

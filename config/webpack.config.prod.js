@@ -2,6 +2,7 @@ const CopyPlugin = require('copy-webpack-plugin');
 const config = require('./webpack.config');
 const ZipperPlugin = require('./ZipperPlugin');
 const path = require('path');
+const RemovePlugin = require('remove-files-webpack-plugin');
 
 module.exports = {
     ...config,
@@ -17,6 +18,11 @@ module.exports = {
                     },
                 },
             ],
+        }),
+        new RemovePlugin({
+            after: {
+                include: ['./dist/.DS_Store'],
+            },
         }),
         new ZipperPlugin(),
     ],
