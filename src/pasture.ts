@@ -98,6 +98,15 @@ export class Pasture {
             let addingMovingPartsInMs =
                 zebra.addingMovingPartsIn.ms(zebra.state.fps) << 0;
             info.update({
+                combination: `${zebra.state.combination} / ${zebra.state.combinations}`,
+                color: zebra.state.getColor(),
+                colorRange: zebra.state.getColorRange(),
+                colorRangeSize: zebra.state.getColorRangeSize(),
+                isGray: zebra.state.isGray,
+                isGold: zebra.state.isGold,
+                isRainbow: zebra.state.isRainbow,
+                size: `${zebra.canvas.width} / ${zebra.canvas.height}`,
+                pixelRatio: `${zebra.state.pixelRatio}`,
                 movingParts: `${zebra.movingParts} / ${zebra.state.maxMovingParts} / ${zebra.movingPartsTotal}`,
                 addingMovingPartsIn: `${
                     addingMovingPartsInMs <= 0 ? '-' : addingMovingPartsInMs
@@ -113,16 +122,7 @@ export class Pasture {
                     zebra.vDir > 0 ? 'up' : zebra.vDir < 0 ? 'down' : '-',
                 valueMin: zebra.state.colorValueMin,
                 valueMax: zebra.state.colorValueMax,
-                color: zebra.state.getColor(),
-                colorRange: zebra.state.getColorRange(),
-                colorRangeSize: zebra.state.getColorRangeSize(),
                 hueGlitch: zebra.hGlitch,
-                isGray: zebra.state.isGray,
-                isGold: zebra.state.isGold,
-                isRainbow: zebra.state.isRainbow,
-                combination: `${zebra.state.combination} / ${zebra.state.combinations}`,
-                size: `${zebra.canvas.width} / ${zebra.canvas.height}`,
-                pixelRatio: `${zebra.state.pixelRatio}`,
                 currentFps: `${this.loop.currentFps() << 0} / ${
                     zebra.state.fps
                 }`,
