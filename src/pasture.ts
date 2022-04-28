@@ -102,6 +102,7 @@ export class Pasture {
                 color: zebra.state.getColor(),
                 colorRange: zebra.state.getColorRange(),
                 colorRangeSize: zebra.state.getColorRangeSize(),
+                colorHueSpeed: zebra.state.colorHueSpeed,
                 isGray: zebra.state.isGray,
                 isGold: zebra.state.isGold,
                 isRainbow: zebra.state.isRainbow,

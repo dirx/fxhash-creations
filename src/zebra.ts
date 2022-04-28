@@ -12,6 +12,7 @@ import { color } from './color';
 export type ZebraFeatures = {
     'Color Range': string;
     'Color Range Size': string;
+    'Color Hue Speed': string;
     Grayish: string;
 };
 
@@ -24,6 +25,8 @@ export class ZebraState {
     public readonly colorHueMax: number;
     public readonly colorSaturationMin: number;
     public readonly colorSaturationMax: number;
+    public readonly colorHueSpeedBase: number;
+    public readonly colorHueSpeed: number;
     public readonly isGray: boolean;
     public readonly isGold: boolean;
     public readonly isRainbow: boolean;
@@ -41,7 +44,6 @@ export class ZebraState {
     public readonly blockSizeMax: number;
     public readonly blockSizeMin: number;
     public readonly blockSizeBigMin: number;
-    public readonly colorValueMinBase: number;
     public readonly colorValueMin: number;
     public readonly colorValueMax: number;
     public fps: number = 30;
@@ -49,7 +51,7 @@ export class ZebraState {
     public padding: number = 0;
 
     public constructor() {
-        // special combinations: gold 18 / 180, rainbow 137 / 180
+        // special combinations: gold 30&31/ 300, rainbow 228&229 / 300
         this.isGrayBase = randInt((this.combinations *= 2), true) % 2;
         this.isGray = this.isGrayBase === 0;
 
@@ -81,6 +83,11 @@ export class ZebraState {
             this.colors.push(this.allColors[p]);
         }
 
+        this.colorHueSpeedBase = randInt((this.combinations *= 2), true) % 2;
+        this.colorHueSpeed =
+            (this.isGray ? 1 : 0.5) *
+            (this.colorHueSpeedBase === 0 ? 1 : this.colorHueMinMaxBase + 2);
+
         this.isGold =
             this.isGray &&
             this.colorHueBase === 3 &&
@@ -94,7 +101,6 @@ export class ZebraState {
         this.colorSaturationMin = this.isGray && !this.isGold ? 0.4 : 0.8;
         this.colorSaturationMax = this.isGray && !this.isGold ? 0.6 : 0.9;
 
-        this.colorValueMinBase = 0;
         this.colorValueMin = this.isGray && !this.isGold ? 0.3 : 1;
         this.colorValueMax = this.isGray && !this.isGold ? 0.8 : 1;
 
@@ -126,13 +132,19 @@ export class ZebraState {
             (this.colorHueMinMaxBase * this.combinations) /
                 2 /
                 this.allColors.length /
-                5;
+                5 +
+            (this.colorHueSpeedBase * this.combinations) /
+                2 /
+                this.allColors.length /
+                5 /
+                2;
     }
 
     public getFeatures(): ZebraFeatures {
         return {
             'Color Range': this.getColorRange(),
             'Color Range Size': this.getColorRangeSize(),
+            'Color Hue Speed': this.getColorHueSpeed(),
             Grayish: this.isGray ? 'yes' : 'no',
         };
     }
@@ -162,6 +174,10 @@ export class ZebraState {
         return ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'][
             this.colorHueMinMaxBase
         ];
+    }
+
+    public getColorHueSpeed(): string {
+        return this.colorHueSpeedBase === 0 ? 'slow' : 'fast';
     }
 
     public getColor(): string {
@@ -608,7 +624,12 @@ export class ZebraMovingBlock {
 
         let big = s.w > this.zebra.width / 2 || s.h > this.zebra.height / 2;
 
-        this.hDir = zebra.state.isGray && !zebra.state.isGold ? 2 : 1;
+        this.hDir = zebra.state.colorHueSpeed;
+        // zebra.state.isGray && !zebra.state.isGold
+        //     ? this.zebra.state.colorHueSpeedBase + 1
+        //     : this.zebra.state.colorHueSpeedBase *
+        //           this.zebra.state.colorHueMinMaxBase +
+        //       1;
         this.vDir = zebra.state.isGray;
         this.sDir = big ? false : randBoolean();
 

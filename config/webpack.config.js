@@ -141,7 +141,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.`,
         new webpack.BannerPlugin({
             banner: `Zebra
 Real-time deterministic animation based on vanilla js & 2d rendering context, variable size, 2022
-If you need help please press 'h'.
+Be inspired. If you need help please press 'h'.
 Dirk Adler, https://twitter.com/d_rx`,
         }),
     ],
