@@ -1,4 +1,4 @@
-import Prando from "prando";
+import Prando from 'prando';
 
 export type Point = {
     x: number;
@@ -12,33 +12,32 @@ export type Area = {
     h: number;
 };
 
-export const rng = new Prando(window.fxhash);
+let rng: Prando;
 
-export const rand = (fx: boolean = false):number => {
-    if (fx) {
-        return window.fxrand();
-    }
-    return rng.next();
+export const randInit = (seed: string): void => {
+    rng = new Prando(seed);
 };
 
-export const randBoolean = (fx: boolean = false): boolean => {
-    return randInt(2, fx) == 0;
-};
-export const randInt = (max: number, fx: boolean = false): number => {
-    return (rand(fx) * max) << 0;
-};
-
-export const randElement = (list: Array<any>, fx: boolean = false): any => {
-    return list[randInt(list.length, fx)];
+export const rand = (): number => {
+    let r: number = rng === undefined ? window.fxrand() : rng.next();
+    // console.log(r);
+    return r;
 };
 
-export const randPoint = (
-    maxX: number,
-    maxY: number,
-    fx: boolean = false
-): Point => {
+export const randBoolean = (): boolean => {
+    return randInt(2) == 0;
+};
+export const randInt = (max: number): number => {
+    return (rand() * max) << 0;
+};
+
+export const randOptions = (list: Array<any>): any => {
+    return list[randInt(list.length)];
+};
+
+export const randPoint = (maxX: number, maxY: number): Point => {
     return {
-        x: randInt(maxX, fx),
-        y: randInt(maxY, fx),
+        x: randInt(maxX),
+        y: randInt(maxY),
     };
 };

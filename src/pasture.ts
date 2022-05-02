@@ -1,6 +1,6 @@
 import { Zebra } from './zebra';
 import { createLoop, Loop } from './frame';
-import { rng } from './rand';
+import { rand } from './rand';
 
 export class Pasture {
     public zebra!: Zebra;
@@ -22,7 +22,12 @@ export class Pasture {
         let canvas = document.createElement('canvas');
         canvas.id = 'main-canvas';
         document.body.prepend(canvas);
-        this.zebra = new Zebra(canvas, window.innerWidth, window.innerHeight);
+        this.zebra = new Zebra(
+            canvas,
+            window.innerWidth,
+            window.innerHeight,
+            window.fxhash
+        );
 
         window.$fxhashFeatures = this.zebra.state.getFeatures();
     }
@@ -99,10 +104,14 @@ export class Pasture {
                 zebra.addingMovingPartsIn.ms(zebra.state.fps) << 0;
             info.update({
                 combination: `${zebra.state.combination} / ${zebra.state.combinations}`,
-                color: zebra.state.getColor(),
-                colorRange: zebra.state.getColorRange(),
+                color: `${zebra.state.getColor()} (${zebra.state.colorHue})`,
+                colorRange: `${zebra.state.getColorRange()} (${
+                    zebra.state.colorHueMin
+                } - ${zebra.state.colorHueMax})`,
                 colorRangeSize: zebra.state.getColorRangeSize(),
-                colorHueSpeed: zebra.state.colorHueSpeed,
+                colorHueSpeed: `${zebra.state.getColorHueSpeed()} (${
+                    zebra.state.colorHueSpeed
+                })`,
                 isGray: zebra.state.isGray,
                 isGold: zebra.state.isGold,
                 isRainbow: zebra.state.isRainbow,
@@ -223,7 +232,7 @@ export class Intercom {
 
                 case 'b':
                     this.display.show('butterfly wing');
-                    rng.skip();
+                    rand();
                     break;
 
                 case 'v':

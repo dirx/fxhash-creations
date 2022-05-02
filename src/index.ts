@@ -4,13 +4,9 @@ import '@fontsource/vt323/latin.css';
 let search = new URLSearchParams(window.location.search);
 let fxrand: string = search.get('fxrand') || '';
 let fxrandOff: string = search.get('fxrandOff') || '';
-let fxrandSteps: string = search.get('fxrandSteps') || '150';
+let fxrandSteps: string = search.get('fxrandSteps') || '300';
 if (fxrand !== '' && fxrandOff === '') {
-    window.fxrand = () => {
-        let r = parseInt(fxrand) / (parseInt(fxrandSteps) - 1);
-        console.log('fxrand', r, fxrand, fxrandSteps);
-        return r;
-    };
+    window.fxhash = `${parseInt(fxrand) / (parseInt(fxrandSteps) - 1)}`;
 }
 
 console.log('Zebra');

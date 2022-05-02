@@ -2,9 +2,10 @@ import {
     Area,
     Point,
     randInt,
-    randElement,
+    randOptions,
     randPoint,
     randBoolean,
+    randInit,
 } from './rand';
 import { createLoop, Loop } from './frame';
 import { color } from './color';
@@ -52,16 +53,16 @@ export class ZebraState {
 
     public constructor() {
         // special combinations: gold 180&181/ 300, rainbow 228&229 / 300
-        this.isGrayBase = randInt((this.combinations *= 2), true) % 2;
+        this.isGrayBase = randInt((this.combinations *= 2)) % 2;
         this.isGray = this.isGrayBase === 0;
 
         this.colorHueBase =
-            randInt((this.combinations *= this.allColors.length), true) %
+            randInt((this.combinations *= this.allColors.length)) %
             this.allColors.length;
 
         this.colorHue = this.allColors[this.colorHueBase];
 
-        this.colorHueMinMaxBase = randInt((this.combinations *= 5), true) % 5;
+        this.colorHueMinMaxBase = randInt((this.combinations *= 5)) % 5;
 
         let hueMin = this.colorHueBase - this.colorHueMinMaxBase - 1;
         hueMin = hueMin < 0 ? this.allColors.length + hueMin : hueMin;
@@ -83,7 +84,7 @@ export class ZebraState {
             this.colors.push(this.allColors[p]);
         }
 
-        this.colorHueSpeedBase = randInt((this.combinations *= 2), true) % 2;
+        this.colorHueSpeedBase = randInt((this.combinations *= 2)) % 2;
         this.colorHueSpeed =
             (this.isGray ? 1 : 0.5) *
             (this.colorHueSpeedBase === 0 ? 1 : this.colorHueMinMaxBase + 2);
@@ -153,6 +154,7 @@ export class ZebraState {
         return [
             this.getColorRange(),
             this.isGray ? 'gray' : 'normal',
+            this.getColorHueSpeed(),
             this.combination,
             window.fxrand(),
         ].join('-');
@@ -250,7 +252,7 @@ export class AddingMovingPart {
 }
 
 export class Zebra {
-    public readonly state: ZebraState;
+    public state!: ZebraState;
 
     public width: number = 0;
     public height: number = 0;
@@ -280,17 +282,26 @@ export class Zebra {
     public inPreviewPhase!: boolean;
     public previewPhaseEndsAfter!: number;
 
+    public fxhash: string;
+
     public constructor(
         canvas: HTMLCanvasElement,
         width: number,
-        height: number
+        height: number,
+        fxhash: string
     ) {
-        this.state = new ZebraState();
+        // this.state = new ZebraState();
         this.canvas = canvas;
         this.context = canvas.getContext('2d') as CanvasRenderingContext2D;
+        this.fxhash = fxhash;
 
         this.updateSize(width, height);
         this.setSmoothing(false);
+    }
+
+    private initState() {
+        randInit(this.fxhash);
+        this.state = new ZebraState();
     }
 
     private init() {
@@ -311,6 +322,7 @@ export class Zebra {
         height: number,
         pixelRatio: number | null = null
     ) {
+        this.initState();
         if (pixelRatio === null) {
             this.state.pixelRatio = Math.ceil((width + height) / 2 / 640);
         } else {
@@ -419,7 +431,7 @@ export class Zebra {
         }
 
         if (this.movingParts === this.state.maxMovingParts) {
-            this.move = randElement([
+            this.move = randOptions([
                 ['left', 'up'],
                 ['left', 'down'],
                 ['right', 'up'],
@@ -432,10 +444,18 @@ export class Zebra {
                 randInt(3) === 0;
 
             if (!this.isBig) {
-                this.sDir = randElement([-1 / 255, -1 / 255, 0, 0, 0, 1 / 255]);
+                this.sDir = randOptions([
+                    -1 / 255,
+                    -1 / 255,
+                    0,
+                    0,
+                    0,
+                    1 / 255,
+                    1 / 255,
+                ]);
                 this.vDir = this.state.isGray ? 1 : 0;
             } else {
-                this.sDir = randElement([-1 / 255, 0, 0]);
+                this.sDir = randOptions([-1 / 255, 0, 0]);
             }
 
             this.addingMovingPartsIn.setIn(
@@ -443,12 +463,14 @@ export class Zebra {
                     ? 0
                     : randInt(
                           this.state.maxMovingParts *
-                              25 *
+                              50 *
                               (this.width + this.height)
                       )
             );
         } else {
-            this.addingMovingPartsIn.setIn((this.width + this.height) / 2);
+            this.addingMovingPartsIn.setIn(
+                (this.width + this.height) * this.state.maxMovingParts
+            );
         }
     }
 
@@ -505,13 +527,13 @@ export class ZebraMovingBlock {
         let wh: number;
 
         if (this.isBig) {
-            wh = randElement(
+            wh = randOptions(
                 zebra.state.blockSizes.slice(
                     (zebra.state.blockSizes.length * -0.333) << 0
                 )
             );
         } else {
-            wh = randElement(zebra.state.blockSizes);
+            wh = randOptions(zebra.state.blockSizes);
         }
 
         let xy: Point = randPoint(
@@ -581,7 +603,7 @@ export class ZebraMovingBlock {
                 zebra.state.blockSizeMin;
         }
 
-        let move: string = randElement(zebra.move);
+        let move: string = randOptions(zebra.move);
 
         switch (move) {
             case 'up':
@@ -616,11 +638,6 @@ export class ZebraMovingBlock {
         let big = s.w > this.zebra.width / 2 || s.h > this.zebra.height / 2;
 
         this.hDir = zebra.state.colorHueSpeed;
-        // zebra.state.isGray && !zebra.state.isGold
-        //     ? this.zebra.state.colorHueSpeedBase + 1
-        //     : this.zebra.state.colorHueSpeedBase *
-        //           this.zebra.state.colorHueMinMaxBase +
-        //       1;
         this.vDir = zebra.state.isGray;
         this.sDir = big ? false : randBoolean();
 
