@@ -49,7 +49,11 @@ export const color = {
                     h = h < hMin && h > hMax ? hMax : h;
                 }
             } else {
-                h = h > hMax ? hMin : h < hMin ? hMax : h;
+                if (dh > 0) {
+                    h = h > hMax ? hMin : h < hMin ? hMin : h;
+                } else {
+                    h = h > hMax ? hMax : h < hMin ? hMax : h;
+                }
             }
         }
 
