@@ -107,25 +107,6 @@ export const color = {
             }
         }
     },
-    rgbToHsv: (r: number, g: number, b: number): Array<number> => {
-        const max_: number = Math.max(r, g, b);
-        const min_: number = Math.min(r, g, b);
-
-        const delta = max_ - min_;
-        let h = 0,
-            s = 0,
-            v = max_ / 255.0;
-
-        if (max_ !== 0) {
-            s = delta / max_;
-            if (r === max_) h = (g - b) / delta;
-            if (g === max_) h = 2 + (b - r) / delta;
-            if (b === max_) h = 4 + (r - g) / delta;
-            h *= 60;
-            if (h < 0) h += 360;
-        }
-        return [h, s, v];
-    },
     hsvToRgb: (h: number, s: number, v: number): Array<number> => {
         v *= 255;
         if (s === 0) {
