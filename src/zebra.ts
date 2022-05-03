@@ -372,7 +372,12 @@ export class Zebra {
 
         new ZebraMovingBlock(
             this,
-            { x: 0, y: 0, w: this.width, h: this.height },
+            {
+                x: 0,
+                y: 0,
+                w: this.width,
+                h: this.height,
+            },
             'up',
             this.height / 10
         );
