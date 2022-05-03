@@ -260,9 +260,9 @@ export class Zebra {
     public canvas: HTMLCanvasElement;
     public context: CanvasRenderingContext2D;
 
+    public addingMovingPartsIn!: AddingMovingPart;
     public movingParts: number = 0;
     public movingPartsTotal: number = 0;
-    public addingMovingPartsIn!: AddingMovingPart;
     public move: Array<'left' | 'up' | 'down' | 'right'> = [
         'left',
         'up',
@@ -270,8 +270,6 @@ export class Zebra {
         'down',
     ];
 
-    public dir!: number;
-    public isDirX!: boolean;
     public isBig!: boolean;
 
     public vDir: number = 0;
@@ -310,8 +308,6 @@ export class Zebra {
         this.inPreviewPhase = true;
         this.previewPhaseEndsAfter = this.state.maxMovingParts * 4;
 
-        this.dir = randInt(2) === 0 ? 1 : -1;
-        this.isDirX = randInt(2) === 0;
         this.isBig = true;
         this.sDir = 0;
         this.vDir = this.state.isGray ? 1 : 0;
@@ -367,41 +363,19 @@ export class Zebra {
     }
 
     public initImage() {
-        let gradient = this.context.createLinearGradient(0, 0, this.width, 0);
-        let times = 1;
-        let vRange = this.state.isRainbow
-            ? 0
-            : this.state.colorValueMax - this.state.colorValueMin;
-        let oTotal = times * this.state.colors.length;
-
-        for (let o = 0; o <= oTotal; o++) {
-            let c = o % this.state.colors.length;
-            let v = ((o + times * 1.5) % (times * 2)) / (times * 2);
-            let s = o / times / this.state.colors.length;
-            if (c === 0 || v === 0) {
-                gradient.addColorStop(
-                    s,
-                    color.hsvCss(
-                        this.state.colors[
-                            c === 0 ? this.state.colors.length - 1 : c
-                        ],
-                        this.state.colorSaturationMin,
-                        this.state.colorValueMin + vRange * (v === 0 ? 1 : v)
-                    )
-                );
-            }
-            gradient.addColorStop(
-                s,
-                color.hsvCss(
-                    this.state.colors[c],
-                    this.state.colorSaturationMin,
-                    this.state.colorValueMin + v * vRange
-                )
-            );
-        }
-
-        this.context.fillStyle = gradient;
+        this.context.fillStyle = color.hsvCss(
+            this.state.colorHue,
+            this.state.colorSaturationMin,
+            this.state.colorValueMin
+        );
         this.context.fillRect(0, 0, this.width, this.height);
+
+        new ZebraMovingBlock(
+            this,
+            { x: 0, y: 0, w: this.width, h: this.height },
+            'up',
+            this.height / 10
+        );
     }
 
     public tick() {
@@ -437,10 +411,8 @@ export class Zebra {
                 ['right', 'up'],
                 ['right', 'down'],
             ]);
-            this.dir = randInt(2) === 0 ? 1 : -1;
-            this.isDirX = randInt(2) === 0;
             this.isBig =
-                this.movingPartsTotal <= this.previewPhaseEndsAfter / 2 ||
+                this.movingPartsTotal <= this.previewPhaseEndsAfter / 3 ||
                 randInt(3) === 0;
 
             if (!this.isBig) {
@@ -502,10 +474,10 @@ export class Zebra {
 }
 
 export class ZebraMovingBlock {
-    public readonly s: Area;
+    public readonly area: Area;
     public readonly isBig: boolean;
-    public readonly dir: number;
-    public readonly isDirX: boolean;
+    public readonly dir!: number;
+    public readonly isDirX!: boolean;
     public readonly hDir: number;
     public readonly hMin: number;
     public readonly hMax: number;
@@ -521,90 +493,81 @@ export class ZebraMovingBlock {
     private updateSizeHandler: EventListenerOrEventListenerObject;
     private updateFpsHandler: EventListenerOrEventListenerObject;
 
-    public constructor(public readonly zebra: Zebra) {
+    public constructor(
+        public readonly zebra: Zebra,
+        area: Area | null = null,
+        move: string | null = null,
+        movingDistance: number | null = null
+    ) {
         this.isBig = zebra.isBig;
-        let s: Area;
         let wh: number;
 
-        if (this.isBig) {
-            wh = randOptions(
-                zebra.state.blockSizes.slice(
-                    (zebra.state.blockSizes.length * -0.333) << 0
-                )
+        if (area === null) {
+            if (this.isBig) {
+                wh = randOptions(
+                    zebra.state.blockSizes.slice(
+                        (zebra.state.blockSizes.length * -0.333) << 0
+                    )
+                );
+            } else {
+                wh = randOptions(zebra.state.blockSizes);
+            }
+
+            let xy: Point = randPoint(
+                zebra.state.blocks + 1 - wh,
+                zebra.state.blocks + 1 - wh
             );
-        } else {
-            wh = randOptions(zebra.state.blockSizes);
+
+            area = {
+                x: xy.x,
+                y: xy.y,
+                w: wh,
+                h: wh,
+            };
+
+            // force use of corners
+            if (area.x <= zebra.state.blocks * 0.2) {
+                area.x = 0;
+            }
+
+            if (area.y <= zebra.state.blocks * 0.2) {
+                area.y = 0;
+            }
+
+            if (area.x + area.w >= zebra.state.blocks * 0.8) {
+                area.w = zebra.state.blocks - area.x;
+            }
+
+            if (area.y + area.h >= zebra.state.blocks * 0.8) {
+                area.h = zebra.state.blocks - area.y;
+            }
+
+            area.x =
+                (area.x * (zebra.width - zebra.state.padding * 2)) /
+                    zebra.state.blocks +
+                zebra.state.padding;
+            area.y =
+                (area.y * (zebra.height - zebra.state.padding * 2)) /
+                    zebra.state.blocks +
+                zebra.state.padding;
+            area.w =
+                ((area.w + 1) * (zebra.width - zebra.state.padding * 2)) /
+                zebra.state.blocks;
+            area.h =
+                ((area.h + 1) * (zebra.height - zebra.state.padding * 2)) /
+                zebra.state.blocks;
         }
 
-        let xy: Point = randPoint(
-            zebra.state.blocks + 1 - wh,
-            zebra.state.blocks + 1 - wh
-        );
+        area.x = area.x << 0;
+        area.y = area.y << 0;
+        area.w = area.w << 0;
+        area.h = area.h << 0;
 
-        s = {
-            x: xy.x,
-            y: xy.y,
-            w: wh,
-            h: wh,
-        };
+        this.area = area;
 
-        // force use of corners
-        if (s.x <= zebra.state.blocks * 0.2) {
-            s.x = 0;
+        if (move === null) {
+            move = randOptions(zebra.move);
         }
-
-        if (s.y <= zebra.state.blocks * 0.2) {
-            s.y = 0;
-        }
-
-        if (s.x + s.w >= zebra.state.blocks * 0.8) {
-            s.w = zebra.state.blocks - s.x;
-        }
-
-        if (s.y + s.h >= zebra.state.blocks * 0.8) {
-            s.h = zebra.state.blocks - s.y;
-        }
-
-        s.x =
-            (s.x * (zebra.width - zebra.state.padding * 2)) /
-                zebra.state.blocks +
-            zebra.state.padding;
-        s.y =
-            (s.y * (zebra.height - zebra.state.padding * 2)) /
-                zebra.state.blocks +
-            zebra.state.padding;
-        s.w =
-            ((s.w + 1) * (zebra.width - zebra.state.padding * 2)) /
-            zebra.state.blocks;
-        s.h =
-            ((s.h + 1) * (zebra.height - zebra.state.padding * 2)) /
-            zebra.state.blocks;
-
-        s.x = s.x << 0;
-        s.y = s.y << 0;
-        s.w = s.w << 0;
-        s.h = s.h << 0;
-
-        this.dir = this.zebra.dir;
-        this.isDirX = this.zebra.isDirX;
-
-        this.s = s;
-
-        let m: number;
-
-        if (this.isBig) {
-            m =
-                randInt(
-                    zebra.state.blockSizeMax - zebra.state.blockSizeBigMin
-                ) + zebra.state.blockSizeBigMin;
-        } else {
-            m =
-                randInt(zebra.state.blockSizeMax - zebra.state.blockSizeMin) +
-                zebra.state.blockSizeMin;
-        }
-
-        let move: string = randOptions(zebra.move);
-
         switch (move) {
             case 'up':
                 this.isDirX = false;
@@ -623,19 +586,36 @@ export class ZebraMovingBlock {
                 this.dir = 1;
                 break;
         }
-        if (this.isDirX) {
-            this.movingDistance =
-                ((m * (this.zebra.width - this.zebra.state.padding * 2)) /
-                    this.zebra.state.blocks) <<
-                0;
+
+        let blocks: number;
+        if (this.isBig) {
+            blocks =
+                randInt(
+                    zebra.state.blockSizeMax - zebra.state.blockSizeBigMin
+                ) + zebra.state.blockSizeBigMin;
         } else {
-            this.movingDistance =
-                ((m * (this.zebra.height - this.zebra.state.padding * 2)) /
-                    this.zebra.state.blocks) <<
-                0;
+            blocks =
+                randInt(zebra.state.blockSizeMax - zebra.state.blockSizeMin) +
+                zebra.state.blockSizeMin;
         }
 
-        let big = s.w > this.zebra.width / 2 || s.h > this.zebra.height / 2;
+        if (movingDistance === null) {
+            if (this.isDirX) {
+                movingDistance =
+                    (blocks *
+                        (this.zebra.width - this.zebra.state.padding * 2)) /
+                    this.zebra.state.blocks;
+            } else {
+                movingDistance =
+                    (blocks *
+                        (this.zebra.height - this.zebra.state.padding * 2)) /
+                    this.zebra.state.blocks;
+            }
+        }
+        this.movingDistance = movingDistance << 0;
+
+        let big =
+            area.w > this.zebra.width / 2 || area.h > this.zebra.height / 2;
 
         this.hDir = zebra.state.colorHueSpeed;
         this.vDir = zebra.state.isGray;
@@ -694,8 +674,8 @@ export class ZebraMovingBlock {
 
         let sx: number;
         let sy: number;
-        let sw: number = this.s.w;
-        let sh: number = this.s.h;
+        let sw: number = this.area.w;
+        let sh: number = this.area.h;
         let tx: number;
         let ty: number;
         let padding: number = this.zebra.state.padding;
@@ -703,8 +683,8 @@ export class ZebraMovingBlock {
         if (this.isDirX) {
             let maxWidth =
                 this.zebra.width - padding - (this.dir > 0 ? this.dir : 0);
-            sx = this.s.x + this.movingDistance;
-            sy = this.s.y;
+            sx = this.area.x + this.movingDistance;
+            sy = this.area.y;
 
             if (sx < padding) {
                 sx = padding;
@@ -724,8 +704,8 @@ export class ZebraMovingBlock {
         } else {
             let maxHeight =
                 this.zebra.height - padding - (this.dir > 0 ? this.dir : 0);
-            sx = this.s.x;
-            sy = this.s.y + this.movingDistance;
+            sx = this.area.x;
+            sy = this.area.y + this.movingDistance;
 
             if (sy < padding) {
                 sy = padding;
