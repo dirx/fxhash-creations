@@ -535,11 +535,16 @@ export class ZebraMovingBlock {
             if (this.isBig) {
                 wh = randOptions(
                     zebra.state.blockSizes.slice(
-                        (zebra.state.blockSizes.length * -0.333) << 0
+                        (zebra.state.blockSizes.length * -0.3) << 0
                     )
                 );
             } else {
-                wh = randOptions(zebra.state.blockSizes);
+                wh = randOptions(
+                    zebra.state.blockSizes.slice(
+                        0,
+                        (zebra.state.blockSizes.length * 0.8) << 0
+                    )
+                );
             }
 
             let xy: Point = randPoint(
