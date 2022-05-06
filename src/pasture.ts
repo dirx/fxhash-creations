@@ -78,14 +78,19 @@ export class Pasture {
 
                     // collect screenshots
                     let search = new URLSearchParams(window.location.search);
-                    let fxrand = search.get('fxrand') || '';
-                    let fxrandSteps = search.get('fxrandSteps') || '150';
-                    if (fxrand != '') {
+                    let variation = search.get('variation') || '';
+                    let variations = search.get('variations') || '300';
+                    if (variation != '') {
                         this.zebra.printImage(zebra.state.getFeatureName());
-                        let nextFxrand = parseInt(fxrand) + 1;
-                        search.set('fxrand', `${nextFxrand}`);
-                        if (fxrand != fxrandSteps) {
-                            window.location.search = search.toString();
+                        let nextCombination = parseInt(variation) + 1;
+                        search.set('variation', `${nextCombination}`);
+                        if (variation != variations) {
+                            setInterval(
+                                () =>
+                                    (window.location.search =
+                                        search.toString()),
+                                1000
+                            );
                         }
                     }
                 }
@@ -100,8 +105,8 @@ export class Pasture {
         let info = this.info;
 
         setInterval(() => {
-            let addingMovingPartsInMs =
-                zebra.addingMovingPartsIn.ms(zebra.state.fps) << 0;
+            let addingMovingBlocksInMs =
+                zebra.addingMovingBlockIn.ms(zebra.state.fps) << 0;
             info.update({
                 combination: `${zebra.state.combination} / ${zebra.state.combinations}`,
                 color: `${zebra.state.getColor()} (${zebra.state.colorHue})`,
@@ -112,14 +117,15 @@ export class Pasture {
                 colorHueSpeed: `${zebra.state.getColorHueSpeed()} (${
                     zebra.state.colorHueSpeed
                 })`,
+                colorValue: zebra.state.getDarkness(),
                 isGray: zebra.state.isGray,
                 isGold: zebra.state.isGold,
                 isRainbow: zebra.state.isRainbow,
                 size: `${zebra.canvas.width} / ${zebra.canvas.height}`,
                 pixelRatio: `${zebra.state.pixelRatio}`,
-                movingParts: `${zebra.movingParts} / ${zebra.state.maxMovingParts} / ${zebra.movingPartsTotal}`,
-                addingMovingPartsIn: `${
-                    addingMovingPartsInMs <= 0 ? '-' : addingMovingPartsInMs
+                movingBlocks: `${zebra.movingBlocks} / ${zebra.state.maxMovingBlocks} / ${zebra.movingBlocksTotal}`,
+                addingMovingBlocksIn: `${
+                    addingMovingBlocksInMs <= 0 ? '-' : addingMovingBlocksInMs
                 } ms`,
                 moveDirection: zebra.move.join(', '),
                 moveBig: zebra.isBig,
@@ -209,7 +215,7 @@ export class Intercom {
                     break;
 
                 case 'c':
-                    this.zebra.printImage(window.fxhash);
+                    this.zebra.printImage(this.zebra.state.getFeatureName());
                     this.display.show('capture image');
                     break;
 
@@ -281,16 +287,19 @@ export class Info {
     public constructor(document: Document) {
         this.element = document.createElement('div');
         this.element.id = 'info';
+        this.element.classList.add('hide');
         document.body.prepend(this.element);
     }
 
     public toggleShow(): boolean {
-        if (this.element.classList.contains('hover')) {
-            this.element.classList.remove('hover');
+        if (this.element.classList.contains('hide')) {
+            this.element.classList.remove('hide');
+            this.element.classList.add('show');
         } else {
-            this.element.classList.add('hover');
+            this.element.classList.remove('show');
+            this.element.classList.add('hide');
         }
-        return this.element.classList.contains('hover');
+        return this.element.classList.contains('show');
     }
 
     public update(properties: any) {
@@ -308,6 +317,7 @@ export class Help {
     public constructor(document: Document) {
         this.element = document.createElement('div');
         this.element.id = 'help';
+        this.element.classList.add('hide');
         this.element.innerHTML = `
           <p><em>+</em> increase fps</p>
           <p><em>-</em> decrease fps</p>
@@ -323,11 +333,13 @@ export class Help {
     }
 
     public toggleShow(): boolean {
-        if (this.element.classList.contains('hover')) {
-            this.element.classList.remove('hover');
+        if (this.element.classList.contains('hide')) {
+            this.element.classList.remove('hide');
+            this.element.classList.add('show');
         } else {
-            this.element.classList.add('hover');
+            this.element.classList.remove('show');
+            this.element.classList.add('hide');
         }
-        return this.element.classList.contains('hover');
+        return this.element.classList.contains('show');
     }
 }

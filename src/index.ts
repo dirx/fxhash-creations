@@ -1,12 +1,14 @@
 import { Pasture } from './pasture';
 import '@fontsource/vt323/latin.css';
+import { fakeFxhash } from './rand';
 
 let search = new URLSearchParams(window.location.search);
-let fxrand: string = search.get('fxrand') || '';
-let fxrandOff: string = search.get('fxrandOff') || '';
-let fxrandSteps: string = search.get('fxrandSteps') || '300';
-if (fxrand !== '' && fxrandOff === '') {
-    window.fxhash = `${parseInt(fxrand) / (parseInt(fxrandSteps) - 1)}`;
+let variation: string = search.get('variation') || '';
+let variations: string = search.get('variations') || '300';
+if (variation !== '') {
+    window.fxhash = fakeFxhash(
+        parseInt(variation) / (parseInt(variations) - 1)
+    );
 }
 
 console.log('Zebra');
@@ -19,7 +21,7 @@ console.log(`FXHASH: ${window.fxhash}`); // the 64 chars hex number fed to your 
 
 window.pasture = new Pasture();
 
-console.log(`Color Range: ${window.$fxhashFeatures['Color Range']}`);
-console.log(`Color Range Size: ${window.$fxhashFeatures['Color Range Size']}`);
-console.log(`Color Hue Speed: ${window.$fxhashFeatures['Color Hue Speed']}`);
-console.log(`Grayish: ${window.$fxhashFeatures.Grayish}`);
+console.log(`Range: ${window.$fxhashFeatures['range']}`);
+console.log(`Range Size: ${window.$fxhashFeatures['range size']}`);
+console.log(`Speed: ${window.$fxhashFeatures['speed']}`);
+console.log(`Darkness: ${window.$fxhashFeatures['darkness']}`);

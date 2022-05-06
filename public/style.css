@@ -47,6 +47,7 @@ html, body {
     margin: 0;
     padding: 20px;
     opacity: 0;
+    visibility: hidden;
     font-size: 2vmin;
     color: #FFFFFF;
     text-shadow: 0 0 10px black;
@@ -60,13 +61,22 @@ html, body {
     margin: 0;
     padding: 20px;
     opacity: 0;
+    visibility: hidden;
     font-size: 2vmin;
     color: #FFFFFF;
     text-shadow: 0 0 10px black;
 }
 
-#info:hover, #info.hover, #help:hover, #help.hover {
+#info.hide, #help.hide {
+    opacity: 0;
+    visibility: visible;
+    transition: opacity 1s;
+}
+
+#info.show, #help.show {
     opacity: 1;
+    visibility: visible;
+    transition: opacity 1s;
 }
 
 #info p, #help p {

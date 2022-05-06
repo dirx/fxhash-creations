@@ -11,10 +11,10 @@ import { createLoop, Loop } from './frame';
 import { color } from './color';
 
 export type ZebraFeatures = {
-    'Color Range': string;
-    'Color Range Size': string;
-    'Color Hue Speed': string;
-    Grayish: string;
+    range: string;
+    'range size': string;
+    speed: string;
+    darkness: string;
 };
 
 export class ZebraState {
@@ -31,7 +31,7 @@ export class ZebraState {
     public readonly isGray: boolean;
     public readonly isGold: boolean;
     public readonly isRainbow: boolean;
-    public maxMovingParts: number = 7;
+    public maxMovingBlocks: number = 7;
     public readonly allColors: Array<number> = [
         10, 20, 40, 50, 60, 80, 130, 160, 200, 220, 250, 265, 285, 320, 350,
     ];
@@ -52,7 +52,6 @@ export class ZebraState {
     public padding: number = 0;
 
     public constructor() {
-        // special combinations: gold 180&181/ 300, rainbow 228&229 / 300
         this.isGrayBase = randInt((this.combinations *= 2)) % 2;
         this.isGray = this.isGrayBase === 0;
 
@@ -85,9 +84,7 @@ export class ZebraState {
         }
 
         this.colorHueSpeedBase = randInt((this.combinations *= 2)) % 2;
-        this.colorHueSpeed =
-            (this.isGray ? 1 : 0.5) *
-            (this.colorHueSpeedBase === 0 ? 1 : this.colorHueMinMaxBase + 2);
+        this.colorHueSpeed = (this.colorHueSpeedBase + 1) * 0.5;
 
         this.isGold =
             !this.isGray &&
@@ -102,14 +99,32 @@ export class ZebraState {
         this.colorSaturationMin = this.isGray && !this.isGold ? 0.4 : 0.8;
         this.colorSaturationMax = this.isGray && !this.isGold ? 0.6 : 0.9;
 
+        this.colorSaturationMin =
+            this.isGray && this.colorHueMinMaxBase === 0
+                ? 0.6
+                : this.colorSaturationMin;
+        this.colorSaturationMax =
+            this.isGray && this.colorHueMinMaxBase === 0
+                ? 0.7
+                : this.colorSaturationMax;
+
         this.colorValueMin = this.isGray && !this.isGold ? 0.3 : 1;
         this.colorValueMax = this.isGray && !this.isGold ? 0.8 : 1;
+
+        this.colorValueMin =
+            this.isGray && this.colorHueMinMaxBase === 0
+                ? 0.1
+                : this.colorValueMin;
+        this.colorValueMax =
+            this.isGray && this.colorHueMinMaxBase === 0
+                ? 0.5
+                : this.colorValueMax;
 
         if (this.isGold) {
             this.colorSaturationMin = 0.9;
             this.colorSaturationMax = 1;
             this.colorValueMin = 1;
-            this.maxMovingParts = 5;
+            this.maxMovingBlocks = 5;
         }
 
         if (this.isRainbow) {
@@ -143,21 +158,32 @@ export class ZebraState {
 
     public getFeatures(): ZebraFeatures {
         return {
-            'Color Range': this.getColorRange(),
-            'Color Range Size': this.getColorRangeSize(),
-            'Color Hue Speed': this.getColorHueSpeed(),
-            Grayish: this.isGray ? 'yes' : 'no',
+            range: this.getColorRange(),
+            'range size': this.getColorRangeSize(),
+            speed: this.getColorHueSpeed(),
+            darkness: this.getDarkness(),
         };
+    }
+
+    public getDarkness(): string {
+        if (this.isGray) {
+            return this.colorHueMinMaxBase === 0 ? 'high' : 'low';
+        }
+
+        return 'none';
     }
 
     public getFeatureName(): string {
         return [
             this.getColorRange(),
-            this.isGray ? 'gray' : 'normal',
+            this.getColorRangeSize(),
             this.getColorHueSpeed(),
+            this.getDarkness(),
             this.combination,
-            window.fxrand(),
-        ].join('-');
+            window.fxhash,
+        ]
+            .join('-')
+            .replace(/\s+/g, '');
     }
 
     public getColorRange(): string {
@@ -225,7 +251,7 @@ export class ZebraState {
     }
 }
 
-export class AddingMovingPart {
+export class AddingMovingBlock {
     public ts!: number;
     public in!: number;
 
@@ -260,9 +286,9 @@ export class Zebra {
     public canvas: HTMLCanvasElement;
     public context: CanvasRenderingContext2D;
 
-    public addingMovingPartsIn!: AddingMovingPart;
-    public movingParts: number = 0;
-    public movingPartsTotal: number = 0;
+    public addingMovingBlockIn!: AddingMovingBlock;
+    public movingBlocks: number = 0;
+    public movingBlocksTotal: number = 0;
     public move: Array<'left' | 'up' | 'down' | 'right'> = [
         'left',
         'up',
@@ -288,7 +314,6 @@ export class Zebra {
         height: number,
         fxhash: string
     ) {
-        // this.state = new ZebraState();
         this.canvas = canvas;
         this.context = canvas.getContext('2d') as CanvasRenderingContext2D;
         this.fxhash = fxhash;
@@ -303,10 +328,10 @@ export class Zebra {
     }
 
     private init() {
-        this.addingMovingPartsIn = new AddingMovingPart();
-        this.movingPartsTotal = 0;
+        this.addingMovingBlockIn = new AddingMovingBlock();
+        this.movingBlocksTotal = 0;
         this.inPreviewPhase = true;
-        this.previewPhaseEndsAfter = this.state.maxMovingParts * 4;
+        this.previewPhaseEndsAfter = this.state.maxMovingBlocks * 3;
 
         this.isBig = true;
         this.sDir = 0;
@@ -388,28 +413,28 @@ export class Zebra {
             !this.state.isGold && !this.state.isRainbow
                 ? (this.state.colorHueMinMaxBase + 1) *
                   5 *
-                  (Math.sin(Date.now() * 0.0005) * 0.5 + 0.5)
+                  (Math.sin(this.movingBlocksTotal * 0.05) * 0.5 + 0.5)
                 : 0;
 
-        if (this.movingParts >= this.state.maxMovingParts) {
+        if (this.movingBlocks >= this.state.maxMovingBlocks) {
             return;
         }
 
-        if (this.addingMovingPartsIn.next(this.state.fps)) {
+        if (this.addingMovingBlockIn.next(this.state.fps)) {
             return;
         }
 
         new ZebraMovingBlock(this);
-        this.movingPartsTotal++;
+        this.movingBlocksTotal++;
 
         if (
             this.inPreviewPhase &&
-            this.movingPartsTotal > this.previewPhaseEndsAfter
+            this.movingBlocksTotal > this.previewPhaseEndsAfter
         ) {
             this.inPreviewPhase = false;
         }
 
-        if (this.movingParts === this.state.maxMovingParts) {
+        if (this.movingBlocks === this.state.maxMovingBlocks) {
             this.move = randOptions([
                 ['left', 'up'],
                 ['left', 'down'],
@@ -417,7 +442,7 @@ export class Zebra {
                 ['right', 'down'],
             ]);
             this.isBig =
-                this.movingPartsTotal <= this.previewPhaseEndsAfter / 3 ||
+                this.movingBlocksTotal <= this.state.maxMovingBlocks ||
                 randInt(3) === 0;
 
             if (!this.isBig) {
@@ -435,18 +460,17 @@ export class Zebra {
                 this.sDir = randOptions([-1 / 255, 0, 0]);
             }
 
-            this.addingMovingPartsIn.setIn(
-                this.inPreviewPhase
-                    ? 0
-                    : randInt(
-                          this.state.maxMovingParts *
-                              50 *
-                              (this.width + this.height)
-                      )
+            this.addingMovingBlockIn.setIn(
+                // this.inPreviewPhase
+                //     ? 0
+                //     :
+                randInt(
+                    this.state.maxMovingBlocks * 50 * (this.width + this.height)
+                )
             );
         } else {
-            this.addingMovingPartsIn.setIn(
-                (this.width + this.height) * this.state.maxMovingParts
+            this.addingMovingBlockIn.setIn(
+                (this.width + this.height) * this.state.maxMovingBlocks
             );
         }
     }
@@ -657,7 +681,7 @@ export class ZebraMovingBlock {
     }
 
     private start() {
-        this.zebra.movingParts++;
+        this.zebra.movingBlocks++;
 
         this.movingDistance = this.movingDistance * this.dir;
         this.loop = createLoop(
@@ -733,7 +757,7 @@ export class ZebraMovingBlock {
             return false;
         }
 
-        this.movePart(sx, sy, sw, sh, tx, ty);
+        this.move(sx, sy, sw, sh, tx, ty);
         this.movingDistance -= this.dir;
         return true;
     }
@@ -747,10 +771,10 @@ export class ZebraMovingBlock {
             'zebra.updateFps',
             this.updateFpsHandler
         );
-        this.zebra.movingParts--;
+        this.zebra.movingBlocks--;
     }
 
-    private movePart(
+    private move(
         sx: number,
         sy: number,
         sw: number,
