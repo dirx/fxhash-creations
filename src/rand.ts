@@ -19,9 +19,7 @@ export const randInit = (seed: string): void => {
 };
 
 export const rand = (): number => {
-    let r: number = rng === undefined ? window.fxrand() : rng.next();
-    // console.log(r);
-    return r;
+    return rng === undefined ? window.fxrand() : rng.next();
 };
 
 export const randBoolean = (): boolean => {
@@ -40,4 +38,21 @@ export const randPoint = (maxX: number, maxY: number): Point => {
         x: randInt(maxX),
         y: randInt(maxY),
     };
+};
+
+export const fakeFxhash = (firstFxrand: number): string => {
+    let a = (firstFxrand * 4294967296) >>> 0;
+    const alphabet =
+        '123456789abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ';
+    let hash = '';
+    let i = 0;
+    do {
+        a = (a / 58) | 0;
+        hash += alphabet[a % 58];
+        i++;
+    } while (i <= 12);
+
+    return (
+        'op' + hash.split('').reverse().join('') + Array(37).fill('1').join('')
+    );
 };
