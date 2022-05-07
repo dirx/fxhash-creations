@@ -76,7 +76,7 @@ export class Pasture {
                     window.fxpreview();
                     fxpreviewCalled = true;
 
-                    // collect screenshots
+                    // debug: variation screenshots
                     let search = new URLSearchParams(window.location.search);
                     let variation = search.get('variation') || '';
                     let variations = search.get('variations') || '300';

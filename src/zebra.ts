@@ -461,9 +461,6 @@ export class Zebra {
             }
 
             this.addingMovingBlockIn.setIn(
-                // this.inPreviewPhase
-                //     ? 0
-                //     :
                 randInt(
                     this.state.maxMovingBlocks * 50 * (this.width + this.height)
                 )

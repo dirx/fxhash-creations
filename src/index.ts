@@ -17,7 +17,7 @@ console.log(
 );
 console.log("Be inspired. If you need help please press 'h'.");
 console.log('Dirk Adler, https://twitter.com/d_rx');
-console.log(`FXHASH: ${window.fxhash}`); // the 64 chars hex number fed to your algorithm
+console.log(`FXHASH: ${window.fxhash}`);
 
 window.pasture = new Pasture();
 

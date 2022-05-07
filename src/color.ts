@@ -41,7 +41,7 @@ export const color = {
             if (h >= 360) h -= 360;
             if (h < 0) h += 360;
 
-            // 120 - 240 or 300 - 60
+            // eg 120 - 240 or 300 - 60
             if (hMax < hMin) {
                 if (dh > 0) {
                     h = h > hMax && h < hMin ? hMin : h;
