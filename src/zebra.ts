@@ -49,7 +49,6 @@ export class ZebraState {
     public readonly colorValueMax: number;
     public fps: number = 30;
     public pixelRatio: number = 2;
-    public padding: number = 0;
 
     public constructor() {
         this.isGrayBase = randInt((this.combinations *= 2)) % 2;
@@ -354,7 +353,6 @@ export class Zebra {
         this.height = (height / this.state.pixelRatio) << 0;
         this.canvas.width = this.width;
         this.canvas.height = this.height;
-        this.state.padding = 0;
         this.canvas.dispatchEvent(new Event('zebra.updateSize'));
         this.init();
         this.initImage();
@@ -573,20 +571,10 @@ export class ZebraMovingBlock {
                 area.h = zebra.state.blocks - area.y;
             }
 
-            area.x =
-                (area.x * (zebra.width - zebra.state.padding * 2)) /
-                    zebra.state.blocks +
-                zebra.state.padding;
-            area.y =
-                (area.y * (zebra.height - zebra.state.padding * 2)) /
-                    zebra.state.blocks +
-                zebra.state.padding;
-            area.w =
-                ((area.w + 1) * (zebra.width - zebra.state.padding * 2)) /
-                zebra.state.blocks;
-            area.h =
-                ((area.h + 1) * (zebra.height - zebra.state.padding * 2)) /
-                zebra.state.blocks;
+            area.x = (area.x * zebra.width) / zebra.state.blocks;
+            area.y = (area.y * zebra.height) / zebra.state.blocks;
+            area.w = ((area.w + 1) * zebra.width) / zebra.state.blocks;
+            area.h = ((area.h + 1) * zebra.height) / zebra.state.blocks;
         }
 
         area.x = area.x << 0;
@@ -633,14 +621,10 @@ export class ZebraMovingBlock {
         if (movingDistance === null) {
             if (this.isDirX) {
                 movingDistance =
-                    (blocks *
-                        (this.zebra.width - this.zebra.state.padding * 2)) /
-                    this.zebra.state.blocks;
+                    (blocks * this.zebra.width) / this.zebra.state.blocks;
             } else {
                 movingDistance =
-                    (blocks *
-                        (this.zebra.height - this.zebra.state.padding * 2)) /
-                    this.zebra.state.blocks;
+                    (blocks * this.zebra.height) / this.zebra.state.blocks;
             }
         }
         this.movingDistance = movingDistance << 0;
@@ -709,17 +693,15 @@ export class ZebraMovingBlock {
         let sh: number = this.area.h;
         let tx: number;
         let ty: number;
-        let padding: number = this.zebra.state.padding;
 
         if (this.isDirX) {
-            let maxWidth =
-                this.zebra.width - padding - (this.dir > 0 ? this.dir : 0);
+            let maxWidth = this.zebra.width - (this.dir > 0 ? this.dir : 0);
             sx = this.area.x + this.movingDistance;
             sy = this.area.y;
 
-            if (sx < padding) {
-                sx = padding;
-                sw += padding;
+            if (sx < 0) {
+                sx = 0;
+                sw += 0;
             }
 
             if (sx > maxWidth) {
@@ -733,14 +715,13 @@ export class ZebraMovingBlock {
             tx = sx + this.dir;
             ty = sy;
         } else {
-            let maxHeight =
-                this.zebra.height - padding - (this.dir > 0 ? this.dir : 0);
+            let maxHeight = this.zebra.height - (this.dir > 0 ? this.dir : 0);
             sx = this.area.x;
             sy = this.area.y + this.movingDistance;
 
-            if (sy < padding) {
-                sy = padding;
-                sh += padding;
+            if (sy < 0) {
+                sy = 0;
+                sh += 0;
             }
 
             if (sy > maxHeight) {
