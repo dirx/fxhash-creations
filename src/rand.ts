@@ -53,6 +53,6 @@ export const fakeFxhash = (firstFxrand: number): string => {
     } while (i <= 12);
 
     return (
-        'op' + hash.split('').reverse().join('') + Array(37).fill('1').join('')
+        'oo' + hash.split('').reverse().join('') + Array(37).fill('1').join('')
     );
 };
