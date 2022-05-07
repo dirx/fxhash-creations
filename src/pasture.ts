@@ -72,7 +72,7 @@ export class Pasture {
             zebra.tick();
 
             if (window.isFxpreview) {
-                if (!fxpreviewCalled && !zebra.inPreviewPhase) {
+                if (!fxpreviewCalled && !zebra.state.inPreviewPhase) {
                     window.fxpreview();
                     fxpreviewCalled = true;
 
@@ -123,22 +123,30 @@ export class Pasture {
                 isRainbow: zebra.state.isRainbow,
                 size: `${zebra.canvas.width} / ${zebra.canvas.height}`,
                 pixelRatio: `${zebra.state.pixelRatio}`,
-                movingBlocks: `${zebra.movingBlocks} / ${zebra.state.maxMovingBlocks} / ${zebra.movingBlocksTotal}`,
+                movingBlocks: `${zebra.state.movingBlocks} / ${zebra.state.maxMovingBlocks} / ${zebra.state.movingBlocksTotal}`,
                 addingMovingBlocksIn: `${
                     addingMovingBlocksInMs <= 0 ? '-' : addingMovingBlocksInMs
                 } ms`,
-                moveDirection: zebra.move.join(', '),
-                moveBig: zebra.isBig,
-                previewPhase: zebra.inPreviewPhase,
+                moveDirection: zebra.state.move.join(', '),
+                moveBig: zebra.state.isBig,
+                previewPhase: zebra.state.inPreviewPhase,
                 saturationDirection:
-                    zebra.sDir > 0 ? 'up' : zebra.sDir < 0 ? 'down' : '-',
+                    zebra.state.sDir > 0
+                        ? 'up'
+                        : zebra.state.sDir < 0
+                        ? 'down'
+                        : '-',
                 saturationMin: zebra.state.colorSaturationMin,
                 saturationMax: zebra.state.colorSaturationMax,
                 valueDirection:
-                    zebra.vDir > 0 ? 'up' : zebra.vDir < 0 ? 'down' : '-',
+                    zebra.state.vDir > 0
+                        ? 'up'
+                        : zebra.state.vDir < 0
+                        ? 'down'
+                        : '-',
                 valueMin: zebra.state.colorValueMin,
                 valueMax: zebra.state.colorValueMax,
-                hueGlitch: zebra.hGlitch,
+                hueGlitch: zebra.state.hGlitch,
                 currentFps: `${this.loop.currentFps() << 0} / ${
                     zebra.state.fps
                 }`,
@@ -239,12 +247,6 @@ export class Intercom {
                 case 'b':
                     this.display.show('butterfly wing');
                     rand();
-                    break;
-
-                case 'v':
-                    this.zebra.vDir += 1;
-                    if (this.zebra.vDir > 1) this.zebra.vDir = -1;
-                    this.display.show('v dir ' + this.zebra.vDir);
                     break;
             }
         });
