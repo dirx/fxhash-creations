@@ -18,6 +18,14 @@ export const randInit = (seed: string): void => {
     rng = new Prando(seed);
 };
 
+export const randSkip = (times: number = 1): void => {
+    if (rng !== undefined) {
+        rng.skip(times);
+    } else {
+        Array(times).forEach(() => rand());
+    }
+};
+
 export const rand = (): number => {
     return rng === undefined ? window.fxrand() : rng.next();
 };

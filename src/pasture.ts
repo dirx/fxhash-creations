@@ -1,5 +1,5 @@
 import { Zebra } from './zebra';
-import { createLoop, Loop } from './frame';
+import { createLoop, Loop } from './loop';
 import { rand } from './rand';
 
 export class Pasture {
@@ -29,7 +29,7 @@ export class Pasture {
             window.fxhash
         );
 
-        window.$fxhashFeatures = this.zebra.state.getFeatures();
+        window.$fxhashFeatures = this.zebra.features.getFxhashFeatures();
     }
 
     private initResizeHandler() {
@@ -72,7 +72,7 @@ export class Pasture {
             zebra.tick();
 
             if (window.isFxpreview) {
-                if (!fxpreviewCalled && !zebra.state.inPreviewPhase) {
+                if (!fxpreviewCalled && !zebra.inPreviewPhase) {
                     window.fxpreview();
                     fxpreviewCalled = true;
 
@@ -81,7 +81,7 @@ export class Pasture {
                     let variation = search.get('variation') || '';
                     let variations = search.get('variations') || '300';
                     if (variation != '') {
-                        this.zebra.printImage(zebra.state.getFeatureName());
+                        this.zebra.printImage(zebra.features.getFeatureName());
                         let nextCombination = parseInt(variation) + 1;
                         search.set('variation', `${nextCombination}`);
                         if (variation != variations) {
@@ -97,7 +97,7 @@ export class Pasture {
             }
         });
 
-        this.loop.runWith(this.zebra.state.fps);
+        this.loop.runWith(this.zebra.fps);
     }
 
     private initInfoUpdate() {
@@ -106,50 +106,42 @@ export class Pasture {
 
         setInterval(() => {
             let addingMovingBlocksInMs =
-                zebra.addingMovingBlockIn.ms(zebra.state.fps) << 0;
+                zebra.addingMovingBlockIn.ms(zebra.fps) << 0;
             info.update({
-                combination: `${zebra.state.combination} / ${zebra.state.combinations}`,
-                color: `${zebra.state.getColor()} (${zebra.state.colorHue})`,
-                colorRange: `${zebra.state.getColorRange()} (${
-                    zebra.state.colorHueMin
-                } - ${zebra.state.colorHueMax})`,
-                colorRangeSize: zebra.state.getColorRangeSize(),
-                colorHueSpeed: `${zebra.state.getColorHueSpeed()} (${
-                    zebra.state.colorHueSpeed
+                combination: `${zebra.features.combination} / ${zebra.features.combinations}`,
+                color: `${zebra.features.getColor()} (${
+                    zebra.features.colorHue
                 })`,
-                colorValue: zebra.state.getDarkness(),
-                isGray: zebra.state.isGray,
-                isGold: zebra.state.isGold,
-                isRainbow: zebra.state.isRainbow,
+                colorRange: `${zebra.features.getColorRange()} (${
+                    zebra.features.colorHueMin
+                } - ${zebra.features.colorHueMax})`,
+                colorRangeSize: zebra.features.getColorRangeSize(),
+                colorHueSpeed: `${zebra.features.getColorHueSpeed()} (${
+                    zebra.features.colorHueSpeed
+                })`,
+                colorValue: zebra.features.getDarkness(),
+                isGray: zebra.features.isGray,
+                isGold: zebra.features.isGold,
+                isRainbow: zebra.features.isRainbow,
                 size: `${zebra.canvas.width} / ${zebra.canvas.height}`,
-                pixelRatio: `${zebra.state.pixelRatio}`,
-                movingBlocks: `${zebra.state.movingBlocks} / ${zebra.state.maxMovingBlocks} / ${zebra.state.movingBlocksTotal}`,
+                pixelRatio: `${zebra.pixelRatio}`,
+                movingBlocks: `${zebra.movingBlocks} / ${zebra.features.maxMovingBlocks} / ${zebra.movingBlocksTotal}`,
                 addingMovingBlocksIn: `${
                     addingMovingBlocksInMs <= 0 ? '-' : addingMovingBlocksInMs
                 } ms`,
-                moveDirection: zebra.state.move.join(', '),
-                moveBig: zebra.state.isBig,
-                previewPhase: zebra.state.inPreviewPhase,
+                moveDirection: zebra.move.join(', '),
+                moveBig: zebra.isBig,
+                previewPhase: zebra.inPreviewPhase,
                 saturationDirection:
-                    zebra.state.sDir > 0
-                        ? 'up'
-                        : zebra.state.sDir < 0
-                        ? 'down'
-                        : '-',
-                saturationMin: zebra.state.colorSaturationMin,
-                saturationMax: zebra.state.colorSaturationMax,
+                    zebra.sDir > 0 ? 'up' : zebra.sDir < 0 ? 'down' : '-',
+                saturationMin: zebra.features.colorSaturationMin,
+                saturationMax: zebra.features.colorSaturationMax,
                 valueDirection:
-                    zebra.state.vDir > 0
-                        ? 'up'
-                        : zebra.state.vDir < 0
-                        ? 'down'
-                        : '-',
-                valueMin: zebra.state.colorValueMin,
-                valueMax: zebra.state.colorValueMax,
-                hueGlitch: zebra.state.hGlitch,
-                currentFps: `${this.loop.currentFps() << 0} / ${
-                    zebra.state.fps
-                }`,
+                    zebra.vDir > 0 ? 'up' : zebra.vDir < 0 ? 'down' : '-',
+                valueMin: zebra.features.colorValueMin,
+                valueMax: zebra.features.colorValueMax,
+                hueGlitch: zebra.hGlitch,
+                currentFps: `${this.loop.currentFps() << 0} / ${zebra.fps}`,
             });
         }, 250);
     }
@@ -207,14 +199,14 @@ export class Intercom {
 
                 case '+':
                     this.zebra.increaseFps();
-                    this.loop.runWith(this.zebra.state.fps);
-                    this.display.show('fps ' + this.zebra.state.fps);
+                    this.loop.runWith(this.zebra.fps);
+                    this.display.show('fps ' + this.zebra.fps);
                     break;
 
                 case '-':
                     this.zebra.decreaseFps();
-                    this.loop.runWith(this.zebra.state.fps);
-                    this.display.show('fps ' + this.zebra.state.fps);
+                    this.loop.runWith(this.zebra.fps);
+                    this.display.show('fps ' + this.zebra.fps);
                     break;
 
                 case 'f':
@@ -223,7 +215,7 @@ export class Intercom {
                     break;
 
                 case 'c':
-                    this.zebra.printImage(this.zebra.state.getFeatureName());
+                    this.zebra.printImage(this.zebra.features.getFeatureName());
                     this.display.show('capture image');
                     break;
 

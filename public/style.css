@@ -26,6 +26,7 @@ html, body {
     justify-content: center;
     align-items: center;
     animation: showit 1s;
+    user-select: none;
 }
 
 @keyframes showit {
@@ -46,8 +47,6 @@ html, body {
     z-index: 999;
     margin: 0;
     padding: 20px;
-    opacity: 0;
-    visibility: hidden;
     font-size: 2vmin;
     color: #FFFFFF;
     text-shadow: 0 0 10px black;
@@ -60,8 +59,6 @@ html, body {
     z-index: 999;
     margin: 0;
     padding: 20px;
-    opacity: 0;
-    visibility: hidden;
     font-size: 2vmin;
     color: #FFFFFF;
     text-shadow: 0 0 10px black;
@@ -69,17 +66,18 @@ html, body {
 
 #info.hide, #help.hide {
     opacity: 0;
-    visibility: visible;
-    transition: opacity 1s;
+    visibility: hidden;
+    transition: visibility 1s, opacity 1s;
 }
 
 #info.show, #help.show {
     opacity: 1;
     visibility: visible;
-    transition: opacity 1s;
+    transition: visibility 0s, opacity 1s;
 }
 
 #info p, #help p {
+    user-select: none;
     margin: 0;
     padding: 0;
 }

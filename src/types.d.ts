@@ -1,11 +1,11 @@
-import { ZebraFeatures } from './zebra';
+import { FxhashFeatures } from './zebra';
 import { Pasture } from './pasture';
 
 declare global {
     interface Window {
         s: number;
         refSize: number;
-        $fxhashFeatures: ZebraFeatures;
+        $fxhashFeatures: FxhashFeatures;
         drawingContext: any;
         fxpreview: Function;
         fxhash: string;
