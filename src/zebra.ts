@@ -284,6 +284,7 @@ export class Zebra {
 
     public width: number = 0;
     public height: number = 0;
+    public baseHeightWidth: number = (640 + 480) / 2;
     public fps: number = 30;
     public pixelRatio: number = 2;
 
@@ -352,7 +353,9 @@ export class Zebra {
     ) {
         this.initState();
         if (pixelRatio === null) {
-            this.pixelRatio = Math.ceil((width + height) / 2 / 640);
+            this.pixelRatio = Math.ceil(
+                (width + height) / 2 / this.baseHeightWidth
+            );
         } else {
             this.pixelRatio = pixelRatio;
         }
@@ -462,14 +465,12 @@ export class Zebra {
 
             this.addingMovingBlockIn.setIn(
                 randInt(
-                    this.features.maxMovingBlocks *
-                        50 *
-                        (this.width + this.height)
+                    55 * this.baseHeightWidth * this.features.maxMovingBlocks
                 )
             );
         } else {
             this.addingMovingBlockIn.setIn(
-                (this.width + this.height) * this.features.maxMovingBlocks
+                this.baseHeightWidth * this.features.maxMovingBlocks
             );
         }
     }
