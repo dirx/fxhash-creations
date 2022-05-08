@@ -329,9 +329,10 @@ export class Zebra {
     private updateHueGlitch() {
         this.hGlitch =
             !this.features.isGold && !this.features.isRainbow
-                ? (this.features.colorHueMinMaxBase + 1) *
-                  5 *
-                  (Math.sin(this.movingBlocksTotal * 0.05) * 0.5 + 0.5)
+                ? ((this.features.colorHueMinMaxBase + 1) *
+                      5 *
+                      (Math.sin(this.movingBlocksTotal * 0.05) * 0.5 + 0.5)) <<
+                  0
                 : 0;
     }
 
