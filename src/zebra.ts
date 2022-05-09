@@ -59,10 +59,6 @@ export class ZebraFeatures {
         this.colorHueMinMaxBase = combination % 5;
         // combination = (combination / 5) << 0;
 
-    public constructor(fxhash: string) {
-        this.fxhash = fxhash;
-        randInit(this.fxhash);
-
         this.isGray = this.isGrayBase === 0;
 
         this.colorHue = this.allColors[this.colorHueBase];
