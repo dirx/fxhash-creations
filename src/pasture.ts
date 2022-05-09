@@ -26,7 +26,7 @@ export class Pasture {
             canvas,
             window.innerWidth,
             window.innerHeight,
-            window.fxhash
+            window.combination
         );
 
         window.$fxhashFeatures = this.zebra.features.getFxhashFeatures();

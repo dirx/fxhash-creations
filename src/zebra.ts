@@ -18,7 +18,7 @@ export type FxhashFeatures = {
 };
 
 export class ZebraFeatures {
-    public combinations: number = 1;
+    public combinations: number = 300;
     public combination: number = 1;
     public readonly colorHue: number;
     public readonly colorHueMinMaxBase: number;
@@ -48,22 +48,24 @@ export class ZebraFeatures {
     public readonly colorValueMin: number;
     public readonly colorValueMax: number;
 
-    public readonly fxhash: string;
+    public constructor(combination: number) {
+        this.combination = combination % this.combinations;
+        this.isGrayBase = combination % 2;
+        combination = (combination / 2) << 0;
+        this.colorHueSpeedBase = combination % 2;
+        combination = (combination / 2) << 0;
+        this.colorHueBase = combination % this.allColors.length;
+        combination = (combination / this.allColors.length) << 0;
+        this.colorHueMinMaxBase = combination % 5;
+        // combination = (combination / 5) << 0;
 
     public constructor(fxhash: string) {
         this.fxhash = fxhash;
         randInit(this.fxhash);
 
-        this.isGrayBase = randInt((this.combinations *= 2)) % 2;
         this.isGray = this.isGrayBase === 0;
 
-        this.colorHueBase =
-            randInt((this.combinations *= this.allColors.length)) %
-            this.allColors.length;
-
         this.colorHue = this.allColors[this.colorHueBase];
-
-        this.colorHueMinMaxBase = randInt((this.combinations *= 5)) % 5;
 
         let hueMin = this.colorHueBase - this.colorHueMinMaxBase - 1;
         hueMin = hueMin < 0 ? this.allColors.length + hueMin : hueMin;
@@ -85,22 +87,24 @@ export class ZebraFeatures {
             this.colors.push(this.allColors[p]);
         }
 
-        this.colorHueSpeedBase = randInt((this.combinations *= 2)) % 2;
         this.colorHueSpeed = (this.colorHueSpeedBase + 1) * 0.5;
 
+        // 13 & 15
         this.isGold =
             !this.isGray &&
             this.colorHueBase === 3 &&
             this.colorHueMinMaxBase === 0;
 
+        // 269 & 271
         this.isRainbow =
             !this.isGray &&
             this.colorHueBase === 7 &&
             this.colorHueMinMaxBase === 4;
 
         this.colorSaturationMin = this.isGray && !this.isGold ? 0.4 : 0.8;
-        this.colorSaturationMax = this.isGray && !this.isGold ? 0.6 : 0.9;
+        this.colorSaturationMax = this.isGray && !this.isGold ? 0.5 : 0.9;
 
+        // high darkness
         this.colorSaturationMin =
             this.isGray && this.colorHueMinMaxBase === 0
                 ? 0.6
@@ -141,21 +145,6 @@ export class ZebraFeatures {
         this.blockSizeBigMin =
             this.blockSizes[(this.blockSizes.length * 0.666) << 0];
         this.blockSizeMax = this.blockSizes[this.blockSizes.length - 1];
-
-        this.combination =
-            (this.isGrayBase * this.combinations) / 2 +
-            (this.colorHueBase * this.combinations) /
-                2 /
-                this.allColors.length +
-            (this.colorHueMinMaxBase * this.combinations) /
-                2 /
-                this.allColors.length /
-                5 +
-            (this.colorHueSpeedBase * this.combinations) /
-                2 /
-                this.allColors.length /
-                5 /
-                2;
     }
 
     public getFxhashFeatures(): FxhashFeatures {
@@ -294,7 +283,7 @@ export class Zebra {
     public addingMovingBlockIn!: AddingMovingBlock;
     public movingBlocks: number = 0;
 
-    public fxhash: string;
+    public combination: number;
     public isBig!: boolean;
     public vDir: number = 0;
     public sDir: number = 0;
@@ -315,11 +304,11 @@ export class Zebra {
         canvas: HTMLCanvasElement,
         width: number,
         height: number,
-        fxhash: string
+        combination: number
     ) {
         this.canvas = canvas;
         this.context = canvas.getContext('2d') as CanvasRenderingContext2D;
-        this.fxhash = fxhash;
+        this.combination = combination;
 
         this.addingMovingBlockIn = new AddingMovingBlock();
         this.updateSize(width, height);
@@ -337,7 +326,8 @@ export class Zebra {
     }
 
     private initState() {
-        this.features = new ZebraFeatures(this.fxhash);
+        randInit(window.fxhash);
+        this.features = new ZebraFeatures(this.combination);
         this.isBig = true;
         this.sDir = 0;
         this.vDir = this.features.isGray ? 1 : 0;

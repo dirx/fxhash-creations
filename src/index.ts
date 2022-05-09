@@ -1,14 +1,13 @@
 import { Pasture } from './pasture';
 import '@fontsource/vt323/latin.css';
-import { fakeFxhash } from './rand';
+// import { fakeFxhash } from './rand';
 
 let search = new URLSearchParams(window.location.search);
-let variation: string = search.get('variation') || '';
-let variations: string = search.get('variations') || '300';
-if (variation !== '') {
-    window.fxhash = fakeFxhash(
-        parseInt(variation) / (parseInt(variations) - 1)
-    );
+let combination: string = search.get('combination') || '';
+if (combination !== '') {
+    window.combination = parseInt(combination);
+} else {
+    window.combination = (300 * window.fxrand()) << 0;
 }
 
 console.log('Zebra');
