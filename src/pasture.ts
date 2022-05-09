@@ -73,19 +73,22 @@ export class Pasture {
 
             if (window.isFxpreview) {
                 if (!fxpreviewCalled && !zebra.inPreviewPhase) {
+                    let previewCanvas = zebra.preparePreviewCanvas();
+                    document.body.prepend(previewCanvas);
                     window.fxpreview();
                     fxpreviewCalled = true;
 
-                    // debug: variation screenshots
+                    // debug: combination screenshots
                     let search = new URLSearchParams(window.location.search);
-                    let variation = search.get('variation') || '';
-                    let variations = search.get('variations') || '300';
-                    if (variation != '') {
-                        this.zebra.printImage(zebra.features.getFeatureName());
-                        let nextCombination = parseInt(variation) + 1;
-                        search.set('variation', `${nextCombination}`);
-                        if (variation != variations) {
-                            setInterval(
+                    let combination = search.get('combination') || '';
+                    if (combination != '') {
+                        this.zebra.captureImage(
+                            zebra.features.getFeatureName()
+                        );
+                        let nextCombination = parseInt(combination) + 1;
+                        search.set('combination', `${nextCombination}`);
+                        if (nextCombination < zebra.features.combinations) {
+                            setTimeout(
                                 () =>
                                     (window.location.search =
                                         search.toString()),
@@ -215,7 +218,9 @@ export class Intercom {
                     break;
 
                 case 'c':
-                    this.zebra.printImage(this.zebra.features.getFeatureName());
+                    this.zebra.captureImage(
+                        this.zebra.features.getFeatureName()
+                    );
                     this.display.show('capture image');
                     break;
 

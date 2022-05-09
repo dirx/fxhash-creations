@@ -466,15 +466,24 @@ export class Zebra {
         }
     }
 
-    public printImage(name: string) {
-        let resizedCanvas = document.createElement('canvas');
-        let resizedContext = resizedCanvas.getContext('2d');
-        if (resizedContext === null) {
-            return;
-        }
+    public captureImage(name: string) {
+        let previewCanvas = this.preparePreviewCanvas();
 
-        resizedCanvas.height = this.height * this.pixelRatio;
-        resizedCanvas.width = this.width * this.pixelRatio;
+        let link = document.createElement('a');
+        link.download = name + '.png';
+        link.href = previewCanvas.toDataURL();
+        link.click();
+    }
+
+    public preparePreviewCanvas(): HTMLCanvasElement {
+        let previewCanvas = document.createElement('canvas');
+        previewCanvas.id = 'preview-canvas';
+        let resizedContext = previewCanvas.getContext(
+            '2d'
+        ) as CanvasRenderingContext2D;
+
+        previewCanvas.height = this.height * this.pixelRatio;
+        previewCanvas.width = this.width * this.pixelRatio;
 
         resizedContext.imageSmoothingEnabled =
             this.context.imageSmoothingEnabled;
@@ -482,14 +491,11 @@ export class Zebra {
             this.canvas,
             0,
             0,
-            resizedCanvas.width,
-            resizedCanvas.height
+            previewCanvas.width,
+            previewCanvas.height
         );
 
-        let link = document.createElement('a');
-        link.download = name + '.png';
-        link.href = resizedCanvas.toDataURL();
-        link.click();
+        return previewCanvas;
     }
 }
 
