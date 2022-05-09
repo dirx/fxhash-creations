@@ -333,7 +333,7 @@ export class Zebra {
         this.vDir = this.features.isGray ? 1 : 0;
         this.movingBlocksTotal = 0;
         this.inPreviewPhase = true;
-        this.previewPhaseEndsAfter = this.features.maxMovingBlocks * 3;
+        this.previewPhaseEndsAfter = this.features.maxMovingBlocks * 4;
         this.addingMovingBlockIn.setIn(0);
     }
 
