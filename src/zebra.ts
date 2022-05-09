@@ -404,7 +404,6 @@ export class Zebra {
     }
 
     public tick() {
-        return;
         this.updateHueGlitch();
 
         if (this.movingBlocks >= this.features.maxMovingBlocks) {
