@@ -357,6 +357,7 @@ export class Zebra {
         this.canvas.height = this.height;
         this.canvas.dispatchEvent(new Event('zebra.updateSize'));
         this.initImage();
+        // this.testRNG();
     }
 
     public increaseFps() {
@@ -386,6 +387,23 @@ export class Zebra {
         return active;
     }
 
+    // private testRNG() {
+    //     let data = this.context.getImageData(0, 0, this.width, this.height);
+    //     let l: number = data.data.length;
+    //
+    //     for (let i: number = 0; i < l; i += 4) {
+    //         let t = randInt(256);
+    //         // let t = randInt(2) * 255;
+    //         // console.log(t);
+    //         data.data[i] = t;
+    //         data.data[i + 1] = t;
+    //         data.data[i + 2] = t;
+    //         data.data[i + 3] = 255;
+    //     }
+    //
+    //     this.context.putImageData(data, 0, 0);
+    // }
+
     public initImage() {
         this.context.fillStyle = color.hsvCss(
             this.features.colorHue,
@@ -408,6 +426,7 @@ export class Zebra {
     }
 
     public tick() {
+        return;
         this.updateHueGlitch();
 
         if (this.movingBlocks >= this.features.maxMovingBlocks) {
