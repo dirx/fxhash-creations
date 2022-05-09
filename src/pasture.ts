@@ -77,6 +77,7 @@ export class Pasture {
                     document.body.prepend(previewCanvas);
                     window.fxpreview();
                     fxpreviewCalled = true;
+                    // setTimeout(() => previewCanvas.remove(), 1000);
 
                     // debug: combination screenshots
                     let search = new URLSearchParams(window.location.search);
