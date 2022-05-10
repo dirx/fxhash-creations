@@ -109,8 +109,7 @@ export class Pasture {
         let info = this.info;
 
         setInterval(() => {
-            let addingMovingBlocksInMs =
-                zebra.addingMovingBlockIn.ms(zebra.fps) << 0;
+            let addingMovingBlocksInFrames = zebra.movingBlocks.frames() << 0;
             info.update({
                 combination: `${zebra.features.combination} / ${ZebraFeatures.combinations}`,
                 color: `${zebra.features.getColor()} (${
@@ -129,10 +128,12 @@ export class Pasture {
                 isRainbow: zebra.features.isRainbow,
                 size: `${zebra.canvas.width} / ${zebra.canvas.height}`,
                 pixelRatio: `${zebra.pixelRatio}`,
-                movingBlocks: `${zebra.movingBlocks} / ${zebra.features.maxMovingBlocks} / ${zebra.movingBlocksTotal}`,
+                movingBlocks: `${zebra.movingBlocks.count} / ${zebra.features.maxMovingBlocks} / ${zebra.movingBlocks.total}`,
                 addingMovingBlocksIn: `${
-                    addingMovingBlocksInMs <= 0 ? '-' : addingMovingBlocksInMs
-                } ms`,
+                    addingMovingBlocksInFrames <= 0
+                        ? '-'
+                        : addingMovingBlocksInFrames
+                } frames`,
                 moveDirection: zebra.move.join(', '),
                 moveBig: zebra.isBig,
                 previewPhase: zebra.inPreviewPhase,
