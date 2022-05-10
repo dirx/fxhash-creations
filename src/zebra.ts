@@ -18,7 +18,7 @@ export type FxhashFeatures = {
 };
 
 export class ZebraFeatures {
-    public combinations: number = 300;
+    public static combinations: number = 300;
     public combination: number = 1;
     public readonly colorHue: number;
     public readonly colorHueMinMaxBase: number;
@@ -49,7 +49,7 @@ export class ZebraFeatures {
     public readonly colorValueMax: number;
 
     public constructor(combination: number) {
-        this.combination = combination % this.combinations;
+        this.combination = combination % ZebraFeatures.combinations;
         this.isGrayBase = combination % 2;
         combination = (combination / 2) << 0;
         this.colorHueSpeedBase = combination % 2;

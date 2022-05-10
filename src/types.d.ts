@@ -12,6 +12,5 @@ declare global {
         fxrand: Function;
         isFxpreview: boolean;
         pasture: Pasture;
-        combination: number;
     }
 }

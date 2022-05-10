@@ -1,4 +1,4 @@
-import { Zebra } from './zebra';
+import { Zebra, ZebraFeatures } from './zebra';
 import { createLoop, Loop } from './loop';
 import { rand } from './rand';
 
@@ -9,8 +9,8 @@ export class Pasture {
     public help!: Help;
     public intercom!: Intercom;
 
-    public constructor() {
-        this.initZebra();
+    public constructor(combination: number) {
+        this.initZebra(combination);
         this.initResizeHandler();
         this.initInfo();
         this.initHelp();
@@ -18,7 +18,7 @@ export class Pasture {
         this.initIntercom();
     }
 
-    private initZebra() {
+    private initZebra(combination: number) {
         let canvas = document.createElement('canvas');
         canvas.id = 'main-canvas';
         document.body.prepend(canvas);
@@ -26,7 +26,7 @@ export class Pasture {
             canvas,
             window.innerWidth,
             window.innerHeight,
-            window.combination
+            combination
         );
 
         window.$fxhashFeatures = this.zebra.features.getFxhashFeatures();
@@ -88,7 +88,7 @@ export class Pasture {
                         );
                         let nextCombination = parseInt(combination) + 1;
                         search.set('combination', `${nextCombination}`);
-                        if (nextCombination < zebra.features.combinations) {
+                        if (nextCombination < ZebraFeatures.combinations) {
                             setTimeout(
                                 () =>
                                     (window.location.search =
@@ -112,7 +112,7 @@ export class Pasture {
             let addingMovingBlocksInMs =
                 zebra.addingMovingBlockIn.ms(zebra.fps) << 0;
             info.update({
-                combination: `${zebra.features.combination} / ${zebra.features.combinations}`,
+                combination: `${zebra.features.combination} / ${ZebraFeatures.combinations}`,
                 color: `${zebra.features.getColor()} (${
                     zebra.features.colorHue
                 })`,
