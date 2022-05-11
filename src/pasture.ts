@@ -127,7 +127,7 @@ export class Pasture {
                 isRainbow: zebra.features.isRainbow,
                 size: `${zebra.canvas.width} / ${zebra.canvas.height}`,
                 pixelRatio: `${zebra.pixelRatio}`,
-                movingBlocks: `${zebra.movingBlocks.count} / ${zebra.features.maxMovingBlocks} / ${zebra.movingBlocks.total}`,
+                movingBlocks: `${zebra.movingBlocks.count} / ${zebra.movingBlocks.butterflyCount} / ${zebra.features.maxMovingBlocks} / ${zebra.movingBlocks.total}`,
                 addingMovingBlocksIn: `${
                     addingMovingBlocksInFrames <= 0
                         ? '-'
