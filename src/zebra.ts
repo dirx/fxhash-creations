@@ -237,57 +237,6 @@ export class ZebraFeatures {
     }
 }
 
-export class ZebraMovingBlocks {
-    public currentFrames: number = 0;
-    public inFrames: number = 0;
-    public blocks: Array<ZebraMovingBlock> = [];
-    public count: number = 0;
-    public total: number = 0;
-    private zebra: Zebra;
-
-    public constructor(zebra: Zebra) {
-        this.zebra = zebra;
-        this.reset();
-    }
-
-    public wait(frames: number) {
-        this.currentFrames = 0;
-        this.inFrames = frames << 0;
-    }
-
-    public frames(): number {
-        return this.inFrames - this.currentFrames;
-    }
-
-    public tick(): boolean {
-        this.currentFrames++;
-
-        this.blocks = this.blocks.filter((block) => block.tick());
-        this.count = this.blocks.length;
-
-        if (this.count >= this.zebra.features.maxMovingBlocks) {
-            return false;
-        }
-
-        if (this.currentFrames < this.inFrames) {
-            return false;
-        }
-
-        this.blocks.push(new ZebraMovingBlock(this.zebra));
-        this.count = this.blocks.length;
-        this.total++;
-
-        return true;
-    }
-
-    public reset(): void {
-        this.blocks = [];
-        this.count = 0;
-        this.total = 0;
-        this.wait(0);
-    }
-}
-
 export class Zebra {
     public features!: ZebraFeatures;
 
@@ -498,6 +447,97 @@ export class Zebra {
     }
 }
 
+export class ZebraMovingBlocks {
+    public currentFrames: number = 0;
+    public inFrames: number = 0;
+    public blocks: Array<ZebraMovingBlock> = [];
+    public count: number = 0;
+    public total: number = 0;
+    private zebra: Zebra;
+
+    public constructor(zebra: Zebra) {
+        this.zebra = zebra;
+        this.reset();
+    }
+
+    public wait(frames: number) {
+        this.currentFrames = 0;
+        this.inFrames = frames << 0;
+    }
+
+    public frames(): number {
+        return this.inFrames - this.currentFrames;
+    }
+
+    public tick(): boolean {
+        this.currentFrames++;
+
+        this.blocks = this.blocks.filter((block) => block.tick());
+        this.count = this.blocks.length;
+
+        if (this.count >= this.zebra.features.maxMovingBlocks) {
+            return false;
+        }
+
+        if (this.currentFrames < this.inFrames) {
+            return false;
+        }
+
+        this.add();
+
+        return true;
+    }
+
+    private add(
+        area: Area | null = null,
+        move: string | null = null,
+        movingDistance: number | null = null,
+        sDir: boolean | null = null
+    ): void {
+        this.blocks.push(
+            new ZebraMovingBlock(this.zebra, area, move, movingDistance, sDir)
+        );
+        this.count = this.blocks.length;
+        this.total++;
+    }
+
+    public addButterfly(x: number | null = null, y: number | null = null) {
+        x = x || Math.random() * this.zebra.width * this.zebra.pixelRatio;
+        y = y || Math.random() * this.zebra.height * this.zebra.pixelRatio;
+        let b: number =
+            this.zebra.features.blockSizes[
+                (this.zebra.features.blockSizes.length / 3 +
+                    Math.random() *
+                        (this.zebra.features.blockSizes.length / 3)) <<
+                    0
+            ];
+        let w: number = (b / this.zebra.features.blocks) * this.zebra.width;
+        let h: number = (b / this.zebra.features.blocks) * this.zebra.height;
+        let area = {
+            x: (x / this.zebra.pixelRatio - w / 2) << 0,
+            y: (y / this.zebra.pixelRatio - h / 2) << 0,
+            w: w << 0,
+            h: h << 0,
+        };
+        let move: string =
+            this.zebra.move[(Math.random() * this.zebra.move.length) << 0];
+        let movingDistance: number = (w + h / 2) << 0;
+        console.log(b);
+        console.log(area);
+        console.log(move);
+        console.log(movingDistance);
+        this.zebra.features.blocks;
+        this.add(area, move, movingDistance, false);
+    }
+
+    public reset(): void {
+        this.blocks = [];
+        this.count = 0;
+        this.total = 0;
+        this.wait(0);
+    }
+}
+
 export class ZebraMovingBlock {
     public readonly area: Area;
     public readonly isBig: boolean;
@@ -518,7 +558,8 @@ export class ZebraMovingBlock {
         public readonly zebra: Zebra,
         area: Area | null = null,
         move: string | null = null,
-        movingDistance: number | null = null
+        movingDistance: number | null = null,
+        sDir: boolean | null = null
     ) {
         this.isBig = zebra.isBig;
         let wh: number;
@@ -603,20 +644,22 @@ export class ZebraMovingBlock {
                 break;
         }
 
-        let blocks: number;
-        if (this.isBig) {
-            blocks =
-                randInt(
-                    zebra.features.blockSizeMax - zebra.features.blockSizeBigMin
-                ) + zebra.features.blockSizeBigMin;
-        } else {
-            blocks =
-                randInt(
-                    zebra.features.blockSizeMax - zebra.features.blockSizeMin
-                ) + zebra.features.blockSizeMin;
-        }
-
         if (movingDistance === null) {
+            let blocks: number;
+            if (this.isBig) {
+                blocks =
+                    randInt(
+                        zebra.features.blockSizeMax -
+                            zebra.features.blockSizeBigMin
+                    ) + zebra.features.blockSizeBigMin;
+            } else {
+                blocks =
+                    randInt(
+                        zebra.features.blockSizeMax -
+                            zebra.features.blockSizeMin
+                    ) + zebra.features.blockSizeMin;
+            }
+
             if (this.isDirX) {
                 movingDistance =
                     (blocks * this.zebra.width) / this.zebra.features.blocks;
@@ -632,7 +675,7 @@ export class ZebraMovingBlock {
 
         this.hDir = zebra.features.colorHueSpeed;
         this.vDir = zebra.features.isGray;
-        this.sDir = big ? false : randBoolean();
+        this.sDir = big ? false : sDir === null ? randBoolean() : sDir;
 
         this.vMin = 255 * this.zebra.features.colorValueMin;
         this.vMax = 255 * this.zebra.features.colorValueMax;

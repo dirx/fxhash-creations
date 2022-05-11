@@ -1,6 +1,5 @@
 import { Zebra, ZebraFeatures } from './zebra';
 import { createLoop, Loop } from './loop';
-import { rand } from './rand';
 
 export class Pasture {
     public zebra!: Zebra;
@@ -172,6 +171,25 @@ export class Intercom {
         this.help = help;
         this.display = new Display(document);
         this.initKeyUpHandler();
+        this.initMouseHandler();
+        this.initTouchHandler();
+    }
+
+    private initTouchHandler() {
+        this.zebra.canvas.addEventListener('touchstart', (ev: TouchEvent) => {
+            this.display.show('butterfly wing');
+            this.zebra.movingBlocks.addButterfly(
+                ev.touches[0].clientX,
+                ev.touches[0].clientY
+            );
+        });
+    }
+
+    private initMouseHandler() {
+        this.zebra.canvas.addEventListener('mousedown', (ev: MouseEvent) => {
+            this.display.show('butterfly wing');
+            this.zebra.movingBlocks.addButterfly(ev.clientX, ev.clientY);
+        });
     }
 
     private initKeyUpHandler() {
@@ -245,7 +263,7 @@ export class Intercom {
 
                 case 'b':
                     this.display.show('butterfly wing');
-                    rand();
+                    this.zebra.movingBlocks.addButterfly();
                     break;
             }
         });
