@@ -118,10 +118,7 @@ export class Pasture {
                     zebra.features.colorHueMin
                 } - ${zebra.features.colorHueMax})`,
                 colorRangeSize: zebra.features.getColorRangeSize(),
-                colorHueSpeed: `${zebra.features.getColorHueSpeed()} (${
-                    zebra.features.colorHueSpeed
-                })`,
-                colorValue: zebra.features.getDarkness(),
+                darkness: zebra.features.getDarkness(),
                 isGray: zebra.features.isGray,
                 isGold: zebra.features.isGold,
                 isRainbow: zebra.features.isRainbow,
@@ -136,8 +133,6 @@ export class Pasture {
                 moveDirection: zebra.move.join(', '),
                 moveBig: zebra.isBig,
                 previewPhase: zebra.inPreviewPhase,
-                saturationDirection:
-                    zebra.sDir > 0 ? 'up' : zebra.sDir < 0 ? 'down' : '-',
                 saturationMin: zebra.features.colorSaturationMin,
                 saturationMax: zebra.features.colorSaturationMax,
                 valueDirection:

@@ -27,5 +27,4 @@ window.pasture = new Pasture(combination);
 console.log(`Combination: ${window.pasture.zebra.features.combination}`);
 console.log(`Range: ${window.$fxhashFeatures['range']}`);
 console.log(`Range Size: ${window.$fxhashFeatures['range size']}`);
-console.log(`Speed: ${window.$fxhashFeatures['speed']}`);
 console.log(`Darkness: ${window.$fxhashFeatures['darkness']}`);

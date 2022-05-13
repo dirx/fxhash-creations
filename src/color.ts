@@ -10,11 +10,9 @@ export const color = {
         vMin: number = 0,
         vMax: number = 255,
         vRotate: boolean = false,
-        ds: number = 0,
         sMin: number = 0,
         sMax: number = 1,
-        sRotate: boolean = false,
-        hBase: number | null = null,
+        hBase: number,
         hBaseDiff: number = 0
     ): Array<number> => {
         // to hsv
@@ -34,6 +32,9 @@ export const color = {
             if (b === maxRGB) h = 4 + (r - g) / delta;
             h *= 60;
         }
+
+        // correct hue > better ryb complementary colors - but too many glitches
+        // h = (360 * (h / 360)) ^ 1.6;
 
         // rotate hue
         if (dh !== 0) {
@@ -57,22 +58,19 @@ export const color = {
             }
         }
 
-        let hDiff = hBase === null || Math.abs(hBase - h) < hBaseDiff;
-
-        // rotate saturation
-        if (ds !== 0 && hDiff) {
-            s += ds;
-            if (s > sMax) s = sRotate ? sMin : sMax;
-            else if (s < sMin) s = sRotate ? sMax : sMin;
+        // min or max saturation based on hue
+        let hDiff = Math.abs(hBase - h) > hBaseDiff;
+        if (hDiff) {
+            s = sMax;
+        } else {
+            s = sMin;
         }
 
         // rotate value
-        if (dv !== 0 && hDiff) {
+        if (dv !== 0) {
             v += dv;
             if (v > vMax) v = vRotate ? vMin : vMax;
             else if (v < vMin) v = vRotate ? vMax : vMin;
-            if (s < sMin) s = sMin;
-            if (s > sMax) s = sMax;
         }
 
         // back to rgb
