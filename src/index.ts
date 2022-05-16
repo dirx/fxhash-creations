@@ -16,7 +16,7 @@ if (combinationParam !== '') {
 
 console.log('Zebra');
 console.log(
-    'Real-time deterministic animation based on vanilla js & 2d rendering context, variable size, 2022'
+    'Real-time deterministic animation based on vanilla js & canvas 2d rendering context, variable size, 2022'
 );
 console.log("Be inspired. If you need help please press 'h'.");
 console.log('Dirk Adler, https://twitter.com/d_rx');
