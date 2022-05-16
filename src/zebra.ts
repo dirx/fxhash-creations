@@ -96,8 +96,8 @@ export class ZebraFeatures {
         }
 
         if (this.isGold) {
-            this.colorSaturationMin = 0.9;
-            this.colorSaturationMax = 1;
+            this.colorSaturationMin = 1;
+            this.colorSaturationMax = 0.9;
             this.colorValueMin = 1;
             this.maxMovingBlocks = 5;
         }
@@ -107,6 +107,8 @@ export class ZebraFeatures {
             this.colorHueMin = 0;
             this.colorHueMax = 360;
             this.colorHueMinMaxBase += 1;
+            this.colorSaturationMin = 0.8;
+            this.colorSaturationMax = 0.9;
         }
 
         this.blockSizeMin = this.blockSizes[0];
