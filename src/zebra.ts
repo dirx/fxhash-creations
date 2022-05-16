@@ -259,8 +259,8 @@ export class Zebra {
         this.isBig = true;
         this.vDir = this.features.isGray ? 1 : 0;
         this.inPreviewPhase = true;
-        this.previewPhaseEndsAfter = this.features.maxMovingBlocks * 4;
-        this.movingBlocks.reset();
+        this.previewPhaseEndsAfter = this.features.maxMovingBlocks * 7;
+        this.movingBlocks.init();
     }
 
     public updateSize(
@@ -283,6 +283,7 @@ export class Zebra {
         this.canvas.height = this.height;
         this.canvas.dispatchEvent(new Event('zebra.updateSize'));
         this.initImage();
+        this.movingBlocks.addInit('up');
     }
 
     public increaseFps() {
@@ -412,7 +413,7 @@ export class ZebraMovingBlocks {
 
     public constructor(zebra: Zebra) {
         this.zebra = zebra;
-        this.reset();
+        this.init();
     }
 
     public wait(frames: number) {
@@ -475,7 +476,7 @@ export class ZebraMovingBlocks {
         };
         let move: string =
             this.zebra.move[(Math.random() * this.zebra.move.length) << 0];
-        let movingDistance: number = (w + h / 2) << 0;
+        let movingDistance: number = ((w + h) / 2) << 0;
         this.butterflyBlocks.push(
             new ZebraMovingBlock(this.zebra, area, move, movingDistance)
         );
@@ -483,9 +484,31 @@ export class ZebraMovingBlocks {
         this.total++;
     }
 
-    public reset(): void {
+    public addInit(move: string) {
+        this.butterflyBlocks.push(
+            new ZebraMovingBlock(
+                this.zebra,
+                {
+                    x: 0,
+                    y: 0,
+                    w: this.zebra.width,
+                    h: this.zebra.height,
+                },
+                move,
+                move === 'up' || move === 'down'
+                    ? this.zebra.height / 5
+                    : this.zebra.width / 5
+            )
+        );
+        this.butterflyCount = this.butterflyBlocks.length;
+        this.total++;
+    }
+
+    public init(): void {
         this.blocks = [];
         this.count = 0;
+        this.butterflyBlocks = [];
+        this.butterflyCount = 0;
         this.total = 0;
         this.wait(0);
     }
