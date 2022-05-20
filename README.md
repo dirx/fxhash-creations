@@ -8,6 +8,8 @@ Grab it @ https://www.fxhash.xyz/generative/slug/zebra
 
 ## About
 
+[<img src="https://gateway.ipfs.io/ipfs/Qme2g4LjLTDM8hV1TXZereU8wTT2pUqi8A9WKP38NWQ1Z1" align="right" width="50%" style="padding: 0 20px 0 20px" />](https://www.fxhash.xyz/generative/slug/zebra)
+
 Zebra follows a simple idea: create an endless variation of new images by simply moving pixels up, down, right or left and rotating colors according to different rules. Sometimes it's gone too fast, other times it's really slow and hardly changes, sometimes it's quite boring, then it's surprising, then it's chaotic with glitches and suddenly it's simple and clear again and then it's displaced by the next one.
 
 The animation is based on a deterministic prng. Width, height and pixel ratio change the order of the animation.
