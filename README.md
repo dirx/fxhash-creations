@@ -4,6 +4,8 @@ Real-time deterministic animation based on vanilla js & canvas 2d rendering cont
 
 __#generativeart__ __#nft__ __#fxhash__ __#tezos__
 
+Grab it @ https://www.fxhash.xyz/generative/slug/zebra
+
 ## About
 
 Zebra follows a simple idea: create an endless variation of new images by simply moving pixels up, down, right or left and rotating colors according to different rules. Sometimes it's gone too fast, other times it's really slow and hardly changes, sometimes it's quite boring, then it's surprising, then it's chaotic with glitches and suddenly it's simple and clear again and then it's displaced by the next one.
@@ -21,8 +23,6 @@ Building Zebra and playing around with it was super fun and I learned a lot.
 I hope you enjoy it, too.
 
 Btw: there might be some specials like gold and rainbow.
-
-Grab it @ https://www.fxhash.xyz/generative/slug/zebra
 
 ## Third Party Licenses
 
