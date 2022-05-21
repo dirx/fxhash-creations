@@ -1,4 +1,5 @@
 export type ColorSpec = {
+    hex: string;
     rgb: Array<number>;
     hsv: Array<number>;
 };
