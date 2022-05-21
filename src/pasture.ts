@@ -56,7 +56,6 @@ export class Pasture {
 
     private initIntercom() {
         this.intercom = new Intercom(
-            this.loop,
             this.zebra,
             this.info,
             this.help,
@@ -100,7 +99,7 @@ export class Pasture {
             }
         });
 
-        this.loop.runWith(this.zebra.fps);
+        this.loop.runWith();
     }
 
     private initInfoUpdate() {
@@ -108,59 +107,43 @@ export class Pasture {
         let info = this.info;
 
         setInterval(() => {
-            let addingMovingBlocksInFrames = zebra.movingBlocks.frames() << 0;
             info.update({
                 combination: `${zebra.features.combination} / ${ZebraFeatures.combinations}`,
-                color: `${zebra.features.getColor()} (${
+                color: `${zebra.features.getColorName()} (${
                     zebra.features.colorHue
                 })`,
-                colorRange: `${zebra.features.getColorRange()} (${
-                    zebra.features.colorHueMin
-                } - ${zebra.features.colorHueMax})`,
-                colorRangeSize: zebra.features.getColorRangeSize(),
-                darkness: zebra.features.getDarkness(),
-                isGray: zebra.features.isGray,
-                isGold: zebra.features.isGold,
-                isRainbow: zebra.features.isRainbow,
                 size: `${zebra.canvas.width} / ${zebra.canvas.height}`,
                 pixelRatio: `${zebra.pixelRatio}`,
-                movingBlocks: `${zebra.movingBlocks.count} / ${zebra.movingBlocks.butterflyCount} / ${zebra.features.maxMovingBlocks} / ${zebra.movingBlocks.total}`,
-                addingMovingBlocksIn: `${
-                    addingMovingBlocksInFrames <= 0
-                        ? '-'
-                        : addingMovingBlocksInFrames
-                } frames`,
-                moveDirection: zebra.move.join(', '),
-                moveBig: zebra.isBig,
                 previewPhase: zebra.inPreviewPhase,
-                saturationMin: zebra.features.colorSaturationMin,
-                saturationMax: zebra.features.colorSaturationMax,
-                valueDirection:
-                    zebra.vDir > 0 ? 'up' : zebra.vDir < 0 ? 'down' : '-',
+                movingBlocks: `${zebra.movingBlocks.count} / ${zebra.movingBlocks.butterflyCount} / ${zebra.features.maxMovingBlocks} / ${zebra.movingBlocks.total}`,
+                moveDirection: `${zebra.movingFlow.direction.join(', ')} (${
+                    zebra.movingFlow.position
+                })`,
+                changeMoveInBlocks: zebra.movingFlow.changeInBlocks,
+                moveWaitBlocks: zebra.movingFlow.waitBlocks,
+                moveClockwise: zebra.movingFlow.clockwise,
+                saturation: zebra.features.colorSaturation,
                 valueMin: zebra.features.colorValueMin,
                 valueMax: zebra.features.colorValueMax,
-                hueGlitch: zebra.hGlitch,
-                currentFps: `${this.loop.currentFps() << 0} / ${zebra.fps}`,
+                currentFps: `${this.loop.currentFps() << 0}`,
+                totalFrames: `${zebra.movingBlocks.totalFrames}`,
             });
         }, 250);
     }
 }
 
 export class Intercom {
-    private loop: Loop;
     private zebra: Zebra;
     private info: Info;
     private help: Help;
     private display: Display;
 
     public constructor(
-        loop: Loop,
         zebra: Zebra,
         info: Info,
         help: Help,
         document: Document
     ) {
-        this.loop = loop;
         this.zebra = zebra;
         this.info = info;
         this.help = help;
@@ -213,18 +196,6 @@ export class Intercom {
                         parseInt(ev.key)
                     );
                     this.display.show('pixel ratio ' + ev.key);
-                    break;
-
-                case '+':
-                    this.zebra.increaseFps();
-                    this.loop.runWith(this.zebra.fps);
-                    this.display.show('fps ' + this.zebra.fps);
-                    break;
-
-                case '-':
-                    this.zebra.decreaseFps();
-                    this.loop.runWith(this.zebra.fps);
-                    this.display.show('fps ' + this.zebra.fps);
                     break;
 
                 case 'f':
@@ -333,8 +304,6 @@ export class Help {
         this.element.id = 'help';
         this.element.classList.add('hide');
         this.element.innerHTML = `
-          <p><em>+</em> increase fps</p>
-          <p><em>-</em> decrease fps</p>
           <p><em>0 - 9</em> change pixel ratio</p>
           <p><em>b</em> butterfly wing</p>
           <p><em>i</em> info</p>
