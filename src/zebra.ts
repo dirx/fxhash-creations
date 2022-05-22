@@ -47,10 +47,6 @@ export class ZebraFeatures {
             .replace(/\s+/g, '');
     }
 
-    public getColor(): number {
-        return this.color.hsv[0];
-    }
-
     public getColorName(): string {
         return this.colorName;
     }
