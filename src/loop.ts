@@ -1,5 +1,5 @@
 export type Loop = {
-    runWith: () => void;
+    runWith: (fps: number) => void;
     stop: () => void;
     currentFps: () => number;
 };
@@ -8,8 +8,9 @@ export const createLoop = (
     func: Function,
     onStop: Function | null = null
 ): Loop => {
+    let targetFps: number = 0;
     let currentFps: number = 0;
-    let newFps: number;
+    let targetDelta: number = 0;
     let lastTimestamp: number = 0;
     let started: boolean = false;
 
@@ -19,26 +20,34 @@ export const createLoop = (
         }
     };
 
-    let intervalFunc: FrameRequestCallback = (_timestamp) => {
-        let now = Date.now();
-        let delta = now - lastTimestamp;
-        newFps = 1000 / delta;
-        currentFps = currentFps === 0 ? newFps : (currentFps + newFps) / 2;
-        lastTimestamp = now;
+    let intervalFunc: FrameRequestCallback = (timestamp) => {
+        const currentDelta: number = timestamp - lastTimestamp;
+        const newFps: number = 1000 / currentDelta;
+        currentFps = (currentFps + newFps) / 2;
 
-        if (func(currentFps << 0) === false) {
-            stopFunc();
-            return;
+        if (currentDelta >= targetDelta) {
+            lastTimestamp = timestamp;
+
+            if (func(currentFps << 0, targetFps) === false) {
+                stopFunc();
+                return;
+            }
         }
 
         requestAnimationFrame(intervalFunc);
     };
 
     return {
-        runWith: () => {
-            lastTimestamp = Date.now();
+        runWith: (fps: number) => {
+            if (fps <= 0) {
+                throw new Error('fps must be > 0');
+            }
+            currentFps = fps;
+            targetFps = fps;
+            targetDelta = (1000 / fps) << 0;
             if (!started) {
                 started = true;
+                lastTimestamp = window.performance.now();
                 requestAnimationFrame(intervalFunc);
             }
         },

@@ -99,7 +99,7 @@ export class Pasture {
             }
         });
 
-        this.loop.runWith();
+        this.loop.runWith(zebra.fps);
     }
 
     private initInfoUpdate() {

@@ -63,6 +63,7 @@ export class Zebra {
     public height: number = 0;
     public baseHeightWidth: number = (640 + 480) / 2;
     public pixelRatio: number = 2;
+    public fps: number = 30;
 
     public canvas: HTMLCanvasElement;
     public context: CanvasRenderingContext2D;
