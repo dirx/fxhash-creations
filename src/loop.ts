@@ -8,39 +8,49 @@ export const createLoop = (
     func: Function,
     onStop: Function | null = null
 ): Loop => {
-    let thisLoop: Date;
-    let targetFps: number;
-    let currentFps: number;
-    let newFps: number;
-    let lastLoop: Date = new Date();
-    let intervalId: number;
+    let targetFps: number = 0;
+    let currentFps: number = 0;
+    let targetDelta: number = 0;
+    let lastTimestamp: number = 0;
+    let started: boolean = false;
 
     let stopFunc = () => {
         if (onStop !== null) {
             onStop();
         }
-        clearInterval(intervalId);
     };
 
-    let intervalFunc: Function = () => {
-        thisLoop = new Date();
-        newFps = 1000 / (thisLoop.getTime() - lastLoop.getTime());
+    let intervalFunc: FrameRequestCallback = () => {
+        const timestamp = window.performance.now();
+        const currentDelta: number = timestamp - lastTimestamp;
+        const newFps: number = 1000 / currentDelta;
         currentFps = (currentFps + newFps) / 2;
-        lastLoop = thisLoop;
 
-        if (func(currentFps << 0, targetFps, intervalId) === false) {
-            stopFunc();
+        if (currentDelta >= targetDelta) {
+            lastTimestamp = timestamp;
+
+            if (func(currentFps << 0, targetFps) === false) {
+                stopFunc();
+                return;
+            }
         }
+
+        requestAnimationFrame(intervalFunc);
     };
 
     return {
         runWith: (fps: number) => {
+            if (fps <= 0) {
+                throw new Error('fps must be > 0');
+            }
             currentFps = fps;
             targetFps = fps;
-            if (intervalId) {
-                clearInterval(intervalId);
+            targetDelta = (1000 / fps) << 0;
+            if (!started) {
+                started = true;
+                lastTimestamp = window.performance.now();
+                requestAnimationFrame(intervalFunc);
             }
-            intervalId = setInterval(intervalFunc, 1000 / fps);
         },
         stop: () => stopFunc(),
         currentFps: () => currentFps,

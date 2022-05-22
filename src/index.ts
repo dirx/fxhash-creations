@@ -10,7 +10,6 @@ if (combinationParam !== '') {
     combination = parseInt(combinationParam);
     window.fxhash = fakeFxhash(combination / ZebraFeatures.combinations);
 } else {
-    // todo why round and not floor?
     combination = (ZebraFeatures.combinations * window.fxrand()) << 0;
 }
 
