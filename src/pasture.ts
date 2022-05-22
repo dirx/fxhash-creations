@@ -149,25 +149,6 @@ export class Intercom {
         this.help = help;
         this.display = new Display(document);
         this.initKeyUpHandler();
-        this.initMouseHandler();
-        this.initTouchHandler();
-    }
-
-    private initTouchHandler() {
-        this.zebra.canvas.addEventListener('touchstart', (ev: TouchEvent) => {
-            this.display.show('butterfly wing');
-            this.zebra.movingBlocks.addButterfly(
-                ev.touches[0].clientX,
-                ev.touches[0].clientY
-            );
-        });
-    }
-
-    private initMouseHandler() {
-        this.zebra.canvas.addEventListener('mousedown', (ev: MouseEvent) => {
-            this.display.show('butterfly wing');
-            this.zebra.movingBlocks.addButterfly(ev.clientX, ev.clientY);
-        });
     }
 
     private initKeyUpHandler() {
@@ -225,11 +206,6 @@ export class Intercom {
                 case 'i':
                     let info = this.info.toggleShow();
                     this.display.show('info ' + (info ? 'on' : 'off'));
-                    break;
-
-                case 'b':
-                    this.display.show('butterfly wing');
-                    this.zebra.movingBlocks.addButterfly();
                     break;
             }
         });
@@ -305,7 +281,6 @@ export class Help {
         this.element.classList.add('hide');
         this.element.innerHTML = `
           <p><em>0 - 9</em> change pixel ratio</p>
-          <p><em>b</em> butterfly wing</p>
           <p><em>i</em> info</p>
           <p><em>f</em> toggle fullscreen</p>
           <p><em>s</em> toggle smoothness</p>
