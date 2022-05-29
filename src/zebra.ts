@@ -6,8 +6,9 @@ export type FxhashFeatures = {
 };
 
 export class ZebraFeatures {
-    public static combinations: number = Object.entries(color.uniqueColorSpec)
-        .length;
+    public static combinations: number = Object.keys(
+        color.palettes['unique-css']
+    ).length;
     public combination: number = 1;
     public readonly colorHue: number;
     public readonly colorName: string;
@@ -22,13 +23,12 @@ export class ZebraFeatures {
     public blockSize: number = 42;
 
     public constructor(combination: number) {
-        color.filterCssColorSpec();
         this.combination = combination % ZebraFeatures.combinations;
 
-        let colors = Object.entries(color.uniqueColorSpec);
+        let colors = Object.values(color.palettes['unique-css']);
         this.colorHueBase = combination % colors.length;
-        this.colorName = colors[this.colorHueBase][0];
-        this.color = colors[this.colorHueBase][1] as ColorSpec;
+        this.colorName = colors[this.colorHueBase].name;
+        this.color = colors[this.colorHueBase];
         this.colorHue = this.color.hsv[0];
         this.colorSaturation = this.color.hsv[1];
         this.colorValueMin = 0.05;
@@ -93,7 +93,7 @@ export class Zebra {
         randInit(window.fxhash);
         this.features = new ZebraFeatures(this.combination);
         this.inPreviewPhase = true;
-        this.previewPhaseEndsAfter = this.features.maxMovingBlocks * 7;
+        this.previewPhaseEndsAfter = this.features.maxMovingBlocks * 5;
         this.movingBlocks.init();
         this.movingFlow.init();
     }
@@ -194,13 +194,9 @@ export class Zebra {
 
 export class ZebraMovingFlow {
     public directionOptions: Array<Array<'left' | 'up' | 'down' | 'right'>> = [
-        // ['up'],
         ['right', 'up'],
-        // ['right'],
         ['right', 'down'],
-        // ['down'],
         ['left', 'down'],
-        // ['left'],
         ['left', 'up'],
     ];
     public direction: Array<'left' | 'up' | 'down' | 'right'> = [];
@@ -257,9 +253,7 @@ export class ZebraMovingBlocks {
     private currentFrames: number = 0;
     private inFrames: number = 0;
     private blocks: Array<ZebraMovingBlock> = [];
-    private butterflyBlocks: Array<ZebraMovingBlock> = [];
     public count: number = 0;
-    public butterflyCount: number = 0;
     public total: number = 0;
     private zebra: Zebra;
 
@@ -273,18 +267,9 @@ export class ZebraMovingBlocks {
         this.inFrames = frames << 0;
     }
 
-    public frames(): number {
-        return this.inFrames - this.currentFrames;
-    }
-
     public tick(): boolean {
         this.totalFrames++;
         this.currentFrames++;
-
-        this.butterflyBlocks = this.butterflyBlocks.filter((block) =>
-            block.tick()
-        );
-        this.butterflyCount = this.butterflyBlocks.length;
 
         this.blocks = this.blocks.filter((block) => block.tick());
         this.count = this.blocks.length;
@@ -308,38 +293,9 @@ export class ZebraMovingBlocks {
         this.total++;
     }
 
-    public addButterfly(x: number | null = null, y: number | null = null) {
-        x = x || Math.random() * this.zebra.width * this.zebra.pixelRatio;
-        y = y || Math.random() * this.zebra.height * this.zebra.pixelRatio;
-        let w: number =
-            (this.zebra.features.blockSize / this.zebra.features.blocks) *
-            this.zebra.width;
-        let h: number =
-            (this.zebra.features.blockSize / this.zebra.features.blocks) *
-            this.zebra.height;
-        let area = {
-            x: (x / this.zebra.pixelRatio - w / 2) << 0,
-            y: (y / this.zebra.pixelRatio - h / 2) << 0,
-            w: w << 0,
-            h: h << 0,
-        };
-        let move: string =
-            this.zebra.movingFlow.direction[
-                (Math.random() * this.zebra.movingFlow.direction.length) << 0
-            ];
-        let movingDistance: number = ((w + h) / 2) << 0;
-        this.butterflyBlocks.push(
-            new ZebraMovingBlock(this.zebra, area, move, movingDistance)
-        );
-        this.butterflyCount = this.butterflyBlocks.length;
-        this.total++;
-    }
-
     public init(): void {
         this.blocks = [];
         this.count = 0;
-        this.butterflyBlocks = [];
-        this.butterflyCount = 0;
         this.total = 0;
         this.wait(0);
     }
@@ -361,7 +317,7 @@ export class ZebraMovingBlock {
         move: string | null = null,
         movingDistance: number | null = null
     ) {
-        this.color = randOptions(Object.keys(color.uniqueColorSpec));
+        this.color = randOptions(Object.keys(color.palettes['unique-css']));
         let h: number;
         let w: number;
 

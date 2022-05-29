@@ -1,9 +1,4 @@
-import Prando from 'prando';
-
-export type Point = {
-    x: number;
-    y: number;
-};
+import { RND, seedFromHash } from '@thi.ng/random-fxhash';
 
 export type Area = {
     x: number;
@@ -12,14 +7,12 @@ export type Area = {
     h: number;
 };
 
-let prng: Prando;
-
 export const randInit = (seed: string): void => {
-    prng = new Prando(seed);
+    RND.seed(seedFromHash(seed));
 };
 
 export const rand = (): number => {
-    return prng === undefined ? window.fxrand() : prng.next();
+    return RND.float();
 };
 
 export const randBoolean = (): boolean => {
@@ -31,13 +24,6 @@ export const randInt = (max: number): number => {
 
 export const randOptions = (list: Array<any>): any => {
     return list[randInt(list.length)];
-};
-
-export const randPoint = (maxX: number, maxY: number): Point => {
-    return {
-        x: randInt(maxX),
-        y: randInt(maxY),
-    };
 };
 
 export const fakeFxhash = (

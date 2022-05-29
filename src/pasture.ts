@@ -115,7 +115,7 @@ export class Pasture {
                 size: `${zebra.canvas.width} / ${zebra.canvas.height}`,
                 pixelRatio: `${zebra.pixelRatio}`,
                 previewPhase: zebra.inPreviewPhase,
-                movingBlocks: `${zebra.movingBlocks.count} / ${zebra.movingBlocks.butterflyCount} / ${zebra.features.maxMovingBlocks} / ${zebra.movingBlocks.total}`,
+                movingBlocks: `${zebra.movingBlocks.count} / ${zebra.features.maxMovingBlocks} / ${zebra.movingBlocks.total}`,
                 moveDirection: `${zebra.movingFlow.direction.join(', ')} (${
                     zebra.movingFlow.position
                 })`,
