@@ -26,3 +26,5 @@ window.pasture = new Pasture(combination);
 
 console.log(`Combination: ${window.pasture.zebra.features.combination}`);
 console.log(`Color: ${window.$fxhashFeatures['color']}`);
+console.log(`Step size: ${window.$fxhashFeatures['stepSize']}`);
+console.log(`Grid Size: ${window.$fxhashFeatures['gridSize']}`);

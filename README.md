@@ -4,9 +4,9 @@ Real-time deterministic animation based on vanilla js & canvas 2d rendering cont
 
 __#generativeart__ __#nft__ __#fxhash__ __#tezos__
 
-Grab it @ https://www.fxhash.xyz/generative/slug/zebra
+## Zebra
 
-## About
+Grab it @ https://www.fxhash.xyz/generative/slug/zebra
 
 [<img src="https://gateway.ipfs.io/ipfs/Qme2g4LjLTDM8hV1TXZereU8wTT2pUqi8A9WKP38NWQ1Z1" align="right" width="50%" style="padding: 0 20px 0 20px" />](https://www.fxhash.xyz/generative/slug/zebra)
 
@@ -26,11 +26,29 @@ I hope you enjoy it, too.
 
 Btw: there might be some specials like gold and rainbow.
 
-## Third Party Licenses
+### Third Party Licenses
 
 - based on [fxhash-boilerplate-webpack](https://github.com/fxhash/fxhash-webpack-boilerplate)
 - [@fontsource/vt323](https://www.npmjs.com/package/@fontsource/vt323) ([font source](https://github.com/phoikoi/VT323))
 - [prando](https://www.npmjs.com/package/prando)
+
+## Zebra mc
+
+Grab it @ https://www.fxhash.xyz/generative/slug/zebra-mc
+
+Zebra follows a simple idea: create an endless, re-playable animation by simply moving pixels up, right, down, left and rotating color value.
+
+The animation is based on a deterministic prng. Width, height and pixel ratio change the order of the animation and lead to different results.
+
+Since it uses the canvas 2D renderings context, there is an auto-adjustment for the pixel ratio to keep the performance e.g. at fullscreen even on larger monitors.
+
+If you are curious you may press `h` for help and play around with the features like changing the pixel ratio or simply looking at the behind the scene numbers.
+
+### Third Party Licenses
+
+- based on [fxhash-boilerplate-webpack](https://github.com/fxhash/fxhash-webpack-boilerplate)
+- [@fontsource/vt323](https://www.npmjs.com/package/@fontsource/vt323) ([font source](https://github.com/phoikoi/VT323))
+- [@thi.ng/random-fxhash](https://www.npmjs.com/package/@thi.ng/random-fxhash)
 
 ## License
 

@@ -112,15 +112,18 @@ export class Pasture {
                 color: `${zebra.features.getColorName()} (${
                     zebra.features.colorHue
                 })`,
+                stepSize: `${zebra.features.stepSize}`,
+                blocks: `${zebra.features.gridSize}`,
                 size: `${zebra.canvas.width} / ${zebra.canvas.height}`,
                 pixelRatio: `${zebra.pixelRatio}`,
                 previewPhase: zebra.inPreviewPhase,
+                previewPhaseEndsAfter: zebra.previewPhaseEndsAfter,
                 movingBlocks: `${zebra.movingBlocks.count} / ${zebra.features.maxMovingBlocks} / ${zebra.movingBlocks.total}`,
                 moveDirection: `${zebra.movingFlow.direction.join(', ')} (${
                     zebra.movingFlow.position
                 })`,
                 changeMoveInBlocks: zebra.movingFlow.changeInBlocks,
-                moveWaitBlocks: zebra.movingFlow.waitBlocks,
+                waitBlocks: zebra.movingFlow.waitBlocks,
                 moveClockwise: zebra.movingFlow.clockwise,
                 saturation: zebra.features.colorSaturation,
                 valueMin: zebra.features.colorValueMin,

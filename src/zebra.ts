@@ -3,27 +3,49 @@ import { color, ColorSpec } from './color';
 
 export type FxhashFeatures = {
     color: string;
+    stepSize: number;
+    gridSize: number;
 };
 
 export class ZebraFeatures {
-    public static combinations: number = Object.keys(
-        color.palettes['unique-css']
-    ).length;
+    public static combinations: number =
+        Object.keys(color.palettes['unique-css']).length * 4 * 5;
     public combination: number = 1;
     public readonly colorHue: number;
     public readonly colorName: string;
     public readonly colorHueBase: number;
     public readonly color: ColorSpec;
     public readonly colorSaturation: number;
-    public maxMovingBlocks: number = 63;
-    public readonly blocks: number = 252;
+    public maxMovingBlocks: number;
+    public readonly gridSize: number;
+    public readonly waitBlocks: number;
     public readonly colorValueMin: number;
     public readonly colorValueMax: number;
-    public movingDistances: Array<any> = [21, 42, 84, 168];
-    public blockSize: number = 42;
+    public blockConfig: Array<any> = [
+        21, 42, 84, 168, 252, 420, 672, 1092, 1764, 2856, 4620,
+    ];
+    public movingDistances: Array<any> = [];
+    public blockBase: number;
+    public blockSize: number;
+    public stepSizeBase: number;
+    public stepSize: number;
 
     public constructor(combination: number) {
         this.combination = combination % ZebraFeatures.combinations;
+
+        this.stepSizeBase = combination % 4;
+        this.stepSize = [1, 2, 3, 5][this.stepSizeBase];
+        combination = (combination / 4) << 0;
+
+        this.blockBase = combination % 5;
+        let blocks = this.blockConfig.slice(this.blockBase, this.blockBase + 4);
+        this.maxMovingBlocks = blocks[0];
+        this.movingDistances = blocks;
+        this.gridSize = blocks[3];
+        this.waitBlocks =
+            this.blockConfig[this.blockBase + this.stepSizeBase + 2];
+        this.blockSize = 42;
+        combination = (combination / 5) << 0;
 
         let colors = Object.values(color.palettes['unique-css']);
         this.colorHueBase = combination % colors.length;
@@ -33,16 +55,25 @@ export class ZebraFeatures {
         this.colorSaturation = this.color.hsv[1];
         this.colorValueMin = 0.05;
         this.colorValueMax = this.color.hsv[2];
+        combination = (combination / colors.length) << 0;
     }
 
     public getFxhashFeatures(): FxhashFeatures {
         return {
             color: this.getColorName(),
+            stepSize: this.stepSize,
+            gridSize: this.gridSize,
         };
     }
 
     public getFeatureName(): string {
-        return [this.getColorName(), this.combination, window.fxhash]
+        return [
+            this.getColorName(),
+            this.gridSize,
+            this.stepSize,
+            this.combination,
+            window.fxhash,
+        ]
             .join('-')
             .replace(/\s+/g, '');
     }
@@ -59,18 +90,18 @@ export class Zebra {
     public height: number = 0;
     public baseHeightWidth: number = (640 + 480) / 2;
     public pixelRatio: number = 2;
-    public fps: number = 30;
+    public fps: number = 60;
 
     public canvas: HTMLCanvasElement;
     public context: CanvasRenderingContext2D;
 
-    public movingBlocks: ZebraMovingBlocks;
-    public movingFlow: ZebraMovingFlow;
+    public movingBlocks!: ZebraMovingBlocks;
+    public movingFlow!: ZebraMovingFlow;
 
     public combination: number;
 
-    public inPreviewPhase!: boolean;
-    public previewPhaseEndsAfter!: number;
+    public inPreviewPhase: boolean = true;
+    public previewPhaseEndsAfter: number = 1764;
 
     public constructor(
         canvas: HTMLCanvasElement,
@@ -82,9 +113,6 @@ export class Zebra {
         this.context = canvas.getContext('2d') as CanvasRenderingContext2D;
         this.combination = combination;
 
-        this.movingBlocks = new ZebraMovingBlocks(this);
-        this.movingFlow = new ZebraMovingFlow(this);
-
         this.updateSize(width, height);
         this.setSmoothing(false);
     }
@@ -93,8 +121,11 @@ export class Zebra {
         randInit(window.fxhash);
         this.features = new ZebraFeatures(this.combination);
         this.inPreviewPhase = true;
-        this.previewPhaseEndsAfter = this.features.maxMovingBlocks * 5;
+
+        this.movingBlocks = new ZebraMovingBlocks(this);
         this.movingBlocks.init();
+
+        this.movingFlow = new ZebraMovingFlow(this);
         this.movingFlow.init();
     }
 
@@ -153,7 +184,7 @@ export class Zebra {
 
         if (
             this.inPreviewPhase &&
-            this.movingBlocks.total > this.previewPhaseEndsAfter
+            this.movingBlocks.totalFrames > this.previewPhaseEndsAfter
         ) {
             this.inPreviewPhase = false;
         }
@@ -180,6 +211,7 @@ export class Zebra {
 
         resizedContext.imageSmoothingEnabled =
             this.context.imageSmoothingEnabled;
+        previewCanvas.style.imageRendering = this.canvas.style.imageRendering;
         resizedContext?.drawImage(
             this.canvas,
             0,
@@ -187,6 +219,7 @@ export class Zebra {
             previewCanvas.width,
             previewCanvas.height
         );
+        1;
 
         return previewCanvas;
     }
@@ -215,8 +248,8 @@ export class ZebraMovingFlow {
         this.direction = ['left', 'up', 'right', 'down'];
         this.position = randInt(this.directionOptions.length);
         this.clockwise = true;
-        this.changeInBlocks = 144;
-        this.waitBlocks = 144;
+        this.changeInBlocks = this.zebra.features.movingDistances[1];
+        this.waitBlocks = this.zebra.features.movingDistances[1];
     }
 
     public tick() {
@@ -241,7 +274,7 @@ export class ZebraMovingFlow {
                 this.direction = this.directionOptions[this.position];
             }
 
-            this.waitBlocks = randOptions([144, 233, 377]);
+            this.waitBlocks = this.zebra.features.waitBlocks;
             this.changeInBlocks =
                 this.zebra.movingBlocks.total + this.waitBlocks;
         }
@@ -250,8 +283,6 @@ export class ZebraMovingFlow {
 
 export class ZebraMovingBlocks {
     public totalFrames: number = 0;
-    private currentFrames: number = 0;
-    private inFrames: number = 0;
     private blocks: Array<ZebraMovingBlock> = [];
     public count: number = 0;
     public total: number = 0;
@@ -262,14 +293,8 @@ export class ZebraMovingBlocks {
         this.init();
     }
 
-    public wait(frames: number) {
-        this.currentFrames = 0;
-        this.inFrames = frames << 0;
-    }
-
     public tick(): boolean {
         this.totalFrames++;
-        this.currentFrames++;
 
         this.blocks = this.blocks.filter((block) => block.tick());
         this.count = this.blocks.length;
@@ -278,11 +303,9 @@ export class ZebraMovingBlocks {
             return false;
         }
 
-        if (this.currentFrames < this.inFrames) {
-            return false;
-        }
-
-        this.add();
+        do {
+            this.add();
+        } while (this.count < this.zebra.features.maxMovingBlocks);
 
         return true;
     }
@@ -297,7 +320,6 @@ export class ZebraMovingBlocks {
         this.blocks = [];
         this.count = 0;
         this.total = 0;
-        this.wait(0);
     }
 }
 
@@ -309,7 +331,7 @@ export class ZebraMovingBlock {
     public readonly vMax: number;
 
     private movingDistance: number = 0;
-    private color: string | CanvasGradient | CanvasPattern;
+    private color: ColorSpec;
 
     public constructor(
         public readonly zebra: Zebra,
@@ -317,15 +339,15 @@ export class ZebraMovingBlock {
         move: string | null = null,
         movingDistance: number | null = null
     ) {
-        this.color = randOptions(Object.keys(color.palettes['unique-css']));
+        this.color = randOptions(Object.values(color.palettes['unique-css']));
         let h: number;
         let w: number;
 
         if (area === null) {
             h = zebra.features.blockSize;
             w = zebra.features.blockSize;
-            let x: number = randInt(zebra.features.blocks + h / 2) - h;
-            let y: number = randInt(zebra.features.blocks + w / 2) - w;
+            let x: number = randInt(zebra.features.gridSize + h / 2) - h;
+            let y: number = randInt(zebra.features.gridSize + w / 2) - w;
 
             area = {
                 x: x,
@@ -334,10 +356,10 @@ export class ZebraMovingBlock {
                 h: h,
             };
 
-            area.x = (area.x * zebra.width) / zebra.features.blocks;
-            area.y = (area.y * zebra.height) / zebra.features.blocks;
-            area.w = (area.w * zebra.width) / zebra.features.blocks;
-            area.h = (area.h * zebra.height) / zebra.features.blocks;
+            area.x = (area.x * zebra.width) / zebra.features.gridSize;
+            area.y = (area.y * zebra.height) / zebra.features.gridSize;
+            area.w = (area.w * zebra.width) / zebra.features.gridSize;
+            area.h = (area.h * zebra.height) / zebra.features.gridSize;
         }
 
         area.x = area.x << 0;
@@ -353,20 +375,20 @@ export class ZebraMovingBlock {
         switch (move) {
             case 'up':
                 this.isDirX = false;
-                this.dir = -1;
+                this.dir = -this.zebra.features.stepSize;
                 break;
             case 'down':
                 this.isDirX = false;
-                this.dir = 1;
+                this.dir = this.zebra.features.stepSize;
                 break;
             case 'left':
                 this.isDirX = true;
-                this.dir = -1;
+                this.dir = -this.zebra.features.stepSize;
                 break;
             default:
             case 'right':
                 this.isDirX = true;
-                this.dir = 1;
+                this.dir = this.zebra.features.stepSize;
                 break;
         }
 
@@ -377,10 +399,10 @@ export class ZebraMovingBlock {
 
             if (this.isDirX) {
                 movingDistance =
-                    (blocks * this.zebra.width) / this.zebra.features.blocks;
+                    (blocks * this.zebra.width) / this.zebra.features.gridSize;
             } else {
                 movingDistance =
-                    (blocks * this.zebra.height) / this.zebra.features.blocks;
+                    (blocks * this.zebra.height) / this.zebra.features.gridSize;
             }
         }
         this.movingDistance = movingDistance << 0;
@@ -390,7 +412,7 @@ export class ZebraMovingBlock {
     }
 
     public tick(): boolean {
-        if (this.movingDistance === 0) {
+        if (this.movingDistance <= 0) {
             return false;
         }
 
@@ -466,7 +488,7 @@ export class ZebraMovingBlock {
         return;
 
         // debug
-        this.zebra.context.fillStyle = this.color;
+        this.zebra.context.fillStyle = `rgba(${this.color.rgb[0]},${this.color.rgb[1]},${this.color.rgb[2]},1)`;
         this.zebra.context.fillRect(tx, ty, sw, sh);
     }
 
