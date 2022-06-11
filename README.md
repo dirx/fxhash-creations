@@ -16,13 +16,15 @@ How does it work?
 
 Several shapes form a boundary. Within these boundaries, pixel blocks are allowed to move and rotating color values according to various principles.
 
-Quite fascinating patterns emerge, which are shaped by the various properties of the animation, such as direction of movement, grid size, the number and size of the moving blocks and the color. Excitingly, the given boundary in turn influence the animation itself.
+Quite fascinating patterns emerge, which are shaped by various features of the animation, such as direction of movement, grid size, the number 
+and size of the moving blocks and the color. What is exciting is that the given boundaries in turn influence the animation itself.
 
-The animation is based on the deterministic prng sfc32 that is also used by fxhash. This allows it to be played repeatedly in the same sequence. Width, height and pixel ratio change the sequence of the animation.
+The animation is based on the deterministic prng sfc32 that is also used by fxhash. This allows it to be played repeatedly in the same sequence. 
+Width, height and pixel ratio change the sequence of the animation.
 
-Since it uses the canvas 2D renderings context, there is an auto-adjustment for the pixel ratio to keep the performance e.g. at fullscreen even on larger monitors.
+Since it uses the canvas 2D rendering context, there is an automatic adjustment for the pixel ratio to keep the performance even at full screen on larger monitors.
 
-If you are curious you may press `h` for help and play around with the features like changing the pixel ratio or simply looking at some behind the scene numbers.
+If you are curious, you can press `h` to get help and play around with the features like changing the pixel ratio or just look at some numbers behind the scene.
 
 ### Third Party Licenses
 
