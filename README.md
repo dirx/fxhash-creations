@@ -14,10 +14,10 @@ Moving blocks formed by moving blocks.
 
 How does it work?
 
-Several shapes form a boundary. Within these boundaries, pixel blocks are allowed to move and rotating color values according to various principles.
+Several shapes form a boundary. Within these boundaries, blocks are allowed to move pixels and rotate color values according to various principles.
 
-Quite fascinating patterns emerge, which are shaped by various features of the animation, such as direction of movement, grid size, the number 
-and size of the moving blocks and the color. What is exciting is that the given boundaries in turn influence the animation itself.
+The fascinating patterns that emerge are shaped by various features of the animation, such as the direction of movement, the size of the grid, 
+the number and size of the moving blocks, and the color. The exciting thing is that the given boundaries in turn influence the animation itself.
 
 The animation is based on the deterministic prng sfc32 that is also used by fxhash. This allows it to be played repeatedly in the same sequence. 
 Width, height and pixel ratio change the sequence of the animation.
