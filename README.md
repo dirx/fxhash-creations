@@ -2,7 +2,35 @@
 
 Real-time deterministic animation based on vanilla js & canvas 2d rendering context, variable size, 2022
 
-__#generativeart__ __#nft__ __#fxhash__ __#tezos__
+__#generativeart__ __#nft__ __#fxhash__ __#tezos__ __#creativecoding__
+
+## Moving Blocks
+
+__soon on fxhash__
+
+<img src="./resources/moving-blocks/orangered-1092-1-true-5-positive-7583-oo4y6bAr8U4DYMAaogyKKLhDuMSZ3gmgeQYEGH44ouFGwW5DiSw.png" align="right" width="50%" style="padding: 0 20px 0 20px" />
+
+Moving blocks formed by moving blocks.
+
+How does it work?
+
+Several shapes form a boundary. Within these boundaries, pixel blocks are allowed to move and rotating color values according to various principles.
+
+Quite fascinating patterns emerge, which are shaped by the various properties of the animation, such as direction of movement, grid size, the number and size of the moving blocks and the color. Excitingly, the given boundary in turn influence the animation itself.
+
+The animation is based on the deterministic prng sfc32 that is also used by fxhash. This allows it to be played repeatedly in the same sequence. Width, height and pixel ratio change the sequence of the animation.
+
+Since it uses the canvas 2D renderings context, there is an auto-adjustment for the pixel ratio to keep the performance e.g. at fullscreen even on larger monitors.
+
+If you are curious you may press `h` for help and play around with the features like changing the pixel ratio or simply looking at some behind the scene numbers.
+
+### Third Party Licenses
+
+- based on [fxhash-boilerplate-webpack](https://github.com/fxhash/fxhash-webpack-boilerplate)
+- [@fontsource/vt323](https://www.npmjs.com/package/@fontsource/vt323) ([font source](https://github.com/phoikoi/VT323))
+- [@thi.ng/random-fxhash](https://www.npmjs.com/package/@thi.ng/random-fxhash)
+- [@thi.ng/geom-isec](https://www.npmjs.com/package/@thi.ng/geom-isec)
+- [@thi.ng/math](https://www.npmjs.com/package/@thi.ng/math)
 
 ## Zebra
 
@@ -31,24 +59,6 @@ Btw: there might be some specials like gold and rainbow.
 - based on [fxhash-boilerplate-webpack](https://github.com/fxhash/fxhash-webpack-boilerplate)
 - [@fontsource/vt323](https://www.npmjs.com/package/@fontsource/vt323) ([font source](https://github.com/phoikoi/VT323))
 - [prando](https://www.npmjs.com/package/prando)
-
-## Zebra mc
-
-Grab it @ https://www.fxhash.xyz/generative/slug/zebra-mc
-
-Zebra follows a simple idea: create an endless, re-playable animation by simply moving pixels up, right, down, left and rotating color value.
-
-The animation is based on a deterministic prng. Width, height and pixel ratio change the order of the animation and lead to different results.
-
-Since it uses the canvas 2D renderings context, there is an auto-adjustment for the pixel ratio to keep the performance e.g. at fullscreen even on larger monitors.
-
-If you are curious you may press `h` for help and play around with the features like changing the pixel ratio or simply looking at the behind the scene numbers.
-
-### Third Party Licenses
-
-- based on [fxhash-boilerplate-webpack](https://github.com/fxhash/fxhash-webpack-boilerplate)
-- [@fontsource/vt323](https://www.npmjs.com/package/@fontsource/vt323) ([font source](https://github.com/phoikoi/VT323))
-- [@thi.ng/random-fxhash](https://www.npmjs.com/package/@thi.ng/random-fxhash)
 
 ## License
 
