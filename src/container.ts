@@ -1,15 +1,15 @@
-import { Zebra, ZebraFeatures } from './zebra';
+import { Features, Piece } from './piece';
 import { createLoop, Loop } from './loop';
 
-export class Pasture {
-    public zebra!: Zebra;
+export class Container {
+    public piece!: Piece;
     public loop!: Loop;
     public info!: Info;
     public help!: Help;
     public intercom!: Intercom;
 
     public constructor(combination: number) {
-        this.initZebra(combination);
+        this.initPiece(combination);
         this.initResizeHandler();
         this.initInfo();
         this.initHelp();
@@ -17,26 +17,26 @@ export class Pasture {
         this.initIntercom();
     }
 
-    private initZebra(combination: number) {
+    private initPiece(combination: number) {
         let canvas = document.createElement('canvas');
         canvas.id = 'main-canvas';
         document.body.prepend(canvas);
-        this.zebra = new Zebra(
+        this.piece = new Piece(
             canvas,
             window.innerWidth,
             window.innerHeight,
             combination
         );
 
-        window.$fxhashFeatures = this.zebra.features.getFxhashFeatures();
+        window.$fxhashFeatures = this.piece.features.getFxhashFeatures();
     }
 
     private initResizeHandler() {
-        let zebra: Zebra = this.zebra;
+        let piece: Piece = this.piece;
         window.addEventListener(
             'resize',
             () => {
-                zebra.updateSize(
+                piece.updateSize(
                     window.innerWidth << 0,
                     window.innerHeight << 0
                 );
@@ -56,7 +56,7 @@ export class Pasture {
 
     private initIntercom() {
         this.intercom = new Intercom(
-            this.zebra,
+            this.piece,
             this.info,
             this.help,
             document
@@ -65,13 +65,13 @@ export class Pasture {
 
     private initLoop() {
         let fxpreviewCalled: boolean = false;
-        let zebra = this.zebra;
+        let piece = this.piece;
         this.loop = createLoop(() => {
-            zebra.tick();
+            piece.tick();
 
             if (window.isFxpreview) {
-                if (!fxpreviewCalled && !zebra.inPreviewPhase) {
-                    let previewCanvas = zebra.preparePreviewCanvas();
+                if (!fxpreviewCalled && !piece.inPreviewPhase) {
+                    let previewCanvas = piece.preparePreviewCanvas();
                     document.body.prepend(previewCanvas);
                     window.fxpreview();
                     fxpreviewCalled = true;
@@ -80,13 +80,19 @@ export class Pasture {
                     // debug: combination screenshots
                     let search = new URLSearchParams(window.location.search);
                     let combination = search.get('combination') || '';
-                    if (combination != '') {
-                        this.zebra.captureImage(
-                            zebra.features.getFeatureName()
+                    let capture = search.has('capture');
+                    if (combination != '' || capture) {
+                        this.piece.captureImage(
+                            piece.features.getFeatureName()
                         );
                         let nextCombination = parseInt(combination) + 1;
-                        search.set('combination', `${nextCombination}`);
-                        if (nextCombination < ZebraFeatures.combinations) {
+                        if (combination != '') {
+                            search.set('combination', `${nextCombination}`);
+                        }
+                        if (
+                            nextCombination < Features.combinations ||
+                            capture
+                        ) {
                             setTimeout(
                                 () =>
                                     (window.location.search =
@@ -99,55 +105,57 @@ export class Pasture {
             }
         });
 
-        this.loop.runWith(zebra.fps);
+        this.loop.runWith(piece.fps);
     }
 
     private initInfoUpdate() {
-        let zebra = this.zebra;
+        let piece = this.piece;
         let info = this.info;
 
         setInterval(() => {
             info.update({
-                combination: `${zebra.features.combination} / ${ZebraFeatures.combinations}`,
-                color: `${zebra.features.getColorName()} (${
-                    zebra.features.colorHue
-                })`,
-                stepSize: `${zebra.features.stepSize}`,
-                blocks: `${zebra.features.gridSize}`,
-                size: `${zebra.canvas.width} / ${zebra.canvas.height}`,
-                pixelRatio: `${zebra.pixelRatio}`,
-                previewPhase: zebra.inPreviewPhase,
-                previewPhaseEndsAfter: zebra.previewPhaseEndsAfter,
-                movingBlocks: `${zebra.movingBlocks.count} / ${zebra.features.maxMovingBlocks} / ${zebra.movingBlocks.total}`,
-                moveDirection: `${zebra.movingFlow.direction.join(', ')} (${
-                    zebra.movingFlow.position
-                })`,
-                changeMoveInBlocks: zebra.movingFlow.changeInBlocks,
-                waitBlocks: zebra.movingFlow.waitBlocks,
-                moveClockwise: zebra.movingFlow.clockwise,
-                saturation: zebra.features.colorSaturation,
-                valueMin: zebra.features.colorValueMin,
-                valueMax: zebra.features.colorValueMax,
+                combination: `${piece.features.combination} / ${Features.combinations}`,
+                color: `${piece.features.getColorName()} (${
+                    piece.features.colorHue
+                }, ${piece.features.color.rgb})`,
+                gridSize: `${piece.features.gridSize}`,
+                shapes: `${
+                    piece.features.shapes.length
+                } (${piece.features.shapes
+                    .map((shape) => shape.type)
+                    .join(', ')})`,
+                direction: `${piece.features.direction.join(' ')}`,
+                diagonal: `${piece.features.diagonal}`,
+                movingDistanceBehavior: `${piece.features.getMovingDistanceDirectionName()}`,
+                stepSize: `${piece.features.stepSize}`,
+                size: `${piece.canvas.width} / ${piece.canvas.height}`,
+                pixelRatio: `${piece.pixelRatio}`,
+                previewPhase: piece.inPreviewPhase,
+                previewPhaseEndsAfter: piece.previewPhaseEndsAfter,
+                movingBlocks: `${piece.movingBlocks.count} / ${piece.features.maxMovingBlocks} / ${piece.movingBlocks.total}`,
+                saturation: piece.features.colorSaturation,
+                valueMin: piece.features.colorValueMin,
+                valueMax: piece.features.colorValueMax,
                 currentFps: `${this.loop.currentFps() << 0}`,
-                totalFrames: `${zebra.movingBlocks.totalFrames}`,
+                totalFrames: `${piece.movingBlocks.totalFrames}`,
             });
         }, 250);
     }
 }
 
 export class Intercom {
-    private zebra: Zebra;
+    private piece: Piece;
     private info: Info;
     private help: Help;
     private display: Display;
 
     public constructor(
-        zebra: Zebra,
+        piece: Piece,
         info: Info,
         help: Help,
         document: Document
     ) {
-        this.zebra = zebra;
+        this.piece = piece;
         this.info = info;
         this.help = help;
         this.display = new Display(document);
@@ -158,7 +166,7 @@ export class Intercom {
         window.addEventListener('keyup', (ev: KeyboardEvent) => {
             switch (ev.key) {
                 case '0':
-                    this.zebra.updateSize(
+                    this.piece.updateSize(
                         window.innerWidth << 0,
                         window.innerHeight << 0,
                         null
@@ -174,7 +182,7 @@ export class Intercom {
                 case '7':
                 case '8':
                 case '9':
-                    this.zebra.updateSize(
+                    this.piece.updateSize(
                         window.innerWidth << 0,
                         window.innerHeight << 0,
                         parseInt(ev.key)
@@ -188,14 +196,14 @@ export class Intercom {
                     break;
 
                 case 'c':
-                    this.zebra.captureImage(
-                        this.zebra.features.getFeatureName()
+                    this.piece.captureImage(
+                        this.piece.features.getFeatureName()
                     );
                     this.display.show('capture image');
                     break;
 
                 case 's':
-                    let smoothing = this.zebra.toggleSmoothing();
+                    let smoothing = this.piece.toggleSmoothing();
                     this.display.show(
                         'smoothing ' + (smoothing ? 'on' : 'off')
                     );

@@ -1,7 +1,7 @@
 {
-  "name": "dirx-zebra",
+  "name": "dirx-moving-blocks",
   "version": "1.0.0",
-  "description": "pixelated animated zebra coloring",
+  "description": "monochromatic edition",
   "main": "index.js",
   "author": "dirx",
   "scripts": {
@@ -11,6 +11,8 @@
   },
   "dependencies": {
     "@fontsource/vt323": "^4.5.6",
+    "@thi.ng/geom-isec": "^2.1.12",
+    "@thi.ng/math": "^5.3.3",
     "@thi.ng/random-fxhash": "^0.2.0"
   },
   "devDependencies": {

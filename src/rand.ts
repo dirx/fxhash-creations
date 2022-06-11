@@ -22,7 +22,25 @@ export const randInt = (max: number): number => {
     return (rand() * max) << 0;
 };
 
-export const randOptions = (list: Array<any>): any => {
+export const randOptions = (
+    list: Array<any>,
+    weights: Array<number> | null = null
+): any => {
+    if (weights) {
+        let i;
+        for (i = 0; i < list.length; i++) {
+            weights[i] = (weights[i] || 1) + (weights[i - 1] || 0);
+        }
+        let r = randInt(weights[weights.length - 1]);
+        for (i = 0; i < weights.length; i++) {
+            if (weights[i] > r) {
+                break;
+            }
+        }
+
+        return list[i];
+    }
+
     return list[randInt(list.length)];
 };
 
