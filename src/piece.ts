@@ -165,10 +165,11 @@ export class Features {
     public getFeatureName(): string {
         return [
             this.getColorName(),
-            this.gridSize,
-            this.stepSize,
-            this.diagonal,
             this.shapes.length,
+            this.gridSize,
+            this.maxMovingBlocks,
+            this.direction.join('-'),
+            this.diagonal,
             this.getMovingDistanceDirectionName(),
             this.combination,
             window.fxhash,
@@ -192,7 +193,7 @@ export class Piece {
     public width: number = 0;
     public height: number = 0;
     public baseHeightWidth: number = 800;
-    public pixelRatio: number = 2;
+    public pixelRatio: number = 1;
     public fps: number = 60;
 
     public canvas: HTMLCanvasElement;
@@ -209,13 +210,14 @@ export class Piece {
         canvas: HTMLCanvasElement,
         width: number,
         height: number,
+        pixelRatio: number | null = null,
         combination: number
     ) {
         this.canvas = canvas;
         this.context = canvas.getContext('2d') as CanvasRenderingContext2D;
         this.combination = combination;
 
-        this.updateSize(width, height);
+        this.updateSize(width, height, pixelRatio);
         this.setSmoothing(false);
     }
 
@@ -246,6 +248,7 @@ export class Piece {
         this.height = (height / this.pixelRatio) << 0;
         this.canvas.width = this.width;
         this.canvas.height = this.height;
+
         this.canvas.dispatchEvent(new Event('piece.updateSize'));
         this.initImage();
     }
@@ -287,6 +290,7 @@ export class Piece {
                     );
                 } else {
                     this.context.fillStyle = '#000000';
+                    this.context.beginPath();
                     this.context.arc(
                         shape.x * this.width,
                         shape.y * this.height,
@@ -312,6 +316,7 @@ export class Piece {
             this.movingBlocks.totalFrames > this.previewPhaseEndsAfter
         ) {
             this.inPreviewPhase = false;
+            this.canvas.dispatchEvent(new Event('piece.previewPhaseEnded'));
         }
     }
 
@@ -331,8 +336,10 @@ export class Piece {
             '2d'
         ) as CanvasRenderingContext2D;
 
-        previewCanvas.height = this.height * this.pixelRatio;
-        previewCanvas.width = this.width * this.pixelRatio;
+        previewCanvas.height =
+            this.height * (this.pixelRatio < 1 ? 1 : this.pixelRatio);
+        previewCanvas.width =
+            this.width * (this.pixelRatio < 1 ? 1 : this.pixelRatio);
 
         resizedContext.imageSmoothingEnabled =
             this.context.imageSmoothingEnabled;
@@ -398,6 +405,7 @@ export class MovingBlock {
     public readonly dirY: number = 0;
     public readonly vMin: number;
     public readonly vMax: number;
+    public readonly vDir: number;
 
     private movingDistanceX: number = 0;
     private movingDistanceY: number = 0;
@@ -421,17 +429,19 @@ export class MovingBlock {
             move = [randOptions(piece.features.direction)];
         }
 
+        let stepSize = this.piece.features.stepSize;
+
         if (move.includes('left')) {
-            this.dirX = -this.piece.features.stepSize;
+            this.dirX = -stepSize;
         }
         if (move.includes('right')) {
-            this.dirX = this.piece.features.stepSize;
+            this.dirX = stepSize;
         }
         if (move.includes('up')) {
-            this.dirY = -this.piece.features.stepSize;
+            this.dirY = -stepSize;
         }
         if (move.includes('down')) {
-            this.dirY = this.piece.features.stepSize;
+            this.dirY = stepSize;
         }
 
         if (this.dirX !== 0) {
@@ -479,6 +489,7 @@ export class MovingBlock {
 
         this.vMin = 255 * this.piece.features.colorValueMin;
         this.vMax = 255 * this.piece.features.colorValueMax;
+        this.vDir = this.piece.pixelRatio * 1.2 - 0.09;
     }
 
     public tick(): boolean {
@@ -514,18 +525,11 @@ export class MovingBlock {
             return false;
         }
 
-        if (!this.isInShapes(sx, sy, sw, sh)) {
+        if (!this.intersectsWithShapes(sx, sy, sw, sh)) {
             return false;
         }
 
-        if (
-            !isec.testRectRect(
-                [sx, sy],
-                [sw, sh],
-                [sw * 2, sh * 2],
-                [this.piece.width - sw * 4, this.piece.height - sh * 4]
-            )
-        ) {
+        if (!this.intersectsWithDrawingArea(sx, sy, sw, sh)) {
             return false;
         }
 
@@ -540,35 +544,42 @@ export class MovingBlock {
         return true;
     }
 
-    private isInShapes(x: number, y: number, w: number, h: number) {
-        return this.piece.features.shapes.some((shape: Circle | Quad) => {
-            if (shape instanceof Circle) {
-                return isec.testRectCircle(
-                    [
-                        x + this.piece.features.blockSize / 4,
-                        y + this.piece.features.blockSize / 4,
-                    ],
-                    [
-                        w - this.piece.features.blockSize / 2,
-                        h - this.piece.features.blockSize / 2,
-                    ],
+    private intersectsWithDrawingArea(
+        x: number,
+        y: number,
+        w: number,
+        h: number
+    ) {
+        return isec.testRectRect(
+            [x + w / 2, y + h / 2],
+            [1, 1],
+            [w, h],
+            [this.piece.width - w * 2, this.piece.height - h * 2]
+        );
+    }
+
+    private intersectsWithShapes(x: number, y: number, w: number, h: number) {
+        return this.piece.features.shapes.some(
+            (shape: Circle | Rect | Quad) => {
+                if (shape instanceof Circle) {
+                    return isec.testRectCircle(
+                        [x + w / 2, y + h / 2],
+                        [1, 1],
+                        [
+                            shape.x * this.piece.width,
+                            shape.y * this.piece.height,
+                        ],
+                        shape.r * Math.min(this.piece.width, this.piece.height)
+                    );
+                }
+                return isec.testRectRect(
+                    [x + w / 2, y + h / 2],
+                    [1, 1],
                     [shape.x * this.piece.width, shape.y * this.piece.height],
-                    shape.r * Math.min(this.piece.width, this.piece.height)
+                    [shape.w * this.piece.width, shape.h * this.piece.height]
                 );
             }
-            return isec.testRectRect(
-                [
-                    x + this.piece.features.blockSize / 4,
-                    y + this.piece.features.blockSize / 4,
-                ],
-                [
-                    w - this.piece.features.blockSize / 2,
-                    h - this.piece.features.blockSize / 2,
-                ],
-                [shape.x * this.piece.width, shape.y * this.piece.height],
-                [shape.w * this.piece.width, shape.h * this.piece.height]
-            );
-        });
+        );
     }
 
     private move(
@@ -609,7 +620,7 @@ export class MovingBlock {
         let fRGB: number =
             sx > this.piece.width / 2 || sy > this.piece.height / 2
                 ? f *
-                  this.piece.features.stepSize *
+                  this.piece.pixelRatio *
                   (1 + this.piece.features.colorHue / 120)
                 : 0;
         let mRGB = Math.max(...this.piece.features.color.rgb);
@@ -629,6 +640,7 @@ export class MovingBlock {
                 b + bRGB,
                 this.vMin,
                 this.vMax,
+                this.vDir,
                 this.piece.features.colorSaturation,
                 mod(this.piece.features.colorHue - fC, 360)
             );

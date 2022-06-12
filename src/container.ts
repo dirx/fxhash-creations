@@ -25,6 +25,7 @@ export class Container {
             canvas,
             window.innerWidth,
             window.innerHeight,
+            null,
             combination
         );
 
@@ -202,6 +203,16 @@ export class Intercom {
                     this.display.show('capture image');
                     break;
 
+                case 'b':
+                    this.captureBigImage(
+                        this.piece.features.getFeatureName(),
+                        window.innerWidth << 0,
+                        window.innerHeight << 0,
+                        0.5
+                    );
+                    this.display.show('capture big image');
+                    break;
+
                 case 's':
                     let smoothing = this.piece.toggleSmoothing();
                     this.display.show(
@@ -230,6 +241,23 @@ export class Intercom {
         } else {
             document.documentElement.requestFullscreen();
         }
+    }
+
+    private captureBigImage(
+        name: string,
+        width: number,
+        height: number,
+        pixelRatio: number
+    ) {
+        this.piece.updateSize(width, height, pixelRatio);
+        let listener = () => {
+            this.piece.canvas.removeEventListener(
+                'piece.previewPhaseEnded',
+                listener
+            );
+            this.piece.captureImage(name);
+        };
+        this.piece.canvas.addEventListener('piece.previewPhaseEnded', listener);
     }
 }
 
@@ -296,6 +324,7 @@ export class Help {
           <p><em>f</em> toggle fullscreen</p>
           <p><em>s</em> toggle smoothness</p>
           <p><em>c</em> capture image</p>
+          <p><em>b</em> capture big image (takes time)</p>
           <p><em>h</em> show help</p>
         `;
         document.body.prepend(this.element);

@@ -14,6 +14,7 @@ export type Color = {
         b: number,
         vMin: number,
         vMax: number,
+        vDir: number,
         sMin: number,
         hBase: number
     ) => Array<number>;
@@ -466,6 +467,7 @@ export const color: Color = {
         b: number,
         vMin: number = 0,
         vMax: number = 255,
+        vDir: number = 1,
         sMin: number = 0,
         hBase: number
     ): Array<number> => {
@@ -475,7 +477,7 @@ export const color: Color = {
             v = Math.max(r, g, b);
 
         // rotate value
-        v += 1;
+        v += vDir;
         if (v > vMax) v = vMin;
         else if (v < vMin) v = vMax;
 

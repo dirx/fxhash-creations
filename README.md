@@ -4,11 +4,11 @@ Real-time deterministic animation based on vanilla js & canvas 2d rendering cont
 
 __#generativeart__ __#nft__ __#fxhash__ __#tezos__ __#creativecoding__
 
-## Moving Blocks
+## Edition: Moving Blocks
 
 __soon on fxhash__
 
-<img src="./resources/moving-blocks/orangered-1092-1-true-5-positive-7583-oo4y6bAr8U4DYMAaogyKKLhDuMSZ3gmgeQYEGH44ouFGwW5DiSw.png" align="right" width="50%" style="padding: 0 20px 0 20px" />
+<img src="./resources/moving-blocks/orangered-5-1092-252-right-up-true-positive-7583-oo4y6bAr8U4DYMAaogyKKLhDuMSZ3gmgeQYEGH44ouFGwW5DiSw.png" align="right" width="50%" style="padding: 0 20px 0 20px" />
 
 Moving blocks formed by moving blocks.
 
@@ -34,7 +34,7 @@ If you are curious, you can press `h` to get help and play around with the featu
 - [@thi.ng/geom-isec](https://www.npmjs.com/package/@thi.ng/geom-isec)
 - [@thi.ng/math](https://www.npmjs.com/package/@thi.ng/math)
 
-## Zebra
+## Edition: Zebra
 
 Grab it @ https://www.fxhash.xyz/generative/slug/zebra
 
