@@ -13,6 +13,14 @@ html, body {
     image-rendering: pixelated;
 }
 
+#main-canvas {
+    z-index: 1;
+}
+
+#debug-canvas {
+    z-index: 222;
+}
+
 .showit {
     position: absolute;
     top: 0;
@@ -44,7 +52,7 @@ html, body {
     position: absolute;
     top: 0;
     left: 0;
-    z-index: 999;
+    z-index: 998;
     margin: 0;
     padding: 20px;
     font-size: 2vmin;

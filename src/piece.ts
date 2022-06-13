@@ -45,6 +45,8 @@ export class Features {
 
     public shapes: Array<Circle | Quad | Rect>;
     public shapeBase: number;
+    public shapesCenterX: number;
+    public shapesCenterY: number;
 
     public directions: Array<Array<'left' | 'up' | 'down' | 'right'>> = [
         ['right', 'up'],
@@ -78,7 +80,7 @@ export class Features {
 
         this.blockBase = (combination % 4) + 1;
         let blocks = this.blockConfig.slice(this.blockBase, this.blockBase + 4);
-        this.maxMovingBlocks = blocks[0];
+        this.maxMovingBlocks = blocks[1];
         this.movingDistances = this.blockConfig.slice(
             this.blockBase,
             this.blockBase + 2
@@ -86,7 +88,7 @@ export class Features {
         this.gridSize = blocks[3];
         this.waitBlocks =
             this.blockConfig[this.blockBase + this.stepSizeBase + 2];
-        this.blockSize = 42;
+        this.blockSize = 21;
         combination = (combination / 4) << 0;
 
         this.shapeBase = combination % 2;
@@ -133,6 +135,15 @@ export class Features {
                 );
             }
         }
+        [this.shapesCenterX, this.shapesCenterY] = this.shapes.reduce(
+            (center: Array<number>, shape) => {
+                return [
+                    center[0] + shape.centerX / this.shapes.length,
+                    center[1] + shape.centerY / this.shapes.length,
+                ];
+            },
+            [0, 0]
+        );
         combination = (combination / 2) << 0;
 
         this.directionBase = combination % 4;
@@ -192,7 +203,7 @@ export class Piece {
 
     public width: number = 0;
     public height: number = 0;
-    public baseHeightWidth: number = 800;
+    public baseHeightWidth: number = 960;
     public pixelRatio: number = 1;
     public fps: number = 60;
 
@@ -206,6 +217,8 @@ export class Piece {
     public inPreviewPhase: boolean = true;
     public previewPhaseEndsAfter: number = 900;
 
+    public debug: DebugPiece;
+
     public constructor(
         canvas: HTMLCanvasElement,
         width: number,
@@ -214,11 +227,15 @@ export class Piece {
         combination: number
     ) {
         this.canvas = canvas;
-        this.context = canvas.getContext('2d') as CanvasRenderingContext2D;
+        this.context = canvas.getContext('2d', {
+            alpha: false,
+        }) as CanvasRenderingContext2D;
         this.combination = combination;
 
         this.updateSize(width, height, pixelRatio);
         this.setSmoothing(false);
+
+        this.debug = new DebugPiece(this);
     }
 
     private initState() {
@@ -277,36 +294,10 @@ export class Piece {
         document.body.style.backgroundColor = css;
         this.context.fillStyle = css;
         this.context.fillRect(0, 0, this.width, this.height);
-
-        if (new URLSearchParams(window.location.search).has('debug')) {
-            this.features.shapes.map((shape) => {
-                this.context.fillStyle = '#000000';
-                if (shape instanceof Rect) {
-                    this.context.fillRect(
-                        shape.x * this.width,
-                        shape.y * this.height,
-                        shape.w * this.width,
-                        shape.h * this.height
-                    );
-                } else {
-                    this.context.fillStyle = '#000000';
-                    this.context.beginPath();
-                    this.context.arc(
-                        shape.x * this.width,
-                        shape.y * this.height,
-                        shape.r * Math.min(this.width, this.height),
-                        0,
-                        2 * Math.PI,
-                        false
-                    );
-                    this.context.fill();
-                }
-                this.context.restore();
-            });
-        }
     }
 
     public tick() {
+        this.debug.tickPiece();
         if (!this.movingBlocks.tick()) {
             return;
         }
@@ -354,6 +345,140 @@ export class Piece {
         1;
 
         return previewCanvas;
+    }
+}
+
+export class DebugPiece {
+    public debugCanvas: HTMLCanvasElement | null = null;
+    public debugContext: CanvasRenderingContext2D | null = null;
+    private piece: Piece;
+
+    public constructor(piece: Piece) {
+        this.piece = piece;
+    }
+
+    public toggle() {
+        if (this.debugContext && this.debugCanvas) {
+            this.debugCanvas.remove();
+            this.debugCanvas = null;
+            this.debugContext = null;
+        } else {
+            this.debugCanvas = this.piece.canvas.cloneNode(
+                true
+            ) as HTMLCanvasElement;
+            this.debugCanvas.id = 'debug-canvas';
+            this.debugCanvas.style.backgroundColor = 'transparent';
+            document.body.prepend(this.debugCanvas);
+            this.debugContext = this.debugCanvas.getContext(
+                '2d'
+            ) as CanvasRenderingContext2D;
+            this.debugContext.globalCompositeOperation = 'multiply';
+            this.debugContext.clearRect(
+                0,
+                0,
+                this.debugCanvas.width,
+                this.debugCanvas.height
+            );
+        }
+    }
+
+    public isEnabled(): boolean {
+        return this.debugContext !== null;
+    }
+
+    public tickPiece() {
+        if (!this.debugContext || !this.debugCanvas) {
+            return;
+        }
+
+        this.debugContext.clearRect(
+            0,
+            0,
+            this.debugCanvas.width,
+            this.debugCanvas.height
+        );
+
+        this.piece.features.shapes.map((shape) => {
+            if (!this.debugContext) {
+                return;
+            }
+            if (shape instanceof Rect) {
+                this.debugContext.strokeStyle = '#00cccc';
+                this.debugContext.strokeRect(
+                    shape.x * this.piece.width,
+                    shape.y * this.piece.height,
+                    shape.w * this.piece.width,
+                    shape.h * this.piece.height
+                );
+            } else {
+                this.debugContext.strokeStyle = '#cccc00';
+                this.debugContext.beginPath();
+                this.debugContext.arc(
+                    shape.x * this.piece.width,
+                    shape.y * this.piece.height,
+                    shape.r * Math.min(this.piece.width, this.piece.height),
+                    0,
+                    2 * Math.PI,
+                    false
+                );
+                this.debugContext.stroke();
+            }
+            this.debugContext.strokeStyle = '#cc0000';
+            this.debugContext.beginPath();
+            this.debugContext.arc(
+                shape.centerX * this.piece.width,
+                shape.centerY * this.piece.height,
+                (10 / this.piece.width) *
+                    Math.min(this.piece.width, this.piece.height),
+                0,
+                2 * Math.PI,
+                false
+            );
+            this.debugContext.stroke();
+        });
+
+        this.debugContext.strokeStyle = '#00cc00';
+        this.debugContext.beginPath();
+        this.debugContext.arc(
+            this.piece.features.shapesCenterX * this.piece.width,
+            this.piece.features.shapesCenterY * this.piece.height,
+            (15 / this.piece.width) *
+                Math.min(this.piece.width, this.piece.height),
+            0,
+            2 * Math.PI,
+            false
+        );
+        this.debugContext.stroke();
+
+        this.debugContext.strokeStyle = '#cc6600';
+        let blockSizeX =
+            (this.piece.features.blockSize / this.piece.features.gridSize) *
+            this.piece.width;
+        let blockSizeY =
+            (this.piece.features.blockSize / this.piece.features.gridSize) *
+            this.piece.width;
+        this.debugContext.strokeRect(
+            blockSizeX,
+            blockSizeY,
+            this.piece.width - blockSizeX * 2,
+            this.piece.height - blockSizeX * 2
+        );
+        this.debugContext.stroke();
+    }
+
+    public moveMovingBlock(
+        tx: number,
+        ty: number,
+        sw: number,
+        sh: number
+    ): boolean {
+        if (!this.debugContext || !this.debugCanvas) {
+            return false;
+        }
+
+        this.debugContext.strokeStyle = `rgba(0, 0, 0, 0.3)`;
+        this.debugContext.strokeRect(tx, ty, sw, sh);
+        return true;
     }
 }
 
@@ -409,6 +534,9 @@ export class MovingBlock {
 
     private movingDistanceX: number = 0;
     private movingDistanceY: number = 0;
+
+    private dirXShapesFactor: number;
+    private dirYShapesFactor: number;
 
     public constructor(public readonly piece: Piece) {
         let move: Array<string>;
@@ -489,7 +617,16 @@ export class MovingBlock {
 
         this.vMin = 255 * this.piece.features.colorValueMin;
         this.vMax = 255 * this.piece.features.colorValueMax;
-        this.vDir = this.piece.pixelRatio * 1.2 - 0.09;
+        this.vDir = this.piece.pixelRatio * 2;
+
+        this.dirXShapesFactor =
+            this.area.x > this.piece.features.shapesCenterX * this.piece.width
+                ? -1
+                : 1;
+        this.dirYShapesFactor =
+            this.area.y > this.piece.features.shapesCenterY * this.piece.height
+                ? -1
+                : 1;
     }
 
     public tick(): boolean {
@@ -511,14 +648,18 @@ export class MovingBlock {
             sx = this.area.x + this.movingDistanceX;
             tx =
                 sx +
-                this.dirX * Math.sin(this.movingDistanceX / this.piece.width);
+                this.dirX *
+                    this.dirXShapesFactor *
+                    Math.sin(this.movingDistanceX / this.piece.width);
         }
 
         if (this.dirY !== 0) {
             sy = this.area.y + this.movingDistanceY;
             ty =
                 sy +
-                this.dirY * Math.cos(this.movingDistanceY / this.piece.height);
+                this.dirY *
+                    this.dirYShapesFactor *
+                    Math.cos(this.movingDistanceY / this.piece.height);
         }
 
         if (sw <= 0 || sh <= 0) {
@@ -591,12 +732,7 @@ export class MovingBlock {
         ty: number
     ) {
         // debug
-        if (new URLSearchParams(window.location.search).has('debug')) {
-            this.piece.context.fillStyle = `rgba(255, 255, 255, 0.01)`;
-            this.piece.context.fillRect(tx, ty, sw, sh);
-            this.piece.context.strokeStyle = `rgba(0, 0, 0, 0.1)`;
-            this.piece.context.strokeRect(tx, ty, sw, sh);
-            this.piece.context.restore();
+        if (this.piece.debug.moveMovingBlock(tx, ty, sw, sh)) {
             return;
         }
 
@@ -617,16 +753,6 @@ export class MovingBlock {
         let f: number = Math.sin(
             (sx + sy) / (this.piece.width + this.piece.height)
         );
-        let fRGB: number =
-            sx > this.piece.width / 2 || sy > this.piece.height / 2
-                ? f *
-                  this.piece.pixelRatio *
-                  (1 + this.piece.features.colorHue / 120)
-                : 0;
-        let mRGB = Math.max(...this.piece.features.color.rgb);
-        let rRGB = mRGB === this.piece.features.color.rgb[0] ? fRGB : 0;
-        let gRGB = mRGB === this.piece.features.color.rgb[1] ? fRGB : 0;
-        let bRGB = mRGB === this.piece.features.color.rgb[2] ? fRGB : 0;
         let fC = f * 7;
 
         for (let i: number = 0; i < l; i += 4) {
@@ -635,9 +761,9 @@ export class MovingBlock {
             let b = data.data[i + 2];
 
             [r, g, b] = color.rotate(
-                r + rRGB,
-                g + gRGB,
-                b + bRGB,
+                r,
+                g,
+                b,
                 this.vMin,
                 this.vMax,
                 this.vDir,

@@ -191,6 +191,13 @@ export class Intercom {
                     this.display.show('pixel ratio ' + ev.key);
                     break;
 
+                case 'd':
+                    this.piece.debug.toggle();
+                    this.display.show(
+                        'debug ' + (this.piece.debug.isEnabled() ? 'on' : 'off')
+                    );
+                    break;
+
                 case 'f':
                     Intercom.toggleFullscreen();
                     this.display.show('toggle fullscreen');
