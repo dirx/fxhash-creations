@@ -93,7 +93,7 @@ export class Features {
         let numOfShapes = [3, 5][this.shapeBase];
         this.shapes = [];
         for (let i = 0; i < numOfShapes; i++) {
-            if (randInt(2) === 0) {
+            if (randInt(3) !== 0) {
                 this.shapes.push(
                     new Circle(
                         floorTo(
