@@ -155,11 +155,13 @@ export const color: Color = {
                 rgb: [169, 169, 169],
                 hsv: [0, 0, 0.6627450980392157],
             },
-            darkgreen: {
-                name: 'darkgreen',
-                hex: '#006400',
-                rgb: [0, 100, 0],
-                hsv: [120, 1, 0.39215686274509803],
+            darkkhaki: {
+                name: 'darkkhaki',
+                hex: '#bdb76b',
+                rgb: [189, 183, 107],
+                hsv: [
+                    55.609756097560975, 0.43386243386243384, 0.7411764705882353,
+                ],
             },
             darkmagenta: {
                 name: 'darkmagenta',
@@ -178,6 +180,12 @@ export const color: Color = {
                 hex: '#ff8c00',
                 rgb: [255, 140, 0],
                 hsv: [32.94117647058824, 1, 1],
+            },
+            darkorchid: {
+                name: 'darkorchid',
+                hex: '#9932cc',
+                rgb: [153, 50, 204],
+                hsv: [280.12987012987014, 0.7549019607843137, 0.8],
             },
             darkred: {
                 name: 'darkred',
@@ -207,12 +215,6 @@ export const color: Color = {
                     248.46153846153848, 0.5611510791366906, 0.5450980392156862,
                 ],
             },
-            darkslategray: {
-                name: 'darkslategray',
-                hex: '#2f4f4f',
-                rgb: [47, 79, 79],
-                hsv: [180, 0.4050632911392405, 0.30980392156862746],
-            },
             darkturquoise: {
                 name: 'darkturquoise',
                 hex: '#00ced1',
@@ -231,11 +233,29 @@ export const color: Color = {
                 rgb: [255, 20, 147],
                 hsv: [327.5744680851064, 0.9215686274509803, 1],
             },
+            deepskyblue: {
+                name: 'deepskyblue',
+                hex: '#00bfff',
+                rgb: [0, 191, 255],
+                hsv: [195.05882352941177, 1, 1],
+            },
+            dimgray: {
+                name: 'dimgray',
+                hex: '#696969',
+                rgb: [105, 105, 105],
+                hsv: [0, 0, 0.4117647058823529],
+            },
             dodgerblue: {
                 name: 'dodgerblue',
                 hex: '#1e90ff',
                 rgb: [30, 144, 255],
                 hsv: [209.6, 0.8823529411764706, 1],
+            },
+            firebrick: {
+                name: 'firebrick',
+                hex: '#b22222',
+                rgb: [178, 34, 34],
+                hsv: [0, 0.8089887640449438, 0.6980392156862745],
             },
             forestgreen: {
                 name: 'forestgreen',
@@ -255,6 +275,32 @@ export const color: Color = {
                 rgb: [220, 220, 220],
                 hsv: [0, 0, 0.8627450980392157],
             },
+            gold: {
+                name: 'gold',
+                hex: '#ffd700',
+                rgb: [255, 215, 0],
+                hsv: [50.588235294117645, 1, 1],
+            },
+            goldenrod: {
+                name: 'goldenrod',
+                hex: '#daa520',
+                rgb: [218, 165, 32],
+                hsv: [
+                    42.903225806451616, 0.8532110091743119, 0.8549019607843137,
+                ],
+            },
+            gray: {
+                name: 'gray',
+                hex: '#808080',
+                rgb: [128, 128, 128],
+                hsv: [0, 0, 0.5019607843137255],
+            },
+            green: {
+                name: 'green',
+                hex: '#008000',
+                rgb: [0, 128, 0],
+                hsv: [120, 1, 0.5019607843137255],
+            },
             greenyellow: {
                 name: 'greenyellow',
                 hex: '#adff2f',
@@ -267,17 +313,35 @@ export const color: Color = {
                 rgb: [255, 105, 180],
                 hsv: [330, 0.5882352941176471, 1],
             },
+            indianred: {
+                name: 'indianred',
+                hex: '#cd5c5c',
+                rgb: [205, 92, 92],
+                hsv: [0, 0.551219512195122, 0.803921568627451],
+            },
             indigo: {
                 name: 'indigo',
                 hex: '#4b0082',
                 rgb: [75, 0, 130],
                 hsv: [274.6153846153846, 1, 0.5098039215686274],
             },
+            khaki: {
+                name: 'khaki',
+                hex: '#f0e68c',
+                rgb: [240, 230, 140],
+                hsv: [54, 0.4166666666666667, 0.9411764705882353],
+            },
             lavender: {
                 name: 'lavender',
                 hex: '#e6e6fa',
                 rgb: [230, 230, 250],
                 hsv: [240, 0.08, 0.9803921568627451],
+            },
+            lemonchiffon: {
+                name: 'lemonchiffon',
+                hex: '#fffacd',
+                rgb: [255, 250, 205],
+                hsv: [54, 0.19607843137254902, 1],
             },
             lightblue: {
                 name: 'lightblue',
@@ -287,11 +351,35 @@ export const color: Color = {
                     194.73684210526315, 0.24782608695652175, 0.9019607843137255,
                 ],
             },
+            lightcoral: {
+                name: 'lightcoral',
+                hex: '#f08080',
+                rgb: [240, 128, 128],
+                hsv: [0, 0.4666666666666667, 0.9411764705882353],
+            },
+            lightcyan: {
+                name: 'lightcyan',
+                hex: '#e0ffff',
+                rgb: [224, 255, 255],
+                hsv: [180, 0.12156862745098039, 1],
+            },
+            lightgray: {
+                name: 'lightgray',
+                hex: '#d3d3d3',
+                rgb: [211, 211, 211],
+                hsv: [0, 0, 0.8274509803921568],
+            },
             lightgreen: {
                 name: 'lightgreen',
                 hex: '#90ee90',
                 rgb: [144, 238, 144],
                 hsv: [120, 0.3949579831932773, 0.9333333333333333],
+            },
+            lightpink: {
+                name: 'lightpink',
+                hex: '#ffb6c1',
+                rgb: [255, 182, 193],
+                hsv: [350.95890410958907, 0.28627450980392155, 1],
             },
             lightsalmon: {
                 name: 'lightsalmon',
@@ -367,11 +455,35 @@ export const color: Color = {
                     259.6261682242991, 0.4885844748858447, 0.8588235294117647,
                 ],
             },
+            mediumseagreen: {
+                name: 'mediumseagreen',
+                hex: '#3cb371',
+                rgb: [60, 179, 113],
+                hsv: [
+                    146.72268907563026, 0.664804469273743, 0.7019607843137254,
+                ],
+            },
+            mediumslateblue: {
+                name: 'mediumslateblue',
+                hex: '#7b68ee',
+                rgb: [123, 104, 238],
+                hsv: [
+                    248.50746268656715, 0.5630252100840336, 0.9333333333333333,
+                ],
+            },
             mediumspringgreen: {
                 name: 'mediumspringgreen',
                 hex: '#00fa9a',
                 rgb: [0, 250, 154],
                 hsv: [156.96, 1, 0.9803921568627451],
+            },
+            mediumturquoise: {
+                name: 'mediumturquoise',
+                hex: '#48d1cc',
+                rgb: [72, 209, 204],
+                hsv: [
+                    177.8102189781022, 0.6555023923444976, 0.8196078431372549,
+                ],
             },
             mediumvioletred: {
                 name: 'mediumvioletred',
@@ -393,6 +505,12 @@ export const color: Color = {
                 rgb: [255, 228, 225],
                 hsv: [6, 0.11764705882352941, 1],
             },
+            navajowhite: {
+                name: 'navajowhite',
+                hex: '#ffdead',
+                rgb: [255, 222, 173],
+                hsv: [35.853658536585364, 0.3215686274509804, 1],
+            },
             olive: {
                 name: 'olive',
                 hex: '#808000',
@@ -406,6 +524,12 @@ export const color: Color = {
                 hsv: [
                     79.62616822429906, 0.7535211267605634, 0.5568627450980392,
                 ],
+            },
+            orange: {
+                name: 'orange',
+                hex: '#ffa500',
+                rgb: [255, 165, 0],
+                hsv: [38.82352941176471, 1, 1],
             },
             orangered: {
                 name: 'orangered',
@@ -421,6 +545,26 @@ export const color: Color = {
                     302.2641509433962, 0.48623853211009177, 0.8549019607843137,
                 ],
             },
+            palegoldenrod: {
+                name: 'palegoldenrod',
+                hex: '#eee8aa',
+                rgb: [238, 232, 170],
+                hsv: [
+                    54.705882352941174, 0.2857142857142857, 0.9333333333333333,
+                ],
+            },
+            palegreen: {
+                name: 'palegreen',
+                hex: '#98fb98',
+                rgb: [152, 251, 152],
+                hsv: [120, 0.3944223107569721, 0.984313725490196],
+            },
+            paleturquoise: {
+                name: 'paleturquoise',
+                hex: '#afeeee',
+                rgb: [175, 238, 238],
+                hsv: [180, 0.2647058823529412, 0.9333333333333333],
+            },
             palevioletred: {
                 name: 'palevioletred',
                 hex: '#db7093',
@@ -428,6 +572,26 @@ export const color: Color = {
                 hsv: [
                     340.3738317757009, 0.4885844748858447, 0.8588235294117647,
                 ],
+            },
+            peachpuff: {
+                name: 'peachpuff',
+                hex: '#ffdab9',
+                rgb: [255, 218, 185],
+                hsv: [28.285714285714285, 0.27450980392156865, 1],
+            },
+            peru: {
+                name: 'peru',
+                hex: '#cd853f',
+                rgb: [205, 133, 63],
+                hsv: [
+                    29.577464788732396, 0.6926829268292682, 0.803921568627451,
+                ],
+            },
+            pink: {
+                name: 'pink',
+                hex: '#ffc0cb',
+                rgb: [255, 192, 203],
+                hsv: [349.5238095238095, 0.24705882352941178, 1],
             },
             plum: {
                 name: 'plum',
@@ -441,11 +605,123 @@ export const color: Color = {
                 rgb: [102, 51, 153],
                 hsv: [270, 0.6666666666666666, 0.6],
             },
+            red: {
+                name: 'red',
+                hex: '#ff0000',
+                rgb: [255, 0, 0],
+                hsv: [0, 1, 1],
+            },
+            rosybrown: {
+                name: 'rosybrown',
+                hex: '#bc8f8f',
+                rgb: [188, 143, 143],
+                hsv: [0, 0.2393617021276596, 0.7372549019607844],
+            },
             royalblue: {
                 name: 'royalblue',
                 hex: '#4169e1',
                 rgb: [65, 105, 225],
                 hsv: [225, 0.7111111111111111, 0.8823529411764706],
+            },
+            saddlebrown: {
+                name: 'saddlebrown',
+                hex: '#8b4513',
+                rgb: [139, 69, 19],
+                hsv: [25, 0.8633093525179856, 0.5450980392156862],
+            },
+            salmon: {
+                name: 'salmon',
+                hex: '#fa8072',
+                rgb: [250, 128, 114],
+                hsv: [6.1764705882352935, 0.544, 0.9803921568627451],
+            },
+            sandybrown: {
+                name: 'sandybrown',
+                hex: '#f4a460',
+                rgb: [244, 164, 96],
+                hsv: [
+                    27.56756756756757, 0.6065573770491803, 0.9568627450980393,
+                ],
+            },
+            seagreen: {
+                name: 'seagreen',
+                hex: '#2e8b57',
+                rgb: [46, 139, 87],
+                hsv: [
+                    146.45161290322582, 0.6690647482014388, 0.5450980392156862,
+                ],
+            },
+            sienna: {
+                name: 'sienna',
+                hex: '#a0522d',
+                rgb: [160, 82, 45],
+                hsv: [19.304347826086953, 0.71875, 0.6274509803921569],
+            },
+            silver: {
+                name: 'silver',
+                hex: '#c0c0c0',
+                rgb: [192, 192, 192],
+                hsv: [0, 0, 0.7529411764705882],
+            },
+            skyblue: {
+                name: 'skyblue',
+                hex: '#87ceeb',
+                rgb: [135, 206, 235],
+                hsv: [197.4, 0.425531914893617, 0.9215686274509803],
+            },
+            slateblue: {
+                name: 'slateblue',
+                hex: '#6a5acd',
+                rgb: [106, 90, 205],
+                hsv: [
+                    248.34782608695653, 0.5609756097560976, 0.803921568627451,
+                ],
+            },
+            springgreen: {
+                name: 'springgreen',
+                hex: '#00ff7f',
+                rgb: [0, 255, 127],
+                hsv: [149.88235294117646, 1, 1],
+            },
+            steelblue: {
+                name: 'steelblue',
+                hex: '#4682b4',
+                rgb: [70, 130, 180],
+                hsv: [
+                    207.27272727272728, 0.6111111111111112, 0.7058823529411765,
+                ],
+            },
+            tan: {
+                name: 'tan',
+                hex: '#d2b48c',
+                rgb: [210, 180, 140],
+                hsv: [
+                    34.285714285714285, 0.3333333333333333, 0.8235294117647058,
+                ],
+            },
+            thistle: {
+                name: 'thistle',
+                hex: '#d8bfd8',
+                rgb: [216, 191, 216],
+                hsv: [300, 0.11574074074074074, 0.8470588235294118],
+            },
+            tomato: {
+                name: 'tomato',
+                hex: '#ff6347',
+                rgb: [255, 99, 71],
+                hsv: [9.130434782608695, 0.7215686274509804, 1],
+            },
+            turquoise: {
+                name: 'turquoise',
+                hex: '#40e0d0',
+                rgb: [64, 224, 208],
+                hsv: [174, 0.7142857142857143, 0.8784313725490196],
+            },
+            violet: {
+                name: 'violet',
+                hex: '#ee82ee',
+                rgb: [238, 130, 238],
+                hsv: [300, 0.453781512605042, 0.9333333333333333],
             },
             yellow: {
                 name: 'yellow',

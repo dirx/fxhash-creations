@@ -120,11 +120,10 @@ export class Container {
                     piece.features.colorHue
                 }, ${piece.features.color.rgb})`,
                 gridSize: `${piece.features.gridSize}`,
+                rotation: `${piece.features.rotation}°`,
                 shapes: `${
                     piece.features.shapes.length
-                } (${piece.features.shapes
-                    .map((shape) => shape.type)
-                    .join(', ')})`,
+                } (${piece.features.getShapes()}`,
                 direction: `${piece.features.direction.join(' ')}`,
                 diagonal: `${piece.features.diagonal}`,
                 movingDistanceBehavior: `${piece.features.getMovingDistanceDirectionName()}`,
@@ -332,6 +331,7 @@ export class Help {
           <p><em>s</em> toggle smoothness</p>
           <p><em>c</em> capture image</p>
           <p><em>b</em> capture big image (takes time)</p>
+          <p><em>d</em> debug view</p>
           <p><em>h</em> show help</p>
         `;
         document.body.prepend(this.element);
