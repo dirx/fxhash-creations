@@ -8,7 +8,7 @@ __#generativeart__ __#nft__ __#fxhash__ __#tezos__ __#creativecoding__
 
 __soon on fxhash__
 
-<img src="./resources/moving-blocks/orangered-5-1092-252-right-up-true-positive-7583-oo4y6bAr8U4DYMAaogyKKLhDuMSZ3gmgeQYEGH44ouFGwW5DiSw.png" align="right" width="50%" style="padding: 0 20px 0 20px" />
+<img src="./resources/moving-blocks/orangered-5-672-7-252-right-down-true-negative-79802-oo1111115FmuHm1111111111111111116MHnHU1111111111111.png" align="right" width="50%" style="padding: 0 20px 0 20px" />
 
 Moving blocks formed by moving blocks.
 
@@ -19,20 +19,20 @@ Several shapes form a boundary. Within these boundaries, blocks are allowed to m
 The fascinating patterns that emerge are shaped by various features of the animation, such as the direction of movement, the size of the grid, 
 the number and size of the moving blocks, and the color. The exciting thing is that the given boundaries in turn influence the animation itself.
 
-The animation is based on the deterministic prng sfc32 that is also used by fxhash. This allows it to be played repeatedly in the same sequence. 
-Width, height and pixel ratio change the sequence of the animation.
+The animation is based on the deterministic prng XorShift128. This allows it to be played repeatedly in the same sequence.
 
-Since it uses the canvas 2D rendering context, there is an automatic adjustment for the pixel ratio to keep the performance even at full screen on larger monitors.
+Preview images are captured after 900 frames.
 
-If you are curious, you can press `h` to get help and play around with the features like changing the pixel ratio or just look at some numbers behind the scene.
+If you are curious, you can press `h` to get help and play around with the features like capturing a bigger image, changing the pixel ratio or just look at some numbers behind the scene.
 
 ### Third Party Licenses
 
 - based on [fxhash-boilerplate-webpack](https://github.com/fxhash/fxhash-webpack-boilerplate)
 - [@fontsource/vt323](https://www.npmjs.com/package/@fontsource/vt323) ([font source](https://github.com/phoikoi/VT323))
-- [@thi.ng/random-fxhash](https://www.npmjs.com/package/@thi.ng/random-fxhash)
 - [@thi.ng/geom-isec](https://www.npmjs.com/package/@thi.ng/geom-isec)
 - [@thi.ng/math](https://www.npmjs.com/package/@thi.ng/math)
+- [@thi.ng/random](https://www.npmjs.com/package/@thi.ng/random)
+- [@thi.ng/random-fxhash](https://www.npmjs.com/package/@thi.ng/random-fxhash)
 
 ## Edition: Zebra
 
