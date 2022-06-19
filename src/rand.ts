@@ -1,4 +1,5 @@
-import { RND, seedFromHash } from '@thi.ng/random-fxhash';
+import { seedFromHash } from '@thi.ng/random-fxhash';
+import { XorShift128 } from '@thi.ng/random';
 
 export type Area = {
     x: number;
@@ -6,6 +7,8 @@ export type Area = {
     w: number;
     h: number;
 };
+
+export const RND: XorShift128 = new XorShift128();
 
 export const randInit = (seed: string): void => {
     RND.seed(seedFromHash(seed));
@@ -18,6 +21,7 @@ export const rand = (): number => {
 export const randBoolean = (): boolean => {
     return randInt(2) == 0;
 };
+
 export const randInt = (max: number): number => {
     return (rand() * max) << 0;
 };

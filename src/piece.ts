@@ -8,7 +8,7 @@ export type FxhashFeatures = {
     color: string;
     'grid size': number;
     'limiting shapes': string;
-    rotation: number;
+    rotation: string;
     'moving blocks': number;
     'moving direction': string;
     'moving diagonal': boolean;
@@ -20,8 +20,8 @@ export class Features {
         2 *
         2 *
         4 *
-        4 *
         2 *
+        4 *
         Object.keys(color.palettes['unique-css']).length *
         8;
     public combination: number = 1;
@@ -68,12 +68,7 @@ export class Features {
         ['left', 'down'],
         ['left', 'up'],
     ];
-    public direction: Array<'left' | 'up' | 'down' | 'right'> = [
-        'left',
-        'up',
-        'right',
-        'down',
-    ];
+    public direction: Array<'left' | 'up' | 'down' | 'right'>;
     public directionBase: number;
 
     public constructor(combination: number) {
@@ -187,9 +182,9 @@ export class Features {
             color: this.getColorName(),
             'limiting shapes': this.getShapes(),
             'grid size': this.gridSize,
-            rotation: this.rotation,
+            rotation: `${this.rotation}°`,
             'moving blocks': this.maxMovingBlocks,
-            'moving direction': this.direction.join(' '),
+            'moving direction': this.getDirectionName(),
             'moving diagonal': this.diagonal,
             'moving distance direction': this.getMovingDistanceDirectionName(),
         };
@@ -218,6 +213,13 @@ export class Features {
 
     public getMovingDistanceDirectionName(): string {
         return this.movingDistanceDirection === -1 ? 'negative' : 'positive';
+    }
+
+    public getDirectionName(): string {
+        if (this.diagonal) {
+            return ['up', 'right', 'down', 'left'][this.directionBase];
+        }
+        return this.directions[this.directionBase].join(' ');
     }
 
     public getShapes(): string {
@@ -305,10 +307,12 @@ export class Piece {
         height: number,
         pixelRatio: number | null = null
     ) {
+        let wh = Math.min(width, height);
+        let f = wh / this.baseHeightWidth;
         this.initState();
         if (pixelRatio === null) {
             this.pixelRatio = Math.ceil(
-                (width + height) / 2 / this.baseHeightWidth
+                (wh + wh) / 2 / this.baseHeightWidth / 2
             );
         } else {
             this.pixelRatio = pixelRatio;
@@ -316,10 +320,16 @@ export class Piece {
         this.previewPhaseEndsAfter =
             this.previewPhaseEndsAfterBase / this.pixelRatio;
         this.context.scale(this.pixelRatio, this.pixelRatio);
-        this.width = (width / this.pixelRatio) << 0;
-        this.height = (height / this.pixelRatio) << 0;
+        this.width = (this.baseHeightWidth / this.pixelRatio) << 0;
+        this.height = (this.baseHeightWidth / this.pixelRatio) << 0;
         this.canvas.width = this.width;
         this.canvas.height = this.height;
+        this.canvas.style.width = `${
+            ((this.width * f) / width) * 100 * this.pixelRatio
+        }%`;
+        this.canvas.style.height = `${
+            ((this.height * f) / height) * 100 * this.pixelRatio
+        }%`;
 
         this.canvas.dispatchEvent(new Event('piece.updateSize'));
         this.initImage();
@@ -478,7 +488,7 @@ export class DebugPiece {
             }
             if (shape instanceof Rect) {
                 this.debugContext.strokeStyle = '#00ffff';
-                this.debugContext.fillStyle = '#00000011';
+                this.debugContext.fillStyle = `rgba(0, 255, 255, 0.1)`;
                 this.debugContext.strokeRect(
                     shape.x * this.piece.width - this.translationX,
                     shape.y * this.piece.height - this.translationY,
@@ -493,7 +503,7 @@ export class DebugPiece {
                 );
             } else {
                 this.debugContext.strokeStyle = '#ffff00';
-                this.debugContext.fillStyle = '#00000011';
+                this.debugContext.fillStyle = `rgba(255, 255, 0, 0.1)`;
                 this.debugContext.beginPath();
                 this.debugContext.arc(
                     shape.x * this.piece.width - this.translationX,
@@ -507,7 +517,7 @@ export class DebugPiece {
                 this.debugContext.stroke();
                 this.debugContext.fill();
             }
-            this.debugContext.fillStyle = '#ffffff11';
+            this.debugContext.fillStyle = `rgba(255, 255, 255, 0.1)`;
             this.debugContext.beginPath();
             this.debugContext.arc(
                 shape.centerX * this.piece.width - this.translationX,
@@ -524,7 +534,7 @@ export class DebugPiece {
         });
 
         this.debugContext.strokeStyle = '#00ff00';
-        this.debugContext.fillStyle = '#ffffff11';
+        this.debugContext.fillStyle = `rgba(0, 255, 0, 0.1)`;
         this.debugContext.beginPath();
         this.debugContext.arc(
             this.piece.features.shapesCenterX * this.piece.width -
@@ -568,7 +578,9 @@ export class DebugPiece {
             return false;
         }
 
-        this.debugContext.strokeStyle = `rgba(0, 0, 0, 0.3)`;
+        this.debugContext.strokeStyle = `rgba(255, 255, 255, 0.3)`;
+        this.debugContext.fillStyle = `rgba(255, 255, 255, 0.1)`;
+        this.debugContext.fillRect(tx, ty, sw, sh);
         this.debugContext.strokeRect(tx, ty, sw, sh);
         return true;
     }

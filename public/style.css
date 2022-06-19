@@ -1,24 +1,47 @@
 html, body {
-    background-color: #999999;
     padding: 0;
     margin: 0;
     overflow: hidden;
     font-family: VT323, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
 }
 
-#main-canvas, #preview-canvas, #debug-canvas {
+body {
+    background-color: #c2c2c2;
+}
+
+#container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    margin: auto;
     display: block;
-    width: 100%;
-    height: 100%;
+    z-index: 4;
+}
+
+#main-canvas, #preview-canvas, #debug-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    margin: auto;
+    display: block;
     image-rendering: pixelated;
 }
 
 #main-canvas {
-    z-index: 1;
+    z-index: 2;
 }
 
 #debug-canvas {
-    z-index: 222;
+    z-index: 3;
+}
+
+#preview-canvas {
+    z-index: 1;
+    visibility: hidden;
 }
 
 .showit {
@@ -52,9 +75,8 @@ html, body {
     position: absolute;
     top: 0;
     left: 0;
-    z-index: 998;
     margin: 0;
-    padding: 20px;
+    padding: 1em;
     font-size: 2vmin;
     color: #FFFFFF;
     text-shadow: 0 0 10px black;
@@ -64,12 +86,15 @@ html, body {
     position: absolute;
     top: 0;
     right: 0;
-    z-index: 999;
     margin: 0;
-    padding: 20px;
+    padding: 1em;
     font-size: 2vmin;
     color: #FFFFFF;
     text-shadow: 0 0 10px black;
+}
+
+.loading {
+    transition: none !important;
 }
 
 #info.hide, #help.hide {

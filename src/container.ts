@@ -7,14 +7,23 @@ export class Container {
     public info!: Info;
     public help!: Help;
     public intercom!: Intercom;
+    public container!: HTMLDivElement;
 
     public constructor(combination: number) {
+        this.initContainer();
         this.initPiece(combination);
         this.initResizeHandler();
         this.initInfo();
         this.initHelp();
         this.initLoop();
         this.initIntercom();
+    }
+
+    private initContainer() {
+        this.container = document.createElement('div');
+        this.container.id = 'container';
+        document.body.prepend(this.container);
+        this.updateSize();
     }
 
     private initPiece(combination: number) {
@@ -41,18 +50,32 @@ export class Container {
                     window.innerWidth << 0,
                     window.innerHeight << 0
                 );
+                this.updateSize();
             },
             false
         );
     }
 
+    private updateSize() {
+        this.container.style.width = `${
+            (Math.min(window.innerWidth, window.innerHeight) /
+                window.innerWidth) *
+            100
+        }%`;
+        this.container.style.height = `${
+            (Math.min(window.innerWidth, window.innerHeight) /
+                window.innerHeight) *
+            100
+        }%`;
+    }
+
     private initInfo() {
-        this.info = new Info(document);
+        this.info = new Info(this.container);
         this.initInfoUpdate();
     }
 
     private initHelp() {
-        this.help = new Help(document);
+        this.help = new Help(this.container);
     }
 
     private initIntercom() {
@@ -60,7 +83,7 @@ export class Container {
             this.piece,
             this.info,
             this.help,
-            document
+            this.container
         );
     }
 
@@ -123,8 +146,8 @@ export class Container {
                 rotation: `${piece.features.rotation}°`,
                 shapes: `${
                     piece.features.shapes.length
-                } (${piece.features.getShapes()}`,
-                direction: `${piece.features.direction.join(' ')}`,
+                } (${piece.features.getShapes()})`,
+                direction: `${piece.features.getDirectionName()}`,
                 diagonal: `${piece.features.diagonal}`,
                 movingDistanceBehavior: `${piece.features.getMovingDistanceDirectionName()}`,
                 stepSize: `${piece.features.stepSize}`,
@@ -153,12 +176,12 @@ export class Intercom {
         piece: Piece,
         info: Info,
         help: Help,
-        document: Document
+        container: HTMLDivElement
     ) {
         this.piece = piece;
         this.info = info;
         this.help = help;
-        this.display = new Display(document);
+        this.display = new Display(container);
         this.initKeyUpHandler();
     }
 
@@ -268,19 +291,17 @@ export class Intercom {
 }
 
 export class Display {
-    private readonly display: HTMLDivElement;
+    private readonly container: HTMLDivElement;
 
-    public constructor(document: Document) {
-        this.display = document.createElement('div');
-        this.display.id = 'display';
-        document.body.prepend(this.display);
+    public constructor(container: HTMLDivElement) {
+        this.container = container;
     }
 
     public show(msg: string) {
         let text = document.createElement('div');
         text.innerText = msg;
         text.classList.add('showit');
-        this.display.prepend(text);
+        this.container.prepend(text);
         setTimeout(() => {
             text.remove();
         }, 1000);
@@ -290,14 +311,16 @@ export class Display {
 export class Info {
     private readonly element: HTMLParagraphElement;
 
-    public constructor(document: Document) {
+    public constructor(container: HTMLDivElement) {
         this.element = document.createElement('div');
         this.element.id = 'info';
+        this.element.classList.add('loading');
         this.element.classList.add('hide');
-        document.body.prepend(this.element);
+        container.prepend(this.element);
     }
 
     public toggleShow(): boolean {
+        this.element.classList.remove('loading');
         if (this.element.classList.contains('hide')) {
             this.element.classList.remove('hide');
             this.element.classList.add('show');
@@ -320,10 +343,11 @@ export class Info {
 export class Help {
     private readonly element: HTMLParagraphElement;
 
-    public constructor(document: Document) {
+    public constructor(container: HTMLDivElement) {
         this.element = document.createElement('div');
         this.element.id = 'help';
         this.element.classList.add('hide');
+        this.element.classList.add('loading');
         this.element.innerHTML = `
           <p><em>0 - 9</em> change pixel ratio</p>
           <p><em>i</em> info</p>
@@ -334,10 +358,11 @@ export class Help {
           <p><em>d</em> debug view</p>
           <p><em>h</em> show help</p>
         `;
-        document.body.prepend(this.element);
+        container.prepend(this.element);
     }
 
     public toggleShow(): boolean {
+        this.element.classList.remove('loading');
         if (this.element.classList.contains('hide')) {
             this.element.classList.remove('hide');
             this.element.classList.add('show');
