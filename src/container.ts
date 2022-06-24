@@ -1,15 +1,17 @@
-import { Zebra, ZebraFeatures } from './zebra';
+import { Features, Piece } from './piece';
 import { createLoop, Loop } from './loop';
 
-export class Pasture {
-    public zebra!: Zebra;
+export class Container {
+    public piece!: Piece;
     public loop!: Loop;
     public info!: Info;
     public help!: Help;
     public intercom!: Intercom;
+    public container!: HTMLDivElement;
 
     public constructor(combination: number) {
-        this.initZebra(combination);
+        this.initContainer();
+        this.initPiece(combination);
         this.initResizeHandler();
         this.initInfo();
         this.initHelp();
@@ -17,62 +19,82 @@ export class Pasture {
         this.initIntercom();
     }
 
-    private initZebra(combination: number) {
+    private initContainer() {
+        this.container = document.createElement('div');
+        this.container.id = 'container';
+        document.body.prepend(this.container);
+        this.updateSize();
+    }
+
+    private initPiece(combination: number) {
         let canvas = document.createElement('canvas');
         canvas.id = 'main-canvas';
         document.body.prepend(canvas);
-        this.zebra = new Zebra(
+        this.piece = new Piece(
             canvas,
             window.innerWidth,
             window.innerHeight,
             combination
         );
 
-        window.$fxhashFeatures = this.zebra.features.getFxhashFeatures();
+        window.$fxhashFeatures = this.piece.features.getFxhashFeatures();
     }
 
     private initResizeHandler() {
-        let zebra: Zebra = this.zebra;
+        let piece: Piece = this.piece;
         window.addEventListener(
             'resize',
             () => {
-                zebra.updateSize(
+                piece.updateSize(
                     window.innerWidth << 0,
                     window.innerHeight << 0
                 );
+                this.updateSize();
             },
             false
         );
     }
 
+    private updateSize() {
+        this.container.style.width = `${
+            (Math.min(window.innerWidth, window.innerHeight) /
+                window.innerWidth) *
+            100
+        }%`;
+        this.container.style.height = `${
+            (Math.min(window.innerWidth, window.innerHeight) /
+                window.innerHeight) *
+            100
+        }%`;
+    }
+
     private initInfo() {
-        this.info = new Info(document);
+        this.info = new Info(this.container);
         this.initInfoUpdate();
     }
 
     private initHelp() {
-        this.help = new Help(document);
+        this.help = new Help(this.container);
     }
 
     private initIntercom() {
         this.intercom = new Intercom(
-            this.loop,
-            this.zebra,
+            this.piece,
             this.info,
             this.help,
-            document
+            this.container
         );
     }
 
     private initLoop() {
         let fxpreviewCalled: boolean = false;
-        let zebra = this.zebra;
+        let piece = this.piece;
         this.loop = createLoop(() => {
-            zebra.tick();
+            piece.tick();
 
             if (window.isFxpreview) {
-                if (!fxpreviewCalled && !zebra.inPreviewPhase) {
-                    let previewCanvas = zebra.preparePreviewCanvas();
+                if (!fxpreviewCalled && !piece.inPreviewPhase) {
+                    let previewCanvas = piece.preparePreviewCanvas();
                     document.body.prepend(previewCanvas);
                     window.fxpreview();
                     fxpreviewCalled = true;
@@ -81,13 +103,19 @@ export class Pasture {
                     // debug: combination screenshots
                     let search = new URLSearchParams(window.location.search);
                     let combination = search.get('combination') || '';
-                    if (combination != '') {
-                        this.zebra.captureImage(
-                            zebra.features.getFeatureName()
+                    let capture = search.has('capture');
+                    if (combination != '' || capture) {
+                        this.piece.captureImage(
+                            piece.features.getFeatureName()
                         );
                         let nextCombination = parseInt(combination) + 1;
-                        search.set('combination', `${nextCombination}`);
-                        if (nextCombination < ZebraFeatures.combinations) {
+                        if (combination != '') {
+                            search.set('combination', `${nextCombination}`);
+                        }
+                        if (
+                            nextCombination < Features.combinations ||
+                            capture
+                        ) {
                             setTimeout(
                                 () =>
                                     (window.location.search =
@@ -100,98 +128,54 @@ export class Pasture {
             }
         });
 
-        this.loop.runWith(this.zebra.fps);
+        this.loop.runWith(piece.fps);
     }
 
     private initInfoUpdate() {
-        let zebra = this.zebra;
+        let piece = this.piece;
         let info = this.info;
 
         setInterval(() => {
-            let addingMovingBlocksInFrames = zebra.movingBlocks.frames() << 0;
             info.update({
-                combination: `${zebra.features.combination} / ${ZebraFeatures.combinations}`,
-                color: `${zebra.features.getColor()} (${
-                    zebra.features.colorHue
-                })`,
-                colorRange: `${zebra.features.getColorRange()} (${
-                    zebra.features.colorHueMin
-                } - ${zebra.features.colorHueMax})`,
-                colorRangeSize: zebra.features.getColorRangeSize(),
-                darkness: zebra.features.getDarkness(),
-                isGray: zebra.features.isGray,
-                isGold: zebra.features.isGold,
-                isRainbow: zebra.features.isRainbow,
-                size: `${zebra.canvas.width} / ${zebra.canvas.height}`,
-                pixelRatio: `${zebra.pixelRatio}`,
-                movingBlocks: `${zebra.movingBlocks.count} / ${zebra.movingBlocks.butterflyCount} / ${zebra.features.maxMovingBlocks} / ${zebra.movingBlocks.total}`,
-                addingMovingBlocksIn: `${
-                    addingMovingBlocksInFrames <= 0
-                        ? '-'
-                        : addingMovingBlocksInFrames
-                } frames`,
-                moveDirection: zebra.move.join(', '),
-                moveBig: zebra.isBig,
-                previewPhase: zebra.inPreviewPhase,
-                saturationMin: zebra.features.colorSaturationMin,
-                saturationMax: zebra.features.colorSaturationMax,
-                valueDirection:
-                    zebra.vDir > 0 ? 'up' : zebra.vDir < 0 ? 'down' : '-',
-                valueMin: zebra.features.colorValueMin,
-                valueMax: zebra.features.colorValueMax,
-                hueGlitch: zebra.hGlitch,
-                currentFps: `${this.loop.currentFps() << 0} / ${zebra.fps}`,
+                combination: `${piece.features.combination} / ${Features.combinations}`,
+                size: `${piece.canvas.width} / ${piece.canvas.height}`,
+                pixelRatio: `${piece.pixelRatio}`,
+                previewPhase: piece.inPreviewPhase,
+                previewPhaseEndsAfter: piece.previewPhaseEndsAfter,
+                movingBlocks: `${piece.movingBlocks.count} / ${piece.features.maxMovingBlocks} / ${piece.movingBlocks.total}`,
+                valueMin: piece.features.colorValueMin,
+                valueMax: piece.features.colorValueMax,
+                currentFps: `${this.loop.currentFps() << 0}`,
+                totalFrames: `${piece.movingBlocks.totalFrames}`,
             });
         }, 250);
     }
 }
 
 export class Intercom {
-    private loop: Loop;
-    private zebra: Zebra;
+    private piece: Piece;
     private info: Info;
     private help: Help;
     private display: Display;
 
     public constructor(
-        loop: Loop,
-        zebra: Zebra,
+        piece: Piece,
         info: Info,
         help: Help,
-        document: Document
+        container: HTMLDivElement
     ) {
-        this.loop = loop;
-        this.zebra = zebra;
+        this.piece = piece;
         this.info = info;
         this.help = help;
-        this.display = new Display(document);
+        this.display = new Display(container);
         this.initKeyUpHandler();
-        this.initMouseHandler();
-        this.initTouchHandler();
-    }
-
-    private initTouchHandler() {
-        this.zebra.canvas.addEventListener('touchstart', (ev: TouchEvent) => {
-            this.display.show('butterfly wing');
-            this.zebra.movingBlocks.addButterfly(
-                ev.touches[0].clientX,
-                ev.touches[0].clientY
-            );
-        });
-    }
-
-    private initMouseHandler() {
-        this.zebra.canvas.addEventListener('mousedown', (ev: MouseEvent) => {
-            this.display.show('butterfly wing');
-            this.zebra.movingBlocks.addButterfly(ev.clientX, ev.clientY);
-        });
     }
 
     private initKeyUpHandler() {
         window.addEventListener('keyup', (ev: KeyboardEvent) => {
             switch (ev.key) {
                 case '0':
-                    this.zebra.updateSize(
+                    this.piece.updateSize(
                         window.innerWidth << 0,
                         window.innerHeight << 0,
                         null
@@ -207,7 +191,7 @@ export class Intercom {
                 case '7':
                 case '8':
                 case '9':
-                    this.zebra.updateSize(
+                    this.piece.updateSize(
                         window.innerWidth << 0,
                         window.innerHeight << 0,
                         parseInt(ev.key)
@@ -215,16 +199,11 @@ export class Intercom {
                     this.display.show('pixel ratio ' + ev.key);
                     break;
 
-                case '+':
-                    this.zebra.increaseFps();
-                    this.loop.runWith(this.zebra.fps);
-                    this.display.show('fps ' + this.zebra.fps);
-                    break;
-
-                case '-':
-                    this.zebra.decreaseFps();
-                    this.loop.runWith(this.zebra.fps);
-                    this.display.show('fps ' + this.zebra.fps);
+                case 'd':
+                    this.piece.debug.toggle();
+                    this.display.show(
+                        'debug ' + (this.piece.debug.isEnabled() ? 'on' : 'off')
+                    );
                     break;
 
                 case 'f':
@@ -233,14 +212,24 @@ export class Intercom {
                     break;
 
                 case 'c':
-                    this.zebra.captureImage(
-                        this.zebra.features.getFeatureName()
+                    this.piece.captureImage(
+                        this.piece.features.getFeatureName()
                     );
                     this.display.show('capture image');
                     break;
 
+                case 'b':
+                    this.captureBigImage(
+                        this.piece.features.getFeatureName(),
+                        window.innerWidth << 0,
+                        window.innerHeight << 0,
+                        0.5
+                    );
+                    this.display.show('capture big image');
+                    break;
+
                 case 's':
-                    let smoothing = this.zebra.toggleSmoothing();
+                    let smoothing = this.piece.toggleSmoothing();
                     this.display.show(
                         'smoothing ' + (smoothing ? 'on' : 'off')
                     );
@@ -256,9 +245,11 @@ export class Intercom {
                     this.display.show('info ' + (info ? 'on' : 'off'));
                     break;
 
-                case 'b':
-                    this.display.show('butterfly wing');
-                    this.zebra.movingBlocks.addButterfly();
+                case ' ':
+                    this.piece.paused = !this.piece.paused;
+                    this.display.show(
+                        'pausing ' + (this.piece.paused ? 'on' : 'off')
+                    );
                     break;
             }
         });
@@ -273,22 +264,37 @@ export class Intercom {
             document.documentElement.requestFullscreen();
         }
     }
+
+    private captureBigImage(
+        name: string,
+        width: number,
+        height: number,
+        pixelRatio: number
+    ) {
+        this.piece.updateSize(width, height, pixelRatio);
+        let listener = () => {
+            this.piece.canvas.removeEventListener(
+                'piece.previewPhaseEnded',
+                listener
+            );
+            this.piece.captureImage(name);
+        };
+        this.piece.canvas.addEventListener('piece.previewPhaseEnded', listener);
+    }
 }
 
 export class Display {
-    private readonly display: HTMLDivElement;
+    private readonly container: HTMLDivElement;
 
-    public constructor(document: Document) {
-        this.display = document.createElement('div');
-        this.display.id = 'display';
-        document.body.prepend(this.display);
+    public constructor(container: HTMLDivElement) {
+        this.container = container;
     }
 
     public show(msg: string) {
         let text = document.createElement('div');
         text.innerText = msg;
         text.classList.add('showit');
-        this.display.prepend(text);
+        this.container.prepend(text);
         setTimeout(() => {
             text.remove();
         }, 1000);
@@ -298,14 +304,16 @@ export class Display {
 export class Info {
     private readonly element: HTMLParagraphElement;
 
-    public constructor(document: Document) {
+    public constructor(container: HTMLDivElement) {
         this.element = document.createElement('div');
         this.element.id = 'info';
+        this.element.classList.add('loading');
         this.element.classList.add('hide');
-        document.body.prepend(this.element);
+        container.prepend(this.element);
     }
 
     public toggleShow(): boolean {
+        this.element.classList.remove('loading');
         if (this.element.classList.contains('hide')) {
             this.element.classList.remove('hide');
             this.element.classList.add('show');
@@ -328,25 +336,26 @@ export class Info {
 export class Help {
     private readonly element: HTMLParagraphElement;
 
-    public constructor(document: Document) {
+    public constructor(container: HTMLDivElement) {
         this.element = document.createElement('div');
         this.element.id = 'help';
         this.element.classList.add('hide');
+        this.element.classList.add('loading');
         this.element.innerHTML = `
-          <p><em>+</em> increase fps</p>
-          <p><em>-</em> decrease fps</p>
           <p><em>0 - 9</em> change pixel ratio</p>
-          <p><em>b</em> butterfly wing</p>
           <p><em>i</em> info</p>
           <p><em>f</em> toggle fullscreen</p>
           <p><em>s</em> toggle smoothness</p>
           <p><em>c</em> capture image</p>
+          <p><em>b</em> capture big image (takes time)</p>
+          <p><em>d</em> debug view</p>
           <p><em>h</em> show help</p>
         `;
-        document.body.prepend(this.element);
+        container.prepend(this.element);
     }
 
     public toggleShow(): boolean {
+        this.element.classList.remove('loading');
         if (this.element.classList.contains('hide')) {
             this.element.classList.remove('hide');
             this.element.classList.add('show');

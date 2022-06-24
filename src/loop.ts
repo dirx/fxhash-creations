@@ -20,8 +20,7 @@ export const createLoop = (
         }
     };
 
-    let intervalFunc: FrameRequestCallback = () => {
-        const timestamp = window.performance.now();
+    let intervalFunc: FrameRequestCallback = (timestamp) => {
         const currentDelta: number = timestamp - lastTimestamp;
         const newFps: number = 1000 / currentDelta;
         currentFps = (currentFps + newFps) / 2;

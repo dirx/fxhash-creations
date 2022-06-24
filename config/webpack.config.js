@@ -139,9 +139,12 @@ OTHER DEALINGS IN THE FONT SOFTWARE.`,
             },
         }),
         new webpack.BannerPlugin({
-            banner: `Zebra
+            banner: `Moving Blocks
+disc edition
+
 Real-time deterministic animation based on vanilla js & canvas 2d rendering context, variable size, 2022
 Be inspired. If you need help please press 'h'.
+
 Dirk Adler, https://twitter.com/d_rx`,
         }),
     ],
@@ -149,6 +152,13 @@ Dirk Adler, https://twitter.com/d_rx`,
         minimizer: [
             new TerserPlugin({
                 extractComments: false,
+                compress: {
+                    pure_funcs: [
+                        'console.log',
+                        'console.debug',
+                        'console.warn',
+                    ],
+                },
             }),
         ],
     },

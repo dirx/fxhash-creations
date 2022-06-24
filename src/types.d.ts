@@ -1,5 +1,5 @@
 import { FxhashFeatures } from './zebra';
-import { Pasture } from './pasture';
+import { Container } from './container';
 
 declare global {
     interface Window {
@@ -11,6 +11,6 @@ declare global {
         fxhash: string;
         fxrand: Function;
         isFxpreview: boolean;
-        pasture: Pasture;
+        container: Container;
     }
 }

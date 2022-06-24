@@ -1,29 +1,32 @@
-import { Pasture } from './pasture';
 import '@fontsource/vt323/latin.css';
 import { fakeFxhash } from './rand';
-import { ZebraFeatures } from './zebra';
+import { Features } from './piece';
+import { Container } from './container';
 
 let search = new URLSearchParams(window.location.search);
 let combinationParam: string = search.get('combination') || '';
 let combination: number;
 if (combinationParam !== '') {
     combination = parseInt(combinationParam);
-    window.fxhash = fakeFxhash(combination / ZebraFeatures.combinations);
+    window.fxhash = fakeFxhash(combination / Features.combinations);
 } else {
-    combination = (ZebraFeatures.combinations * window.fxrand()) << 0;
+    combination = (Features.combinations * window.fxrand()) << 0;
 }
 
-console.log('Zebra');
-console.log(
+console.info('Moving Blocks');
+console.info('disc edition');
+console.info(
     'Real-time deterministic animation based on vanilla js & canvas 2d rendering context, variable size, 2022'
 );
-console.log("Be inspired. If you need help please press 'h'.");
-console.log('Dirk Adler, https://twitter.com/d_rx');
-console.log(`FXHASH: ${window.fxhash}`);
+console.info("Be inspired. If you need help please press 'h'.");
+console.info('Dirk Adler, https://twitter.com/d_rx');
+console.info(`FXHASH: ${window.fxhash}`);
 
-window.pasture = new Pasture(combination);
+window.container = new Container(combination);
 
-console.log(`Combination: ${window.pasture.zebra.features.combination}`);
-console.log(`Range: ${window.$fxhashFeatures['range']}`);
-console.log(`Range Size: ${window.$fxhashFeatures['range size']}`);
-console.log(`Darkness: ${window.$fxhashFeatures['darkness']}`);
+console.info(
+    `combination: ${window.container.piece.combination} / ${Features.combinations}`
+);
+Object.entries(window.container.piece.features.getFxhashFeatures()).forEach(
+    (entry) => console.info(`${entry[0]}: ${entry[1]}`)
+);
