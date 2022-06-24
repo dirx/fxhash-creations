@@ -46,7 +46,7 @@ export class Features {
     public readonly shapes: Array<Circle | Quad> = [];
 
     public readonly colorRGBMax: number;
-    public readonly colorShiftFn: (
+    public readonly colorShiftPixelFn: (
         data: ImageData,
         i: number,
         inShape: boolean,
@@ -134,31 +134,7 @@ export class Features {
         this.colorRGBMax = Math.max(...this.color.rgb);
         let colorRGBMin = this.color.rgb.map((rgb) => (rgb !== 0 ? rgb : 51));
 
-        // let safeMod = (a: number, b: number) => (b ? mod(a, b) : 10);
         let rgbIndex = [0, 1, 2];
-        let colorShiftFn = (
-            data: ImageData,
-            i: number,
-            inShape: boolean,
-            pixelRatio: number
-        ) => {
-            data.data[rgbIndex[0] + i] = mod(
-                data.data[rgbIndex[0] + i] +
-                    this.colorShiftDir * pixelRatio * 2 * this.colorShiftFactor,
-                colorRGBMin[rgbIndex[0]] * (inShape ? 1 : 0.6)
-            );
-            data.data[rgbIndex[2] + i] = mod(
-                data.data[rgbIndex[2] + i] -
-                    this.colorShiftDir * 2 * pixelRatio,
-                colorRGBMin[rgbIndex[2]] * (inShape ? 1 : 0.5)
-            );
-            data.data[rgbIndex[1] + i] = mod(
-                Math.abs(
-                    data.data[rgbIndex[0] + i] - data.data[rgbIndex[2] + i]
-                ),
-                colorRGBMin[rgbIndex[1]] * (inShape ? 1 : 0.4)
-            );
-        };
         if (
             this.color.rgb[0] >= this.color.rgb[1] &&
             this.color.rgb[1] >= this.color.rgb[2]
@@ -187,7 +163,29 @@ export class Features {
         } else {
             rgbIndex = [2, 1, 0];
         }
-        this.colorShiftFn = colorShiftFn;
+        this.colorShiftPixelFn = (
+            data: ImageData,
+            i: number,
+            inShape: boolean,
+            pixelRatio: number
+        ) => {
+            data.data[rgbIndex[0] + i] = mod(
+                data.data[rgbIndex[0] + i] +
+                    this.colorShiftDir * pixelRatio * 2 * this.colorShiftFactor,
+                colorRGBMin[rgbIndex[0]] * (inShape ? 1 : 0.6)
+            );
+            data.data[rgbIndex[2] + i] = mod(
+                data.data[rgbIndex[2] + i] -
+                    this.colorShiftDir * 2 * pixelRatio,
+                colorRGBMin[rgbIndex[2]] * (inShape ? 1 : 0.5)
+            );
+            data.data[rgbIndex[1] + i] = mod(
+                Math.abs(
+                    data.data[rgbIndex[0] + i] - data.data[rgbIndex[2] + i]
+                ),
+                colorRGBMin[rgbIndex[1]] * (inShape ? 1 : 0.4)
+            );
+        };
         console.log(this.color.rgb);
         console.log(rgbIndex);
 
@@ -556,23 +554,6 @@ export class DebugPiece {
             );
         });
     }
-
-    public moveMovingBlock(
-        tx: number,
-        ty: number,
-        sw: number,
-        sh: number
-    ): boolean {
-        if (!this.debugContext || !this.debugCanvas) {
-            return false;
-        }
-
-        this.debugContext.strokeStyle = `rgba(255, 255, 255, 0.3)`;
-        this.debugContext.fillStyle = `rgba(255, 255, 255, 0.1)`;
-        this.debugContext.fillRect(tx, ty, sw, sh);
-        this.debugContext.strokeRect(tx, ty, sw, sh);
-        return true;
-    }
 }
 
 export class MovingBlocks {
@@ -594,6 +575,7 @@ export class MovingBlocks {
             (c, block) => (block.tick() ? c + 1 : c),
             0
         );
+        this.total += this.piece.features.maxMovingBlocks - this.count;
 
         return true;
     }
@@ -803,7 +785,7 @@ export class MovingBlock {
         let l: number = data.data.length;
 
         for (let i: number = 0; i < l; i += 4) {
-            this.piece.features.colorShiftFn(
+            this.piece.features.colorShiftPixelFn(
                 data,
                 i,
                 this.inShape,

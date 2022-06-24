@@ -14,7 +14,7 @@ if (combinationParam !== '') {
 }
 
 console.info('Moving Blocks');
-console.info('disc edition');
+console.info('Disc Edition');
 console.info(
     'Real-time deterministic animation based on vanilla js & canvas 2d rendering context, variable size, 2022'
 );

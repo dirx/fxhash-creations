@@ -342,8 +342,9 @@ export class Help {
         this.element.classList.add('hide');
         this.element.classList.add('loading');
         this.element.innerHTML = `
-          <p><em>0 - 9</em> change pixel ratio</p>
           <p><em>i</em> info</p>
+          <p><em>0 - 9</em> change pixel ratio</p>
+          <p><em>p</em> pause</p>
           <p><em>f</em> toggle fullscreen</p>
           <p><em>s</em> toggle smoothness</p>
           <p><em>c</em> capture image</p>

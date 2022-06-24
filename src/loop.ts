@@ -21,6 +21,7 @@ export const createLoop = (
     };
 
     let intervalFunc: FrameRequestCallback = (timestamp) => {
+        const requestId = requestAnimationFrame(intervalFunc);
         const currentDelta: number = timestamp - lastTimestamp;
         const newFps: number = 1000 / currentDelta;
         currentFps = (currentFps + newFps) / 2;
@@ -30,11 +31,10 @@ export const createLoop = (
 
             if (func(currentFps << 0, targetFps) === false) {
                 stopFunc();
+                cancelAnimationFrame(requestId);
                 return;
             }
         }
-
-        requestAnimationFrame(intervalFunc);
     };
 
     return {
@@ -47,8 +47,8 @@ export const createLoop = (
             targetDelta = (1000 / fps) << 0;
             if (!started) {
                 started = true;
-                lastTimestamp = window.performance.now();
-                requestAnimationFrame(intervalFunc);
+                lastTimestamp = 0;
+                intervalFunc(window.performance.now());
             }
         },
         stop: () => stopFunc(),
