@@ -8,16 +8,6 @@ export type ColorPalette = { [key: string]: ColorSpec };
 export type ColorPalettes = { [key: string]: ColorPalette };
 export type Color = {
     palettes: ColorPalettes;
-    rotate: (
-        r: number,
-        g: number,
-        b: number,
-        vMin: number,
-        vMax: number,
-        vDir: number,
-        sMin: number,
-        hBase: number
-    ) => Array<number>;
     rgbToHsv: (r: number, g: number, b: number) => Array<number>;
     hsvToRgb: (h: number, s: number, v: number) => Array<number>;
     hsvCss: (h: number, s: number, v: number) => string;
@@ -736,53 +726,6 @@ export const color: Color = {
                 hsv: [79.74193548387098, 0.7560975609756098, 0.803921568627451],
             },
         },
-    },
-    rotate: (
-        r: number,
-        g: number,
-        b: number,
-        vMin: number = 0,
-        vMax: number = 255,
-        vDir: number = 1,
-        sMin: number = 0,
-        hBase: number
-    ): Array<number> => {
-        // get v
-        let h = hBase / 60,
-            s = sMin,
-            v = Math.max(r, g, b);
-
-        // rotate value
-        v += vDir;
-        if (v > vMax) v = vMin;
-        else if (v < vMin) v = vMax;
-
-        // back to rgb
-        if (s === 0) {
-            return [v, v, v];
-        } else {
-            const i = h << 0;
-            const f = h - i;
-            const p = v * (1 - s);
-            const q = v * (1 - s * f);
-            const t = v * (1 - s * (1 - f));
-
-            switch (i) {
-                case 0:
-                    return [v, t, p];
-                case 1:
-                    return [q, v, p];
-                case 2:
-                    return [p, v, t];
-                case 3:
-                    return [p, q, v];
-                case 4:
-                    return [t, p, v];
-                case 5:
-                default:
-                    return [v, p, q];
-            }
-        }
     },
     rgbToHsv: (r: number, g: number, b: number): Array<number> => {
         const maxRGB: number = Math.max(r, g, b);

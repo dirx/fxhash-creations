@@ -11,20 +11,11 @@ export type FxhashFeatures = {
     rotation: string;
     'moving blocks': number;
     'moving direction': string;
-    'moving diagonal': boolean;
     'moving distance direction': string;
 };
 
 export class Features {
-    public static combinations: number =
-        2 *
-        2 *
-        4 *
-        2 *
-        4 *
-        Object.keys(color.palettes['unique-css']).length *
-        8;
-    public combination: number = 1;
+    public combination: number = 0;
     public readonly colorHue: number;
     public readonly colorName: string;
     public readonly colorHueBase: number;
@@ -47,9 +38,6 @@ export class Features {
     public movingDistanceDirectionBase: number;
     public movingDistanceDirection: number;
 
-    public diagonalBase: number;
-    public diagonal: boolean;
-
     public shapes: Array<Circle | Quad | Rect>;
     public shapeBase: number;
     public shapesCenterX: number;
@@ -62,14 +50,64 @@ export class Features {
     public rotationCos: number;
     public rotationSin: number;
 
-    public directions: Array<Array<'left' | 'up' | 'down' | 'right'>> = [
-        ['right', 'up'],
-        ['right', 'down'],
-        ['left', 'down'],
-        ['left', 'up'],
+    public static directionOptions: Array<
+        Array<Array<'left' | 'up' | 'down' | 'right'>>
+    > = [
+        [['up'], ['left'], ['down'], ['right']],
+        [
+            ['left', 'up'],
+            ['left', 'down'],
+            ['right', 'up'],
+            ['right', 'down'],
+        ],
+        [
+            ['left', 'up'],
+            ['left', 'down'],
+        ],
+        [
+            ['right', 'up'],
+            ['right', 'down'],
+        ],
+        [
+            ['left', 'up'],
+            ['right', 'up'],
+        ],
+        [
+            ['left', 'down'],
+            ['right', 'up'],
+        ],
+        [['right'], ['right', 'up'], ['right', 'down']],
+        [['left'], ['left', 'up'], ['left', 'down']],
+        [['up'], ['left', 'up'], ['right', 'up']],
+        [['down'], ['left', 'down'], ['right', 'down']],
+        [
+            ['up'],
+            ['left'],
+            ['down'],
+            ['right'],
+            ['left', 'up'],
+            ['left', 'down'],
+            ['right', 'up'],
+            ['right', 'down'],
+        ],
+        [['left'], ['left', 'up'], ['up']],
+        [['left'], ['left', 'down'], ['down']],
+        [['right'], ['right', 'up'], ['up']],
+        [['right'], ['right', 'down'], ['down']],
+        [['right'], ['right', 'down'], ['left'], ['left', 'up']],
+        [['right'], ['right', 'up'], ['left'], ['left', 'down']],
+        [['down'], ['right', 'down'], ['up'], ['left', 'up']],
     ];
-    public direction: Array<'left' | 'up' | 'down' | 'right'>;
     public directionBase: number;
+    public direction: Array<Array<'left' | 'up' | 'down' | 'right'>>;
+
+    public static combinations: number =
+        2 *
+        4 *
+        2 *
+        Object.keys(color.palettes['unique-css']).length *
+        Features.directionOptions.length *
+        8;
 
     public constructor(combination: number) {
         this.combination = combination % Features.combinations;
@@ -78,10 +116,6 @@ export class Features {
         this.movingDistanceDirection = [-1, 1][
             this.movingDistanceDirectionBase
         ];
-        combination = (combination / 2) << 0;
-
-        this.diagonalBase = combination % 2;
-        this.diagonal = this.diagonalBase === 1;
         combination = (combination / 2) << 0;
 
         this.stepSizeBase = 0; // fix 1 pixel
@@ -155,9 +189,10 @@ export class Features {
         );
         combination = (combination / 2) << 0;
 
-        this.directionBase = combination % 4;
-        this.direction = this.directions[this.directionBase];
-        combination = (combination / 4) << 0;
+        this.directionBase = combination % Features.directionOptions.length;
+        this.direction = Features.directionOptions[this.directionBase];
+        combination = (combination / Features.directionOptions.length) << 0;
+        console.log(this.direction.map((a) => a.join('-')).join(','));
 
         let colors = Object.values(color.palettes['unique-css']);
         this.colorHueBase = combination % colors.length;
@@ -185,21 +220,13 @@ export class Features {
             rotation: `${this.rotation}°`,
             'moving blocks': this.maxMovingBlocks,
             'moving direction': this.getDirectionName(),
-            'moving diagonal': this.diagonal,
             'moving distance direction': this.getMovingDistanceDirectionName(),
         };
     }
 
     public getFeatureName(): string {
         return [
-            this.getColorName(),
-            this.shapes.length,
-            this.gridSize,
-            this.rotation,
-            this.maxMovingBlocks,
-            this.direction.join('-'),
-            this.diagonal,
-            this.getMovingDistanceDirectionName(),
+            ...Object.values(this.getFxhashFeatures()),
             this.combination,
             window.fxhash,
         ]
@@ -216,10 +243,7 @@ export class Features {
     }
 
     public getDirectionName(): string {
-        if (this.diagonal) {
-            return ['up', 'right', 'down', 'left'][this.directionBase];
-        }
-        return this.directions[this.directionBase].join(' ');
+        return this.direction.map((a) => a.join('-')).join(',');
     }
 
     public getShapes(): string {
@@ -273,6 +297,7 @@ export class Piece {
     public readonly previewPhaseEndsAfterBase: number = 900;
 
     public debug: DebugPiece;
+    public paused: boolean = false;
 
     public constructor(
         canvas: HTMLCanvasElement,
@@ -297,6 +322,7 @@ export class Piece {
         randInit(window.fxhash);
         this.features = new Features(this.combination);
         this.inPreviewPhase = true;
+        this.paused = false;
 
         this.movingBlocks = new MovingBlocks(this);
         this.movingBlocks.init();
@@ -362,6 +388,10 @@ export class Piece {
     }
 
     public tick() {
+        if (this.paused) {
+            return;
+        }
+
         this.debug.tickPiece();
         if (!this.movingBlocks.tick()) {
             return;
@@ -369,10 +399,11 @@ export class Piece {
 
         if (
             this.inPreviewPhase &&
-            this.movingBlocks.totalFrames > this.previewPhaseEndsAfter
+            this.movingBlocks.totalFrames >= this.previewPhaseEndsAfter
         ) {
             this.inPreviewPhase = false;
             this.canvas.dispatchEvent(new Event('piece.previewPhaseEnded'));
+            this.paused = true;
         }
     }
 
@@ -423,35 +454,54 @@ export class DebugPiece {
 
     public constructor(piece: Piece) {
         this.piece = piece;
+        this.piece.canvas.addEventListener('piece.updateSize', () => {
+            let active = this.debugContext && this.debugCanvas;
+            this.remove();
+            if (active) {
+                this.create();
+            }
+        });
     }
 
     public toggle() {
         if (this.debugContext && this.debugCanvas) {
-            this.debugCanvas.remove();
-            this.debugCanvas = null;
-            this.debugContext = null;
+            this.remove();
         } else {
-            this.debugCanvas = this.piece.canvas.cloneNode(
-                false
-            ) as HTMLCanvasElement;
-            this.debugCanvas.id = 'debug-canvas';
-            this.debugCanvas.style.backgroundColor = 'transparent';
-            this.debugCanvas.width = this.piece.width;
-            this.debugCanvas.height = this.piece.height;
-            document.body.prepend(this.debugCanvas);
-            this.debugContext = this.debugCanvas.getContext(
-                '2d'
-            ) as CanvasRenderingContext2D;
-            this.debugContext.scale(
-                this.piece.pixelRatio,
-                this.piece.pixelRatio
-            );
-
-            this.translationX = this.piece.width / 2;
-            this.translationY = this.piece.height / 2;
-
-            this.tickPiece();
+            this.create();
         }
+    }
+
+    private remove() {
+        if (!this.debugContext || !this.debugCanvas) {
+            return;
+        }
+
+        this.debugCanvas.remove();
+        this.debugCanvas = null;
+        this.debugContext = null;
+    }
+
+    private create() {
+        if (this.debugContext && this.debugCanvas) {
+            return;
+        }
+
+        this.debugCanvas = this.piece.canvas.cloneNode(
+            false
+        ) as HTMLCanvasElement;
+        this.debugCanvas.id = 'debug-canvas';
+        this.debugCanvas.style.backgroundColor = 'transparent';
+        this.debugCanvas.width = this.piece.width;
+        this.debugCanvas.height = this.piece.height;
+        document.body.prepend(this.debugCanvas);
+        this.debugContext = this.debugCanvas.getContext(
+            '2d'
+        ) as CanvasRenderingContext2D;
+
+        this.translationX = this.piece.width / 2;
+        this.translationY = this.piece.height / 2;
+
+        this.tickPiece();
     }
 
     public isEnabled(): boolean {
@@ -522,8 +572,7 @@ export class DebugPiece {
             this.debugContext.arc(
                 shape.centerX * this.piece.width - this.translationX,
                 shape.centerY * this.piece.height - this.translationY,
-                (10 / this.piece.width) *
-                    Math.min(this.piece.width, this.piece.height),
+                Math.min(this.piece.width, this.piece.height) * 0.01,
                 0,
                 2 * Math.PI,
                 false
@@ -541,8 +590,7 @@ export class DebugPiece {
                 this.translationX,
             this.piece.features.shapesCenterY * this.piece.height -
                 this.translationY,
-            (15 / this.piece.width) *
-                Math.min(this.piece.width, this.piece.height),
+            Math.min(this.piece.width, this.piece.height) * 0.015,
             0,
             2 * Math.PI,
             false
@@ -566,6 +614,36 @@ export class DebugPiece {
             this.piece.width - blockSizeX * 2,
             this.piece.height - blockSizeX * 2
         );
+
+        this.movingBlocks();
+    }
+
+    private movingBlocks() {
+        if (!this.debugContext || !this.debugCanvas) {
+            return;
+        }
+        this.piece.movingBlocks.blocks.forEach((block) => {
+            if (!this.debugContext || !this.debugCanvas) {
+                return;
+            }
+            if (!block.active) {
+                return;
+            }
+            this.debugContext.strokeStyle = `rgba(255, 255, 255, 0.3)`;
+            this.debugContext.fillStyle = `rgba(255, 255, 255, 0.1)`;
+            this.debugContext.fillRect(
+                block.tx,
+                block.ty,
+                block.area.w,
+                block.area.h
+            );
+            this.debugContext.strokeRect(
+                block.tx,
+                block.ty,
+                block.area.w,
+                block.area.h
+            );
+        });
     }
 
     public moveMovingBlock(
@@ -588,7 +666,7 @@ export class DebugPiece {
 
 export class MovingBlocks {
     public totalFrames: number = 0;
-    private blocks: Array<MovingBlock> = [];
+    public blocks: Array<MovingBlock> = [];
     public count: number = 0;
     public total: number = 0;
     private piece: Piece;
@@ -601,23 +679,17 @@ export class MovingBlocks {
     public tick(): boolean {
         this.totalFrames++;
 
-        this.blocks = this.blocks.filter((block) => block.tick());
-        this.count = this.blocks.length;
-
-        if (this.count >= this.piece.features.maxMovingBlocks) {
-            return false;
-        }
-
-        do {
-            this.add();
-        } while (this.count < this.piece.features.maxMovingBlocks);
+        this.count = this.blocks.reduce(
+            (c, block) => (block.tick() ? c + 1 : c),
+            0
+        );
+        this.total += this.piece.features.maxMovingBlocks - this.count;
 
         return true;
     }
 
     private add(): void {
         this.blocks.push(new MovingBlock(this.piece));
-        this.count = this.blocks.length;
         this.total++;
     }
 
@@ -625,44 +697,40 @@ export class MovingBlocks {
         this.blocks = [];
         this.count = 0;
         this.total = 0;
+
+        do {
+            this.add();
+        } while (this.total < this.piece.features.maxMovingBlocks);
     }
 }
 
 export class MovingBlock {
-    public readonly area: Area;
-    public readonly dirX: number = 0;
-    public readonly dirY: number = 0;
-    public readonly vMin: number;
-    public readonly vMax: number;
-    public readonly vDir: number;
+    public active: boolean = false;
+    public area!: Area;
+    public dirX: number = 0;
+    public dirY: number = 0;
+    public vMin!: number;
+    public vMax!: number;
+    public vDir!: number;
 
-    private movingDistanceX: number = 0;
-    private movingDistanceY: number = 0;
+    public tx!: number;
+    public ty!: number;
+    private movingDistanceX!: number;
+    private movingDistanceY!: number;
 
-    private dirXShapesFactor: number;
-    private dirYShapesFactor: number;
+    private dirXShapesFactor!: number;
+    private dirYShapesFactor!: number;
 
     public constructor(public readonly piece: Piece) {
-        let move: Array<string>;
+        this.piece = piece;
+    }
 
-        let blocksX: number = randOptions(this.piece.features.movingDistances);
-        let blocksY: number = randOptions(this.piece.features.movingDistances);
-
-        if (this.piece.features.diagonal) {
-            let m: string = randOptions(piece.features.direction);
-            move =
-                {
-                    left: ['left', 'down'],
-                    up: ['left', 'up'],
-                    right: ['right', 'up'],
-                    down: ['right', 'down'],
-                }[m] ?? [];
-        } else {
-            move = [randOptions(piece.features.direction)];
-        }
-
+    public activate() {
+        let move = randOptions(this.piece.features.direction);
         let stepSize = this.piece.features.stepSize;
 
+        this.dirX = 0;
+        this.dirY = 0;
         if (move.includes('left')) {
             this.dirX = -stepSize;
         }
@@ -676,48 +744,23 @@ export class MovingBlock {
             this.dirY = stepSize;
         }
 
-        if (this.dirX !== 0) {
-            this.movingDistanceX =
-                ((blocksX * this.piece.width) / this.piece.features.gridSize) <<
-                0;
-        }
+        let blocksX: number = randOptions(this.piece.features.movingDistances);
+        let blocksY: number = randOptions(this.piece.features.movingDistances);
+        let x: number = randInt(this.piece.features.gridSize - blocksX);
+        let y: number = randInt(this.piece.features.gridSize - blocksY);
 
-        if (this.dirY !== 0) {
-            this.movingDistanceY =
-                ((blocksY * this.piece.height) /
+        this.area = {
+            x: ((x * this.piece.width) / this.piece.features.gridSize) << 0,
+            y: ((y * this.piece.height) / this.piece.features.gridSize) << 0,
+            w:
+                ((this.piece.features.blockSize * this.piece.width) /
                     this.piece.features.gridSize) <<
-                0;
-        }
-
-        let h: number = piece.features.blockSize;
-        let w: number = piece.features.blockSize;
-        let x: number = randInt(
-            piece.features.gridSize -
-                blocksX * (this.piece.features.diagonalBase * 2)
-        );
-        let y: number = randInt(
-            piece.features.gridSize -
-                blocksY * (this.piece.features.diagonalBase * 2)
-        );
-
-        let area: Area = {
-            x: x,
-            y: y,
-            w: w,
-            h: h,
+                0,
+            h:
+                ((this.piece.features.blockSize * this.piece.height) /
+                    this.piece.features.gridSize) <<
+                0,
         };
-
-        area.x = (area.x * piece.width) / piece.features.gridSize;
-        area.y = (area.y * piece.height) / piece.features.gridSize;
-        area.w = (area.w * piece.width) / piece.features.gridSize;
-        area.h = (area.h * piece.height) / piece.features.gridSize;
-
-        area.x = area.x << 0;
-        area.y = area.y << 0;
-        area.w = area.w << 0;
-        area.h = area.h << 0;
-
-        this.area = area;
 
         this.vMin = 255 * this.piece.features.colorValueMin;
         this.vMax = 255 * this.piece.features.colorValueMax;
@@ -731,54 +774,78 @@ export class MovingBlock {
             this.area.y > this.piece.features.shapesCenterY * this.piece.height
                 ? -1
                 : 1;
+
+        this.movingDistanceX = 0;
+        this.movingDistanceY = 0;
+        if (this.dirX !== 0) {
+            this.movingDistanceX =
+                ((blocksX * this.piece.width) / this.piece.features.gridSize) <<
+                0;
+        }
+        if (this.dirY !== 0) {
+            this.movingDistanceY =
+                ((blocksY * this.piece.height) /
+                    this.piece.features.gridSize) <<
+                0;
+        }
+        this.area.x += this.movingDistanceX;
+        this.area.y += this.movingDistanceY;
+
+        this.active = true;
+    }
+
+    public deactivate() {
+        this.active = false;
     }
 
     public tick(): boolean {
+        if (!this.active) {
+            this.activate();
+        }
+
         if (this.movingDistanceX < 0 || this.movingDistanceY < 0) {
+            this.deactivate();
             return false;
         }
 
-        let sx: number;
-        let sy: number;
-        let sw: number = this.area.w;
-        let sh: number = this.area.h;
-        let tx: number;
-        let ty: number;
-
-        tx = sx = this.area.x;
-        ty = sy = this.area.y;
+        let sx: number = this.area.x;
+        let sy: number = this.area.y;
+        let tx: number = this.area.x;
+        let ty: number = this.area.y;
 
         if (this.dirX !== 0) {
-            sx = this.area.x + this.movingDistanceX;
             tx =
-                sx +
+                this.area.x +
                 this.dirX *
                     this.dirXShapesFactor *
                     Math.sin(this.movingDistanceX / this.piece.width);
         }
 
         if (this.dirY !== 0) {
-            sy = this.area.y + this.movingDistanceY;
             ty =
-                sy +
+                this.area.y +
                 this.dirY *
                     this.dirYShapesFactor *
                     Math.cos(this.movingDistanceY / this.piece.height);
         }
 
-        if (sw <= 0 || sh <= 0) {
+        this.tx = tx;
+        this.ty = ty;
+
+        if (!this.intersectsWithShapes(sx, sy, this.area.w, this.area.h)) {
+            this.deactivate();
             return false;
         }
 
-        if (!this.intersectsWithShapes(sx, sy, sw, sh)) {
+        if (!this.intersectsWithDrawingArea(sx, sy, this.area.w, this.area.h)) {
+            this.deactivate();
             return false;
         }
 
-        if (!this.intersectsWithDrawingArea(sx, sy, sw, sh)) {
-            return false;
-        }
+        this.move(sx, sy, this.area.w, this.area.h, tx, ty);
 
-        this.move(sx << 0, sy << 0, sw << 0, sh << 0, tx << 0, ty << 0);
+        this.area.x -= this.dirX * this.piece.features.movingDistanceDirection;
+        this.area.y -= this.dirY * this.piece.features.movingDistanceDirection;
 
         // note: this runs towards 0 or runs into box constraints
         this.movingDistanceX -=
@@ -823,15 +890,15 @@ export class MovingBlock {
         [x, y] = this.rotatePoint(
             this.piece.width / 2,
             this.piece.height / 2,
-            x,
-            y
+            x + w / 2,
+            y + h / 2
         );
 
         return this.piece.features.shapes.some(
             (shape: Circle | Rect | Quad) => {
                 if (shape instanceof Circle) {
                     return isec.testRectCircle(
-                        [x + w / 2, y + h / 2],
+                        [x, y],
                         [1, 1],
                         [
                             shape.x * this.piece.width,
@@ -841,7 +908,7 @@ export class MovingBlock {
                     );
                 }
                 return isec.testRectRect(
-                    [x + w / 2, y + h / 2],
+                    [x, y],
                     [1, 1],
                     [shape.x * this.piece.width, shape.y * this.piece.height],
                     [shape.w * this.piece.width, shape.h * this.piece.height]
@@ -858,11 +925,6 @@ export class MovingBlock {
         tx: number,
         ty: number
     ) {
-        // debug
-        if (this.piece.debug.moveMovingBlock(tx, ty, sw, sh)) {
-            return;
-        }
-
         this.piece.context.putImageData(
             this.shiftColor(
                 this.piece.context.getImageData(sx, sy, sw, sh),
@@ -883,27 +945,72 @@ export class MovingBlock {
                 this.piece.pixelRatio
         );
         let fC = f * 7;
+        let hBase = mod(this.piece.features.colorHue - fC, 360) / 60;
 
         for (let i: number = 0; i < l; i += 4) {
-            let r = data.data[i];
-            let g = data.data[i + 1];
-            let b = data.data[i + 2];
-
-            [r, g, b] = color.rotate(
-                r,
-                g,
-                b,
-                this.vMin,
-                this.vMax,
-                this.vDir,
-                this.piece.features.colorSaturation,
-                mod(this.piece.features.colorHue - fC, 360)
-            );
-
-            data.data[i] = r;
-            data.data[i + 1] = g;
-            data.data[i + 2] = b;
+            this.shiftColorPixel(data, i, hBase);
         }
         return data;
+    }
+
+    private shiftColorPixel(data: ImageData, offset: number, h: number): void {
+        // get v
+        let s = this.piece.features.colorSaturation,
+            v = Math.max(
+                data.data[offset],
+                data.data[offset + 1],
+                data.data[offset + 2]
+            );
+
+        // rotate value
+        v += this.vDir;
+        if (v > this.vMax) v = this.vMin;
+        else if (v < this.vMin) v = this.vMax;
+
+        // back to rgb
+        if (s === 0) {
+            data.data[offset] = v;
+            data.data[offset + 1] = v;
+            data.data[offset + 2] = v;
+        } else {
+            const i = h << 0;
+            const f = h - i;
+            const p = v * (1 - s);
+            const q = v * (1 - s * f);
+            const t = v * (1 - s * (1 - f));
+
+            switch (i) {
+                case 0:
+                    data.data[offset] = v;
+                    data.data[offset + 1] = t;
+                    data.data[offset + 2] = p;
+                    break;
+                case 1:
+                    data.data[offset] = q;
+                    data.data[offset + 1] = v;
+                    data.data[offset + 2] = p;
+                    break;
+                case 2:
+                    data.data[offset] = p;
+                    data.data[offset + 1] = v;
+                    data.data[offset + 2] = t;
+                    break;
+                case 3:
+                    data.data[offset] = p;
+                    data.data[offset + 1] = q;
+                    data.data[offset + 2] = v;
+                    break;
+                case 4:
+                    data.data[offset] = t;
+                    data.data[offset + 1] = p;
+                    data.data[offset + 2] = v;
+                    break;
+                case 5:
+                default:
+                    data.data[offset] = v;
+                    data.data[offset + 1] = p;
+                    data.data[offset + 2] = q;
+            }
+        }
     }
 }

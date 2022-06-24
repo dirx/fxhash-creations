@@ -148,7 +148,6 @@ export class Container {
                     piece.features.shapes.length
                 } (${piece.features.getShapes()})`,
                 direction: `${piece.features.getDirectionName()}`,
-                diagonal: `${piece.features.diagonal}`,
                 movingDistanceBehavior: `${piece.features.getMovingDistanceDirectionName()}`,
                 stepSize: `${piece.features.stepSize}`,
                 size: `${piece.canvas.width} / ${piece.canvas.height}`,
@@ -161,6 +160,7 @@ export class Container {
                 valueMax: piece.features.colorValueMax,
                 currentFps: `${this.loop.currentFps() << 0}`,
                 totalFrames: `${piece.movingBlocks.totalFrames}`,
+                paused: `${piece.paused}`,
             });
         }, 250);
     }
@@ -258,6 +258,13 @@ export class Intercom {
                     let info = this.info.toggleShow();
                     this.display.show('info ' + (info ? 'on' : 'off'));
                     break;
+
+                case ' ':
+                    this.piece.paused = !this.piece.paused;
+                    this.display.show(
+                        'pausing ' + (this.piece.paused ? 'on' : 'off')
+                    );
+                    break;
             }
         });
     }
@@ -349,8 +356,9 @@ export class Help {
         this.element.classList.add('hide');
         this.element.classList.add('loading');
         this.element.innerHTML = `
-          <p><em>0 - 9</em> change pixel ratio</p>
           <p><em>i</em> info</p>
+          <p><em>0 - 9</em> change pixel ratio</p>
+          <p><em>p</em> pause</p>
           <p><em>f</em> toggle fullscreen</p>
           <p><em>s</em> toggle smoothness</p>
           <p><em>c</em> capture image</p>

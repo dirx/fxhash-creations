@@ -13,20 +13,20 @@ if (combinationParam !== '') {
     combination = (Features.combinations * window.fxrand()) << 0;
 }
 
-console.log('Moving Blocks');
-console.log('Monochromatic Edition');
-console.log(
+console.info('Moving Blocks');
+console.info('Monochromatic Edition');
+console.info(
     'Real-time deterministic animation based on vanilla js & canvas 2d rendering context, variable size, 2022'
 );
-console.log("Be inspired. If you need help please press 'h'.");
-console.log('Dirk Adler, https://twitter.com/d_rx');
-console.log(`FXHASH: ${window.fxhash}`);
+console.info("Be inspired. If you need help please press 'h'.");
+console.info('Dirk Adler, https://twitter.com/d_rx');
+console.info(`FXHASH: ${window.fxhash}`);
 
 window.container = new Container(combination);
 
-console.log(
+console.info(
     `combination: ${window.container.piece.combination} / ${Features.combinations}`
 );
 Object.entries(window.container.piece.features.getFxhashFeatures()).forEach(
-    (entry) => console.log(`${entry[0]}: ${entry[1]}`)
+    (entry) => console.info(`${entry[0]}: ${entry[1]}`)
 );
