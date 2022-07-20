@@ -90,44 +90,48 @@ export class Container {
     private initLoop() {
         let fxpreviewCalled: boolean = false;
         let piece = this.piece;
-        this.loop = createLoop(() => {
-            piece.tick();
+        this.loop = createLoop(
+            (_currentFps: number, _targetFps: number, timeMs: number) => {
+                piece.tick(timeMs);
 
-            if (window.isFxpreview) {
-                if (!fxpreviewCalled && !piece.inPreviewPhase) {
-                    let previewCanvas = piece.preparePreviewCanvas();
-                    document.body.prepend(previewCanvas);
-                    window.fxpreview();
-                    fxpreviewCalled = true;
-                    // setTimeout(() => previewCanvas.remove(), 1000);
+                if (window.isFxpreview) {
+                    if (!fxpreviewCalled && !piece.inPreviewPhase) {
+                        let previewCanvas = piece.preparePreviewCanvas();
+                        document.body.prepend(previewCanvas);
+                        window.fxpreview();
+                        fxpreviewCalled = true;
+                        // setTimeout(() => previewCanvas.remove(), 1000);
 
-                    // debug: combination screenshots
-                    let search = new URLSearchParams(window.location.search);
-                    let combination = search.get('combination') || '';
-                    let capture = search.has('capture');
-                    if (combination != '' || capture) {
-                        this.piece.captureImage(
-                            piece.features.getFeatureName()
+                        // debug: combination screenshots
+                        let search = new URLSearchParams(
+                            window.location.search
                         );
-                        let nextCombination = parseInt(combination) + 1;
-                        if (combination != '') {
-                            search.set('combination', `${nextCombination}`);
-                        }
-                        if (
-                            nextCombination < Features.combinations ||
-                            capture
-                        ) {
-                            setTimeout(
-                                () =>
-                                    (window.location.search =
-                                        search.toString()),
-                                1000
+                        let combination = search.get('combination') || '';
+                        let capture = search.has('capture');
+                        if (combination != '' || capture) {
+                            this.piece.captureImage(
+                                piece.features.getFeatureName()
                             );
+                            let nextCombination = parseInt(combination) + 1;
+                            if (combination != '') {
+                                search.set('combination', `${nextCombination}`);
+                            }
+                            if (
+                                nextCombination < Features.combinations ||
+                                capture
+                            ) {
+                                setTimeout(
+                                    () =>
+                                        (window.location.search =
+                                            search.toString()),
+                                    1000
+                                );
+                            }
                         }
                     }
                 }
             }
-        });
+        );
 
         this.loop.runWith(piece.fps);
     }
@@ -189,13 +193,6 @@ export class Intercom {
         window.addEventListener('keyup', (ev: KeyboardEvent) => {
             switch (ev.key) {
                 case '0':
-                    this.piece.updateSize(
-                        window.innerWidth << 0,
-                        window.innerHeight << 0,
-                        null
-                    );
-                    this.display.show('pixel ratio: auto');
-                    break;
                 case '1':
                 case '2':
                 case '3':
@@ -205,12 +202,17 @@ export class Intercom {
                 case '7':
                 case '8':
                 case '9':
-                    this.piece.updateSize(
-                        window.innerWidth << 0,
-                        window.innerHeight << 0,
-                        parseInt(ev.key)
+                    this.piece.outputBuffer =
+                        this.piece.outputBuffer === null ||
+                        parseInt(ev.key) !== this.piece.outputBuffer
+                            ? parseInt(ev.key)
+                            : null;
+                    this.display.show(
+                        'show buffer ' +
+                            (this.piece.outputBuffer === null
+                                ? 'default'
+                                : this.piece.outputBuffer)
                     );
-                    this.display.show('pixel ratio ' + ev.key);
                     break;
 
                 case 'd':
@@ -240,13 +242,6 @@ export class Intercom {
                         0.5
                     );
                     this.display.show('capture big image');
-                    break;
-
-                case 's':
-                    let smoothing = this.piece.toggleSmoothing();
-                    this.display.show(
-                        'smoothing ' + (smoothing ? 'on' : 'off')
-                    );
                     break;
 
                 case 'h':
@@ -357,10 +352,9 @@ export class Help {
         this.element.classList.add('loading');
         this.element.innerHTML = `
           <p><em>i</em> info</p>
-          <p><em>0 - 9</em> change pixel ratio</p>
+          <p><em>0 - 9</em> show buffer</p>
           <p><em>p</em> pause</p>
           <p><em>f</em> toggle fullscreen</p>
-          <p><em>s</em> toggle smoothness</p>
           <p><em>c</em> capture image</p>
           <p><em>b</em> capture big image (takes time)</p>
           <p><em>d</em> debug view</p>

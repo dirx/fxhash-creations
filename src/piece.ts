@@ -2,7 +2,8 @@ import { Area, randInit, randInt, randOptions } from './rand';
 import { color, ColorSpec } from './color';
 import * as isec from '@thi.ng/geom-isec';
 import { Circle, Quad, Rect } from './shapes';
-import { floorTo, mod } from '@thi.ng/math';
+import { floorTo } from '@thi.ng/math';
+import * as twgl from 'twgl.js';
 
 export type FxhashFeatures = {
     color: string;
@@ -22,6 +23,8 @@ export class Features {
     public readonly color: ColorSpec;
     public readonly colorSaturation: number;
     public maxMovingBlocks: number;
+    public framebufferForOffsets: number = 8;
+    public framebufferForMovingBlocks: number = 2;
     public readonly gridSize: number;
     public readonly waitBlocks: number;
     public readonly colorValueMin: number;
@@ -53,50 +56,56 @@ export class Features {
     public static directionOptions: Array<
         Array<Array<'left' | 'up' | 'down' | 'right'>>
     > = [
-        [['up'], ['left'], ['down'], ['right']],
+        // [['up'], ['left'], ['down'], ['right']],
+        // [
+        //     ['left', 'up'],
+        //     ['left', 'down'],
+        //     ['right', 'up'],
+        //     ['right', 'down'],
+        // ],
+        // [
+        //     ['left', 'up'],
+        //     ['left', 'down'],
+        // ],
+        // [
+        //     ['right', 'up'],
+        //     ['right', 'down'],
+        // ],
+        // [
+        //     ['left', 'up'],
+        //     ['right', 'up'],
+        // ],
+        // looks like wood:
         [
-            ['left', 'up'],
             ['left', 'down'],
             ['right', 'up'],
+        ],
+        // looks like wood:
+        [
+            ['left', 'up'],
             ['right', 'down'],
         ],
-        [
-            ['left', 'up'],
-            ['left', 'down'],
-        ],
-        [
-            ['right', 'up'],
-            ['right', 'down'],
-        ],
-        [
-            ['left', 'up'],
-            ['right', 'up'],
-        ],
-        [
-            ['left', 'down'],
-            ['right', 'up'],
-        ],
-        [['right'], ['right', 'up'], ['right', 'down']],
-        [['left'], ['left', 'up'], ['left', 'down']],
-        [['up'], ['left', 'up'], ['right', 'up']],
-        [['down'], ['left', 'down'], ['right', 'down']],
-        [
-            ['up'],
-            ['left'],
-            ['down'],
-            ['right'],
-            ['left', 'up'],
-            ['left', 'down'],
-            ['right', 'up'],
-            ['right', 'down'],
-        ],
-        [['left'], ['left', 'up'], ['up']],
-        [['left'], ['left', 'down'], ['down']],
-        [['right'], ['right', 'up'], ['up']],
-        [['right'], ['right', 'down'], ['down']],
-        [['right'], ['right', 'down'], ['left'], ['left', 'up']],
-        [['right'], ['right', 'up'], ['left'], ['left', 'down']],
-        [['down'], ['right', 'down'], ['up'], ['left', 'up']],
+        // [['right'], ['right', 'up'], ['right', 'down']],
+        // [['left'], ['left', 'up'], ['left', 'down']],
+        // [['up'], ['left', 'up'], ['right', 'up']],
+        // [['down'], ['left', 'down'], ['right', 'down']],
+        // [
+        //     ['up'],
+        //     ['left'],
+        //     ['down'],
+        //     ['right'],
+        //     ['left', 'up'],
+        //     ['left', 'down'],
+        //     ['right', 'up'],
+        //     ['right', 'down'],
+        // ],
+        // [['left'], ['left', 'up'], ['up']],
+        // [['left'], ['left', 'down'], ['down']],
+        // [['right'], ['right', 'up'], ['up']],
+        // [['right'], ['right', 'down'], ['down']],
+        // [['right'], ['right', 'down'], ['left'], ['left', 'up']],
+        // [['right'], ['right', 'up'], ['left'], ['left', 'down']],
+        // [['down'], ['right', 'down'], ['up'], ['left', 'up']],
     ];
     public directionBase: number;
     public direction: Array<Array<'left' | 'up' | 'down' | 'right'>>;
@@ -113,7 +122,7 @@ export class Features {
         this.combination = combination % Features.combinations;
 
         this.movingDistanceDirectionBase = combination % 2;
-        this.movingDistanceDirection = [-1, 1][
+        this.movingDistanceDirection = [-1, -1][
             this.movingDistanceDirectionBase
         ];
         combination = (combination / 2) << 0;
@@ -123,7 +132,7 @@ export class Features {
 
         this.blockBase = (combination % 4) + 1;
         let blocks = this.blockConfig.slice(this.blockBase, this.blockBase + 4);
-        this.maxMovingBlocks = blocks[1];
+        this.maxMovingBlocks = blocks[3];
         this.movingDistances = this.blockConfig.slice(
             this.blockBase,
             this.blockBase + 2
@@ -151,7 +160,7 @@ export class Features {
                             this.blockSize / 3
                         ) / this.gridSize,
                         (randOptions(
-                            [blocks[0], blocks[1]],
+                            [blocks[1], blocks[2]],
                             [numOfShapes + 2, 1]
                         ) /
                             this.gridSize) *
@@ -171,7 +180,7 @@ export class Features {
                             this.blockSize / 3
                         ) / this.gridSize,
                         randOptions(
-                            [blocks[0] + 10, blocks[1]],
+                            [blocks[1] + 10, blocks[2]],
                             [numOfShapes + 2, 1]
                         ) / this.gridSize
                     )
@@ -243,7 +252,7 @@ export class Features {
     }
 
     public getDirectionName(): string {
-        return this.direction.map((a) => a.join('-')).join(',');
+        return this.direction.map((a) => a.join('-')).join(', ');
     }
 
     public getShapes(): string {
@@ -281,23 +290,26 @@ export class Piece {
 
     public width: number = 0;
     public height: number = 0;
-    public baseHeightWidth: number = 960;
-    public pixelRatio: number = 1;
+    public baseHeightWidth: number = 1600;
     public fps: number = 60;
+    public pixelRatio: number = 1;
 
     public canvas: HTMLCanvasElement;
-    public context: CanvasRenderingContext2D;
+    public context!: WebGL2RenderingContext;
 
     public movingBlocks!: MovingBlocks;
 
     public combination: number;
 
-    public inPreviewPhase: boolean = true;
-    public previewPhaseEndsAfter: number = 900;
-    public readonly previewPhaseEndsAfterBase: number = 900;
+    public inPreviewPhase!: boolean;
+    public previewPhaseEndsAfterBase: number = 900;
+    public previewPhaseEndsAfter!: number;
 
-    public debug: DebugPiece;
+    public debug!: DebugPiece;
+
     public paused: boolean = false;
+
+    public outputBuffer: number | null = null;
 
     public constructor(
         canvas: HTMLCanvasElement,
@@ -307,13 +319,9 @@ export class Piece {
         combination: number
     ) {
         this.canvas = canvas;
-        this.context = canvas.getContext('2d', {
-            alpha: false,
-        }) as CanvasRenderingContext2D;
         this.combination = combination;
 
         this.updateSize(width, height, pixelRatio);
-        this.setSmoothing(false);
 
         this.debug = new DebugPiece(this);
     }
@@ -326,6 +334,386 @@ export class Piece {
 
         this.movingBlocks = new MovingBlocks(this);
         this.movingBlocks.init();
+
+        this.initWebgl();
+    }
+
+    public programDraw!: twgl.ProgramInfo;
+    public positionBuffer!: twgl.BufferInfo;
+    public programPixels!: twgl.ProgramInfo;
+
+    public programOffsets!: twgl.ProgramInfo;
+    public programInit!: twgl.ProgramInfo;
+
+    public framebuffers!: Array<twgl.FramebufferInfo>;
+    public framebufferPixelsIndex: number = 0;
+    public bufferOffsets!: twgl.BufferInfo;
+
+    private initWebgl() {
+        if (this.context instanceof WebGL2RenderingContext) {
+            return;
+        }
+        let precision = `
+            precision mediump float;
+            precision mediump int;
+            precision mediump sampler2D;
+            `;
+        // init canvas & context
+        this.context = twgl.getContext(this.canvas, {
+            depth: false,
+            preserveDrawingBuffer: true,
+        }) as WebGL2RenderingContext;
+
+        // init framebuffers
+        const vInit = `#version 300 es
+            ${precision}
+
+            in vec2 position;
+
+            void main() {
+                gl_Position = vec4(position, 0.0, 1.0);
+            }`;
+        const fInit = `#version 300 es
+            precision mediump float;
+
+            uniform vec3 baseColor;
+            
+            out vec4 outColor;
+
+            void main() {
+                outColor = vec4(baseColor, 0.0);
+            }`;
+
+        const vDraw = `#version 300 es
+            ${precision}
+        
+            in vec2 position;
+            out vec2 v_position;
+            
+            uniform mat4 world;
+        
+            void main() {
+               gl_Position = world * vec4(position, 0.0, 1.0);
+               v_position = 0.5 * (position + 1.0);
+            }`;
+        const fDraw = `#version 300 es
+            ${precision}
+            
+            in vec2 v_position;
+            out vec4 outColor;
+            
+            uniform sampler2D pixels;
+           
+            void main() {
+              outColor = vec4(texture(pixels, v_position).rgb, 1.0); 
+            }`;
+        this.programDraw = twgl.createProgramInfo(this.context, [vDraw, fDraw]);
+        this.context.useProgram(this.programDraw.program);
+
+        const vOffsets = `#version 300 es
+            ${precision}
+        
+            in vec4 block;
+            out vec4 color;
+            
+            uniform float pixelSize;
+            uniform float blockWidthHeight;
+            
+            uniform mat4 world;
+        
+            void main() {
+               // ignore inactive ones
+               if (block.x == 0.0 && block.y == 0.0 && block.z == 0.0 && block.w == 0.0) {
+                    color = vec4(0.0);
+                    gl_PointSize = 0.0;
+                    gl_Position = world * vec4(0.0, 0.0, 0.0, 1.0);
+               } else {
+                   color = vec4(0.5 * (block.zw + 1.0), 1.0, 0.0); // convert to color 0-1
+                   gl_PointSize = pixelSize;
+                   gl_Position = world * vec4(block.x + blockWidthHeight, block.y - blockWidthHeight, 0.0, 1.0);
+               }        
+            }`;
+        const fOffsets = `#version 300 es
+            precision mediump float;
+            
+            in vec4 color;
+            out vec4 outColor;
+            
+            void main() {
+                outColor = color;
+            }`;
+
+        // create framebuffer for texture
+        const vMoveBlocks = `#version 300 es
+            ${precision}
+
+            in vec2 position;
+            out vec2 v_position;
+            
+            uniform float pixelSize;
+            uniform mat4 world;
+        
+            void main() {
+               gl_Position = world * vec4(position, 0.0, 1.0);
+               v_position = 0.5 * (position + 1.0);
+            }`;
+        const fMoveBlocks = `#version 300 es
+            ${precision}
+        
+            in vec2 v_position;
+            in vec2 offset;
+            
+            out vec4 outColor;
+            
+            uniform int drawId;
+            uniform sampler2D pixels;
+            uniform sampler2D offsets;
+
+            uniform sampler2D u_offsets;
+            uniform vec3 baseColor;
+            uniform float pixelSize;
+            uniform float pixelWidth;
+            uniform ivec3 colorRGBIndex;
+            uniform vec3 colorRGBMin;
+            uniform float colorShiftFactor;
+            uniform vec2 colorShiftRGBDir;
+            uniform float colorShiftDir;
+            uniform float timeMs;
+    
+            float rollover(float value, float min, float max) {
+                if (value > max) {
+                    return abs(max - value) + min;
+                }
+                
+                if (value < min) {
+                    return max - abs(value - min);
+                }
+                
+                return value;
+            }
+            
+            // see https://github.com/dmnsgn/glsl-rotate
+            mat2 rotation2d(float angle) {
+              float s = sin(angle);
+              float c = cos(angle);
+            
+              return mat2(
+                c, -s,
+                s, c
+              );
+            }
+            
+            vec2 rotate(vec2 v, float angle) {
+              return rotation2d(angle) * v;
+            }
+            
+            mat4 rotation3d(vec3 axis, float angle) {
+              axis = normalize(axis);
+              float s = sin(angle);
+              float c = cos(angle);
+              float oc = 1.0 - c;
+            
+              return mat4(
+                oc * axis.x * axis.x + c,           oc * axis.x * axis.y - axis.z * s,  oc * axis.z * axis.x + axis.y * s,  0.0,
+                oc * axis.x * axis.y + axis.z * s,  oc * axis.y * axis.y + c,           oc * axis.y * axis.z - axis.x * s,  0.0,
+                oc * axis.z * axis.x - axis.y * s,  oc * axis.y * axis.z + axis.x * s,  oc * axis.z * axis.z + c,           0.0,
+                0.0,                                0.0,                                0.0,                                1.0
+              );
+            }
+            
+            vec3 rotate(vec3 v, vec3 axis, float angle) {
+              return (rotation3d(axis, angle) * vec4(v, 1.0)).xyz;
+            }
+            
+            vec3 bezier(vec3 A, vec3 B, float t) {
+              return mix(A, B, t);
+            }
+            
+            vec3 bezier(vec3 A, vec3 B, vec3 C, float t) {
+              vec3 E = mix(A, B, t);
+              vec3 F = mix(B, C, t);
+            
+              vec3 P = mix(E, F, t);
+            
+              return P;
+            }
+            
+            vec3 bezier(vec3 A, vec3 B, vec3 C, vec3 D, float t) {
+              vec3 E = mix(A, B, t);
+              vec3 F = mix(B, C, t);
+              vec3 G = mix(C, D, t);
+            
+              vec3 H = mix(E, F, t);
+              vec3 I = mix(F, G, t);
+            
+              vec3 P = mix(H, I, t);
+            
+              return P;
+            }
+
+            vec3 bezier(vec3 A, vec3 B, vec3 C, vec3 D, vec3 E, float t) {
+              vec3 A1 = mix(A, B, t);
+              vec3 B1 = mix(B, C, t);
+              vec3 C1 = mix(C, D, t);
+              vec3 D1 = mix(D, E, t);
+            
+              vec3 A2 = mix(A1, B1, t);
+              vec3 B2 = mix(B1, C1, t);
+              vec3 C2 = mix(C1, D1, t);
+            
+              vec3 A3 = mix(A2, B2, t);
+              vec3 B3 = mix(B2, C2, t);
+              
+              vec3 P = mix(A3, B3, t);
+            
+              return P;
+            }
+            
+            vec3 bezier(vec3 A, vec3 B, vec3 C, vec3 D, vec3 E, vec3 F, vec3 G, float t) {
+              vec3 A1 = mix(A, B, t);
+              vec3 B1 = mix(B, C, t);
+              vec3 C1 = mix(C, D, t);
+              vec3 D1 = mix(D, E, t);
+              vec3 E1 = mix(E, F, t);
+              vec3 F1 = mix(F, G, t);
+            
+              vec3 A2 = mix(A1, B1, t);
+              vec3 B2 = mix(B1, C1, t);
+              vec3 C2 = mix(C1, D1, t);
+              vec3 D2 = mix(D1, E1, t);
+              vec3 E2 = mix(E1, F1, t);
+            
+              vec3 A3 = mix(A2, B2, t);
+              vec3 B3 = mix(B2, C2, t);
+              vec3 C3 = mix(C2, D2, t);
+              vec3 D3 = mix(D2, E2, t);
+            
+              vec3 A4 = mix(A3, B3, t);
+              vec3 B4 = mix(B3, C3, t);
+              vec3 C4 = mix(C3, D3, t);
+            
+              vec3 A5 = mix(A4, B4, t);
+              vec3 B5 = mix(B4, C4, t);
+              
+              vec3 P = mix(A5, B5, t);
+            
+              return P;
+            }
+
+            vec4 shiftColor(vec4 color) {
+                return vec4(
+                    bezier(
+                        vec3(0.05),
+                        baseColor.rgb - 0.1, 
+                        color.a
+                    ),
+                    color.a
+                );
+            }
+
+            void main() {
+                vec4 singleOffset;
+                vec2 offset;
+                vec2 offsetPos;
+                vec4 color;
+    
+                singleOffset = texture(offsets, v_position);
+                
+                offset = singleOffset.rg * 2.0 - 1.0; // convert back from color > -1 to 1
+                offsetPos = offset.xy * 40.0 * pixelWidth; // convert back to -100 / 100 and normalize 
+                
+                if (singleOffset.b == 0.0) {
+                    color = texture(pixels, v_position);
+                } else {
+                    color = texture(pixels, v_position - offsetPos.xy);
+                    color.a = rollover(color.a + 1.0/255.0, 0.0, 1.0);
+                    color = shiftColor(color);
+                }
+                outColor = color;
+            }`;
+
+        const n = this.baseHeightWidth; //this.gl.canvas.width;
+        const m = this.baseHeightWidth; //this.gl.canvas.height;
+        // const initColor = [...this.features.color.rgb.map((c) => c / 255), 1.0];
+        this.framebuffers = [
+            ...Array(
+                this.features.framebufferForOffsets +
+                    this.features.framebufferForMovingBlocks
+            ),
+        ].map((_) => {
+            let attachments = [
+                {
+                    attachmentPoint: WebGL2RenderingContext.COLOR_ATTACHMENT0,
+                    format: this.context.RGBA,
+                    type: this.context.UNSIGNED_BYTE,
+                    min: this.context.NEAREST,
+                    mag: this.context.NEAREST,
+                    wrap: this.context.CLAMP_TO_EDGE,
+                    // color: [1.0, 0.5, 0.0, 1.0],
+                },
+            ];
+
+            return twgl.createFramebufferInfo(this.context, attachments, n, m);
+        });
+
+        this.framebufferPixelsIndex = 0; // point to the first index
+        this.programPixels = twgl.createProgramInfo(this.context, [
+            vMoveBlocks,
+            fMoveBlocks,
+        ]);
+
+        const blocks = {
+            block: {
+                data: this.movingBlocks.normalized(),
+                numComponents: 4,
+            },
+        };
+        this.bufferOffsets = twgl.createBufferInfoFromArrays(
+            this.context,
+            blocks
+        );
+
+        const position = {
+            position: {
+                data: [-1, 1, 1, 1, 1, -1, 1, -1, -1, -1, -1, 1],
+                numComponents: 2,
+            },
+        };
+        this.positionBuffer = twgl.createBufferInfoFromArrays(
+            this.context,
+            position
+        );
+
+        // init offsets program
+        this.programOffsets = twgl.createProgramInfo(this.context, [
+            vOffsets,
+            fOffsets,
+        ]);
+
+        // colorize framebuffers that are used for moving pixels
+        this.programInit = twgl.createProgramInfo(this.context, [vInit, fInit]);
+
+        this.context.useProgram(this.programInit.program);
+        twgl.setBuffersAndAttributes(
+            this.context,
+            this.programInit,
+            this.positionBuffer
+        );
+
+        twgl.setUniforms(this.programInit, {
+            baseColor: this.features.color.rgb.map((v) => v / 255),
+        });
+        twgl.bindFramebufferInfo(
+            this.context,
+            this.framebuffers[this.features.framebufferForOffsets]
+        );
+        twgl.drawBufferInfo(this.context, this.positionBuffer);
+
+        twgl.bindFramebufferInfo(
+            this.context,
+            this.framebuffers[1 + this.features.framebufferForOffsets]
+        );
+        twgl.drawBufferInfo(this.context, this.positionBuffer);
     }
 
     public updateSize(
@@ -333,9 +721,10 @@ export class Piece {
         height: number,
         pixelRatio: number | null = null
     ) {
+        this.initState();
         let wh = Math.min(width, height);
         let f = wh / this.baseHeightWidth;
-        this.initState();
+        // todo: handle pixel ratio on webgl2 context
         if (pixelRatio === null) {
             this.pixelRatio = Math.ceil(
                 (wh + wh) / 2 / this.baseHeightWidth / 2
@@ -345,7 +734,6 @@ export class Piece {
         }
         this.previewPhaseEndsAfter =
             this.previewPhaseEndsAfterBase / this.pixelRatio;
-        this.context.scale(this.pixelRatio, this.pixelRatio);
         this.width = (this.baseHeightWidth / this.pixelRatio) << 0;
         this.height = (this.baseHeightWidth / this.pixelRatio) << 0;
         this.canvas.width = this.width;
@@ -358,44 +746,46 @@ export class Piece {
         }%`;
 
         this.canvas.dispatchEvent(new Event('piece.updateSize'));
-        this.initImage();
+
+        // twgl.resizeCanvasToDisplaySize(this.gl.canvas);
+        this.context.canvas.width = this.width;
+        this.context.canvas.height = this.height;
+        this.context.canvas.style.width = `${
+            ((this.width * f) / width) * 100 * this.pixelRatio
+        }%`;
+        this.context.canvas.style.height = `${
+            ((this.height * f) / height) * 100 * this.pixelRatio
+        }%`;
+        this.context.viewport(
+            0,
+            0,
+            this.context.canvas.width,
+            this.context.canvas.height
+        );
+
+        this.initBackground();
     }
 
-    private setSmoothing(active: boolean) {
-        this.context.imageSmoothingEnabled = active;
-        this.canvas.style.imageRendering = active ? 'auto' : 'pixelated';
-    }
-
-    private getSmoothing(): boolean {
-        return this.context.imageSmoothingEnabled;
-    }
-
-    public toggleSmoothing(): boolean {
-        let active: boolean = !this.getSmoothing();
-        this.setSmoothing(active);
-        return active;
-    }
-
-    public initImage() {
-        let css = color.hsvCss(
+    public initBackground() {
+        document.body.style.backgroundColor = color.hsvCss(
             this.features.colorHue,
             this.features.colorSaturation,
             this.features.colorValueMax
         );
-        document.body.style.backgroundColor = css;
-        this.context.fillStyle = css;
-        this.context.fillRect(0, 0, this.width, this.height);
     }
 
-    public tick() {
+    public tick(timeMs: number) {
+        this.tickCaptureImage();
+
         if (this.paused) {
             return;
         }
 
         this.debug.tickPiece();
-        if (!this.movingBlocks.tick()) {
-            return;
-        }
+
+        this.movingBlocks.tick();
+
+        this.tickWebgl(timeMs);
 
         if (
             this.inPreviewPhase &&
@@ -407,13 +797,150 @@ export class Piece {
         }
     }
 
-    public captureImage(name: string) {
-        let previewCanvas = this.preparePreviewCanvas();
+    public tickWebgl(timeMs: number) {
+        if (this.positionBuffer === undefined) {
+            return;
+        }
 
-        let link = document.createElement('a');
-        link.download = name + '.png';
-        link.href = previewCanvas.toDataURL();
-        link.click();
+        let world = twgl.m4.identity();
+
+        // todo: use fix array reference instead of building up new one each frame
+        const movingBlocks = this.movingBlocks.normalized();
+        const movingBlocksChunkLength =
+            this.features.maxMovingBlocks / this.features.framebufferForOffsets;
+
+        // draw offsets maps - distribute blocks over multiple layers to minimize overlapping / enable multi offset shifts
+        this.context.useProgram(this.programOffsets.program);
+        twgl.setBuffersAndAttributes(
+            this.context,
+            this.programOffsets,
+            this.bufferOffsets
+        );
+        twgl.setAttribInfoBufferFromArray(
+            this.context,
+            this.bufferOffsets.attribs?.block as twgl.AttribInfo,
+            movingBlocks
+        );
+        twgl.setUniforms(this.programOffsets, {
+            pixelSize:
+                (this.features.blockSize / this.features.gridSize) *
+                this.context.canvas.width,
+            blockWidthHeight: this.features.blockSize / this.features.gridSize,
+            world: world,
+        });
+
+        for (let i = 0; i < this.features.framebufferForOffsets; i++) {
+            twgl.bindFramebufferInfo(this.context, this.framebuffers[i]);
+
+            this.context.clearColor(0.0, 0.0, 0.0, 0.0);
+            this.context.clear(this.context.COLOR_BUFFER_BIT);
+
+            twgl.drawBufferInfo(
+                this.context,
+                this.bufferOffsets,
+                WebGL2RenderingContext.POINTS,
+                movingBlocksChunkLength,
+                movingBlocksChunkLength * i
+            );
+        }
+
+        // draw moving pixels based on offset layers - toggle pixel buffers per layer
+        this.context.useProgram(this.programPixels.program);
+        twgl.setBuffersAndAttributes(
+            this.context,
+            this.programPixels,
+            this.positionBuffer
+        );
+
+        let uniform = {
+            baseColor: this.features.color.rgb.map((c) => c / 255),
+            pixelSize:
+                (this.features.blockSize / this.features.gridSize) *
+                this.context.canvas.width,
+            pixelWidth: 1 / this.context.canvas.width,
+            pixels: this.framebuffers[
+                this.framebufferPixelsIndex +
+                    this.features.framebufferForOffsets
+            ].attachments[0],
+            offsets: this.framebuffers[0].attachments[0],
+            timeMs: timeMs,
+            // colorShiftFactor: this.features.colorShiftFactor,
+            // colorShiftDir: this.features.colorShiftDir / 255,
+        };
+        twgl.setUniforms(this.programPixels, uniform);
+        for (let i = 0; i < this.features.framebufferForOffsets; i++) {
+            twgl.setUniforms(this.programPixels, {
+                world: world,
+                offsets: this.framebuffers[i].attachments[0],
+                pixels: this.framebuffers[
+                    this.framebufferPixelsIndex +
+                        this.features.framebufferForOffsets
+                ].attachments[0],
+            });
+
+            twgl.bindFramebufferInfo(
+                this.context,
+                this.framebuffers[
+                    1 -
+                        this.framebufferPixelsIndex +
+                        this.features.framebufferForOffsets
+                ]
+            );
+            twgl.drawBufferInfo(this.context, this.positionBuffer);
+            this.framebufferPixelsIndex = 1 - this.framebufferPixelsIndex;
+        }
+
+        // draw latest moving blocks buffer to screen
+        this.context.useProgram(this.programDraw.program);
+        twgl.setBuffersAndAttributes(
+            this.context,
+            this.programDraw,
+            this.positionBuffer
+        );
+
+        if (this.outputBuffer === null) {
+            let uniforms = {
+                pixels: this.framebuffers[
+                    this.framebufferPixelsIndex +
+                        this.features.framebufferForOffsets
+                ].attachments[0],
+                world: world, // todo rotate: twgl.m4.rotateZ(world, -this.features.rotationRadians),
+            };
+            twgl.setUniforms(this.programDraw, uniforms);
+        } else {
+            twgl.setUniforms(this.programDraw, {
+                pixels: this.framebuffers[this.outputBuffer].attachments[0],
+            });
+        }
+
+        twgl.bindFramebufferInfo(this.context, null);
+        twgl.drawBufferInfo(this.context, this.positionBuffer);
+    }
+
+    private captureImageName: string | null = null;
+    public captureImage(name: string) {
+        this.captureImageName = name;
+    }
+
+    private tickCaptureImage() {
+        if (this.captureImageName === null) {
+            return;
+        }
+
+        let name = this.captureImageName;
+        this.captureImageName = null;
+
+        this.context.canvas.toBlob((blob) => {
+            if (blob === null) {
+                return;
+            }
+            const a = document.createElement('a');
+            document.body.appendChild(a);
+            a.style.display = 'none';
+            a.href = window.URL.createObjectURL(blob);
+            a.download = name;
+            a.click();
+        });
     }
 
     public preparePreviewCanvas(): HTMLCanvasElement {
@@ -428,17 +955,13 @@ export class Piece {
         previewCanvas.width =
             this.width * (this.pixelRatio < 1 ? 1 : this.pixelRatio);
 
-        resizedContext.imageSmoothingEnabled =
-            this.context.imageSmoothingEnabled;
-        previewCanvas.style.imageRendering = this.canvas.style.imageRendering;
         resizedContext?.drawImage(
-            this.canvas,
+            this.context.canvas,
             0,
             0,
             previewCanvas.width,
             previewCanvas.height
         );
-        1;
 
         return previewCanvas;
     }
@@ -702,6 +1225,31 @@ export class MovingBlocks {
             this.add();
         } while (this.total < this.piece.features.maxMovingBlocks);
     }
+
+    public normalized(): Float32Array {
+        return (
+            this.blocks
+                // .sort((a, b) =>
+                //     a.active &&
+                //     b.active &&
+                //     a.area.x + a.area.y > b.area.x + b.area.y
+                //         ? -1
+                //         : 1
+                // )
+                // .sort((a, b) =>
+                //     a.active &&
+                //     b.active &&
+                //     Math.abs(a.area.x - b.area.x) > a.area.w * 2 &&
+                //     Math.abs(a.area.y - b.area.y) > a.area.h * 2
+                //         ? -1
+                //         : 1
+                // )
+                .reduce((r, block, currentIndex) => {
+                    block.normalized(r, currentIndex * 4);
+                    return r;
+                }, new Float32Array(this.piece.features.maxMovingBlocks * 4))
+        );
+    }
 }
 
 export class MovingBlock {
@@ -723,6 +1271,22 @@ export class MovingBlock {
 
     public constructor(public readonly piece: Piece) {
         this.piece = piece;
+    }
+
+    public normalized(r: Float32Array, index: number): Float32Array {
+        if (this.active) {
+            r[index] = (this.area.x / this.piece.width) * 2 - 1;
+            r[index + 1] = 2 - (this.area.y / this.piece.height) * 2 - 1;
+            r[index + 2] = this.dirX / 40; // max -40 / 40 => - 1 / 1
+            r[index + 3] = -this.dirY / 40; // max -40 / 40  => - 1 / 1
+        } else {
+            r[index] = 0.0;
+            r[index + 1] = 0.0;
+            r[index + 2] = 0.0;
+            r[index + 3] = 0.0;
+        }
+
+        return r;
     }
 
     public activate() {
@@ -842,8 +1406,6 @@ export class MovingBlock {
             return false;
         }
 
-        this.move(sx, sy, this.area.w, this.area.h, tx, ty);
-
         this.area.x -= this.dirX * this.piece.features.movingDistanceDirection;
         this.area.y -= this.dirY * this.piece.features.movingDistanceDirection;
 
@@ -876,6 +1438,9 @@ export class MovingBlock {
         x: number,
         y: number
     ): Array<number> {
+        if (this.piece.features.rotation === 0) {
+            return [x, y];
+        }
         return [
             this.piece.features.rotationCos * (x - cx) +
                 this.piece.features.rotationSin * (y - cy) +
@@ -917,100 +1482,80 @@ export class MovingBlock {
         );
     }
 
-    private move(
-        sx: number,
-        sy: number,
-        sw: number,
-        sh: number,
-        tx: number,
-        ty: number
-    ) {
-        this.piece.context.putImageData(
-            this.shiftColor(
-                this.piece.context.getImageData(sx, sy, sw, sh),
-                sx,
-                sy
-            ),
-            tx,
-            ty
-        );
-        return;
-    }
-
-    private shiftColor(data: ImageData, sx: number, sy: number) {
-        let l: number = data.data.length;
-        let f: number = Math.sin(
-            (sx + sy) /
-                (this.piece.width + this.piece.height) /
-                this.piece.pixelRatio
-        );
-        let fC = f * 7;
-        let hBase = mod(this.piece.features.colorHue - fC, 360) / 60;
-
-        for (let i: number = 0; i < l; i += 4) {
-            this.shiftColorPixel(data, i, hBase);
-        }
-        return data;
-    }
-
-    private shiftColorPixel(data: ImageData, offset: number, h: number): void {
-        // get v
-        let s = this.piece.features.colorSaturation,
-            v = Math.max(
-                data.data[offset],
-                data.data[offset + 1],
-                data.data[offset + 2]
-            );
-
-        // rotate value
-        v += this.vDir;
-        if (v > this.vMax) v = this.vMin;
-        else if (v < this.vMin) v = this.vMax;
-
-        // back to rgb
-        if (s === 0) {
-            data.data[offset] = v;
-            data.data[offset + 1] = v;
-            data.data[offset + 2] = v;
-        } else {
-            const i = h << 0;
-            const f = h - i;
-            const p = v * (1 - s);
-            const q = v * (1 - s * f);
-            const t = v * (1 - s * (1 - f));
-
-            switch (i) {
-                case 0:
-                    data.data[offset] = v;
-                    data.data[offset + 1] = t;
-                    data.data[offset + 2] = p;
-                    break;
-                case 1:
-                    data.data[offset] = q;
-                    data.data[offset + 1] = v;
-                    data.data[offset + 2] = p;
-                    break;
-                case 2:
-                    data.data[offset] = p;
-                    data.data[offset + 1] = v;
-                    data.data[offset + 2] = t;
-                    break;
-                case 3:
-                    data.data[offset] = p;
-                    data.data[offset + 1] = q;
-                    data.data[offset + 2] = v;
-                    break;
-                case 4:
-                    data.data[offset] = t;
-                    data.data[offset + 1] = p;
-                    data.data[offset + 2] = v;
-                    break;
-                case 5:
-                default:
-                    data.data[offset] = v;
-                    data.data[offset + 1] = p;
-                    data.data[offset + 2] = q;
-            }
-        }
-    }
+    // public shiftColor(data: ImageData, sx: number, sy: number) {
+    //     let l: number = data.data.length;
+    //     let f: number = Math.sin(
+    //         (sx + sy) /
+    //             (this.piece.width + this.piece.height) /
+    //             this.piece.pixelRatio
+    //     );
+    //     let fC = f * 7;
+    //     let hBase = mod(this.piece.features.colorHue - fC, 360) / 60;
+    //
+    //     for (let i: number = 0; i < l; i += 4) {
+    //         this.shiftColorPixel(data, i, hBase);
+    //     }
+    //     return data;
+    // }
+    //
+    // private shiftColorPixel(data: ImageData, offset: number, h: number): void {
+    //     // get v
+    //     let s = this.piece.features.colorSaturation,
+    //         v = Math.max(
+    //             data.data[offset],
+    //             data.data[offset + 1],
+    //             data.data[offset + 2]
+    //         );
+    //
+    //     // rotate value
+    //     v += this.vDir;
+    //     if (v > this.vMax) v = this.vMin;
+    //     else if (v < this.vMin) v = this.vMax;
+    //
+    //     // back to rgb
+    //     if (s === 0) {
+    //         data.data[offset] = v;
+    //         data.data[offset + 1] = v;
+    //         data.data[offset + 2] = v;
+    //     } else {
+    //         const i = h << 0;
+    //         const f = h - i;
+    //         const p = v * (1 - s);
+    //         const q = v * (1 - s * f);
+    //         const t = v * (1 - s * (1 - f));
+    //
+    //         switch (i) {
+    //             case 0:
+    //                 data.data[offset] = v;
+    //                 data.data[offset + 1] = t;
+    //                 data.data[offset + 2] = p;
+    //                 break;
+    //             case 1:
+    //                 data.data[offset] = q;
+    //                 data.data[offset + 1] = v;
+    //                 data.data[offset + 2] = p;
+    //                 break;
+    //             case 2:
+    //                 data.data[offset] = p;
+    //                 data.data[offset + 1] = v;
+    //                 data.data[offset + 2] = t;
+    //                 break;
+    //             case 3:
+    //                 data.data[offset] = p;
+    //                 data.data[offset + 1] = q;
+    //                 data.data[offset + 2] = v;
+    //                 break;
+    //             case 4:
+    //                 data.data[offset] = t;
+    //                 data.data[offset + 1] = p;
+    //                 data.data[offset + 2] = v;
+    //                 break;
+    //             case 5:
+    //             default:
+    //                 data.data[offset] = v;
+    //                 data.data[offset + 1] = p;
+    //                 data.data[offset + 2] = q;
+    //         }
+    //     }
+    // }
 }
