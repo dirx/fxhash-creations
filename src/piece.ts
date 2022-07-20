@@ -203,7 +203,7 @@ export class Features {
             gradient: this.getGradientFeature(),
             shape: this.shapeBase === 0 ? 'circle' : 'quad',
             rotation: this.rotation,
-            animation: this.animation.map((i) => i.join('-')).join(','),
+            animation: this.animation.map((i) => i.join('-')).join(', '),
             rotationDir: this.rotationDir,
         };
     }
@@ -215,7 +215,7 @@ export class Features {
             this.gradient,
         ][this.gradientStepsBase]
             .map((c) => c.name)
-            .join(',');
+            .join(', ');
     }
 
     public getFeatureName(): string {
