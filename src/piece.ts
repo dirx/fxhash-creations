@@ -1,15 +1,18 @@
 import { Area, rand, randInit, randInt, randOptions } from './rand';
 import { color, ColorSpec } from './color';
 import * as isec from '@thi.ng/geom-isec';
-import { mod } from '@thi.ng/math';
 import { Circle, Quad } from './shapes';
+import * as twgl from 'twgl.js';
 
 export type FxhashFeatures = {
     color: string;
     colorShiftDir: number;
     colorShiftFactor: number;
+    gradientSteps: string;
+    gradient: string;
     shape: string;
     rotation: number;
+    rotationDir: number;
     animation: string;
 };
 
@@ -24,6 +27,10 @@ export class Features {
     public readonly colorValueMin: number;
     public readonly colorValueMax: number;
 
+    public readonly gradientStepsBase: number;
+    public readonly gradientSteps: number;
+    public readonly gradient: Array<ColorSpec>;
+
     public readonly colorShiftDirBase: number;
     public readonly colorShiftDir: number;
 
@@ -37,21 +44,20 @@ export class Features {
     public rotationCos: number;
     public rotationSin: number;
 
-    public maxMovingBlocks: number = 400;
+    public rotationDirBase: number;
+    public rotationDir: number;
 
-    public readonly gridSize: number = 200;
-    public readonly blockSize: number = 10;
+    public maxMovingBlocks: number = 8 * 128;
+    public framebufferForOffsets: number = 8;
+    public framebufferForMovingBlocks: number = 2;
+
+    public readonly gridSize: number = 8 * 24;
+    public readonly blockSize: number = 8;
 
     public readonly shapeBase: number;
     public readonly shapes: Array<Circle | Quad> = [];
 
     public readonly colorRGBMax: number;
-    public readonly colorShiftPixelFn: (
-        data: ImageData,
-        i: number,
-        inShape: boolean,
-        pixelRatio: number
-    ) => void;
 
     public static animationOptions: Array<
         Array<Array<'left' | 'up' | 'down' | 'right'>>
@@ -88,16 +94,20 @@ export class Features {
     public animationBase: number;
     public animation: Array<Array<'left' | 'up' | 'down' | 'right'>>;
 
+    // todo: organize combinations
     public static combinations: number =
-        Object.keys(color.palettes['unique-css-light']).length *
         2 *
         3 *
         2 *
         2 *
-        Features.animationOptions.length;
+        3 *
+        Features.animationOptions.length *
+        Object.keys(color.palettes['unique-css-light']).length *
+        3;
 
     public constructor(combination: number) {
         this.combination = combination % Features.combinations;
+        console.log(combination);
 
         this.colorShiftDirBase = combination % 2;
         this.colorShiftDir = [-1, 1][this.colorShiftDirBase];
@@ -117,11 +127,22 @@ export class Features {
         this.rotationSin = Math.sin(this.rotationRadians);
         combination = (combination / this.rotationOptions.length) << 0;
 
+        this.rotationDirBase = combination % 3;
+        this.rotationDir = [-1, 0, 1][this.rotationDirBase];
+        combination = (combination / 3) << 0;
+
         this.animationBase = combination % Features.animationOptions.length;
         this.animation = Features.animationOptions[this.animationBase];
         combination = (combination / Features.animationOptions.length) << 0;
 
         let colors = Object.values(color.palettes['unique-css-light']);
+        let colorsDark = Object.values(color.palettes['unique-css-dark']);
+        let colorsLight = Object.values(color.palettes['unique-css-light']);
+        let colorsRGB = [
+            Object.values(color.palettes['unique-css-red']),
+            Object.values(color.palettes['unique-css-green']),
+            Object.values(color.palettes['unique-css-blue']),
+        ];
         this.colorHueBase = combination % colors.length;
         this.colorName = colors[this.colorHueBase].name;
         this.color = colors[this.colorHueBase];
@@ -132,68 +153,32 @@ export class Features {
         combination = (combination / colors.length) << 0;
 
         this.colorRGBMax = Math.max(...this.color.rgb);
-        let colorRGBMin = this.color.rgb.map((rgb) => (rgb !== 0 ? rgb : 51));
 
-        let rgbIndex = [0, 1, 2];
-        if (
-            this.color.rgb[0] >= this.color.rgb[1] &&
-            this.color.rgb[1] >= this.color.rgb[2]
-        ) {
-            rgbIndex = [0, 1, 2];
-        } else if (
-            this.color.rgb[0] >= this.color.rgb[2] &&
-            this.color.rgb[2] >= this.color.rgb[1]
-        ) {
-            rgbIndex = [0, 2, 1];
-        } else if (
-            this.color.rgb[1] >= this.color.rgb[0] &&
-            this.color.rgb[0] >= this.color.rgb[2]
-        ) {
-            rgbIndex = [1, 0, 2];
-        } else if (
-            this.color.rgb[1] >= this.color.rgb[2] &&
-            this.color.rgb[2] >= this.color.rgb[0]
-        ) {
-            rgbIndex = [1, 2, 0];
-        } else if (
-            this.color.rgb[2] >= this.color.rgb[0] &&
-            this.color.rgb[0] >= this.color.rgb[1]
-        ) {
-            rgbIndex = [2, 0, 1];
-        } else {
-            rgbIndex = [2, 1, 0];
-        }
-        this.colorShiftPixelFn = (
-            data: ImageData,
-            i: number,
-            inShape: boolean,
-            pixelRatio: number
-        ) => {
-            data.data[rgbIndex[0] + i] = mod(
-                data.data[rgbIndex[0] + i] +
-                    this.colorShiftDir * pixelRatio * 2 * this.colorShiftFactor,
-                colorRGBMin[rgbIndex[0]] * (inShape ? 1 : 0.6)
-            );
-            data.data[rgbIndex[2] + i] = mod(
-                data.data[rgbIndex[2] + i] -
-                    this.colorShiftDir * 2 * pixelRatio,
-                colorRGBMin[rgbIndex[2]] * (inShape ? 1 : 0.5)
-            );
-            data.data[rgbIndex[1] + i] = mod(
-                Math.abs(
-                    data.data[rgbIndex[0] + i] - data.data[rgbIndex[2] + i]
-                ),
-                colorRGBMin[rgbIndex[1]] * (inShape ? 1 : 0.4)
-            );
-        };
+        let rgbIndex = color.rgbIndex(
+            ...(this.color.rgb as [number, number, number])
+        );
+
         console.log(this.color.rgb);
         console.log(rgbIndex);
 
+        this.gradientStepsBase = combination % 3;
+        this.gradientSteps = [1, 2, 6][this.gradientStepsBase];
+        this.gradient = [
+            colorsRGB[rgbIndex[0]][randInt(colorsRGB[rgbIndex[0]].length)],
+            colorsDark[randInt(colorsDark.length)],
+            colorsRGB[rgbIndex[2]][randInt(colorsRGB[rgbIndex[2]].length)],
+            colorsRGB[rgbIndex[2]][randInt(colorsRGB[rgbIndex[2]].length)],
+            colorsLight[randInt(colorsLight.length)],
+            colorsDark[randInt(colorsDark.length)],
+        ];
+
+        console.log(this.gradient.map((cs) => cs.name));
+
         let r = 0.45;
-        let c = 0; //rand() * 0.2 - 0.1;
-        let p = this.shapeBase === 0 ? 0.05 : 0.08;
         this.shapes.push(new Circle(0.5, 0.5, r));
-        let w = 0.25 - p + rand() * 0.1;
+        let c = 0; //rand() * 0.2 - 0.1;
+        let p = 0.02;
+        let w = 0.1 - p + rand() * 0.1;
         r = r - w;
 
         this.shapes.push(
@@ -207,8 +192,6 @@ export class Features {
                 ? new Circle(0.5 + c, 0.5 + c, r)
                 : new Quad(0.5 + c - r / 2, 0.5 + c - r / 2, r)
         );
-        // r -= rand() * 0.05 + 0.1;
-        // this.shapes.push(new Circle(0.5, 0.5, r));
     }
 
     public getFxhashFeatures(): FxhashFeatures {
@@ -216,10 +199,23 @@ export class Features {
             color: this.colorName,
             colorShiftDir: this.colorShiftDir,
             colorShiftFactor: this.colorShiftFactor,
+            gradientSteps: ['mono', 'duo', 'hexa'][this.gradientStepsBase],
+            gradient: this.getGradientFeature(),
             shape: this.shapeBase === 0 ? 'circle' : 'quad',
             rotation: this.rotation,
             animation: this.animation.map((i) => i.join('-')).join(','),
+            rotationDir: this.rotationDir,
         };
+    }
+
+    public getGradientFeature() {
+        return [
+            [this.gradient[1]],
+            [this.gradient[1], this.gradient[2]],
+            this.gradient,
+        ][this.gradientStepsBase]
+            .map((c) => c.name)
+            .join(',');
     }
 
     public getFeatureName(): string {
@@ -238,24 +234,28 @@ export class Piece {
 
     public width: number = 0;
     public height: number = 0;
-    public baseHeightWidth: number = 960;
+    public baseHeightWidth: number = 1600;
     public fps: number = 60;
     public pixelRatio: number = 2;
 
     public canvas: HTMLCanvasElement;
-    public context: CanvasRenderingContext2D;
+    public context!: WebGL2RenderingContext;
 
     public movingBlocks!: MovingBlocks;
 
     public combination: number;
 
     public inPreviewPhase!: boolean;
-    public previewPhaseEndsAfterBase: number = 900;
+    public previewPhaseEndsAfterBase: number = 400;
     public previewPhaseEndsAfter!: number;
 
     public debug!: DebugPiece;
 
+    public outputBuffer: number | null = null;
+
     public paused: boolean = false;
+
+    public rotationState: number = 0;
 
     public constructor(
         canvas: HTMLCanvasElement,
@@ -264,11 +264,9 @@ export class Piece {
         combination: number
     ) {
         this.canvas = canvas;
-        this.context = canvas.getContext('2d') as CanvasRenderingContext2D;
         this.combination = combination;
 
         this.updateSize(width, height);
-        this.setSmoothing(false);
 
         this.debug = new DebugPiece(this);
     }
@@ -280,6 +278,414 @@ export class Piece {
         this.inPreviewPhase = true;
         this.movingBlocks.init();
         this.paused = false;
+        this.initWebgl();
+    }
+
+    public programDraw!: twgl.ProgramInfo;
+    public positionBuffer!: twgl.BufferInfo;
+    public programPixels!: twgl.ProgramInfo;
+
+    public programOffsets!: twgl.ProgramInfo;
+    public programInit!: twgl.ProgramInfo;
+
+    public framebuffers!: Array<twgl.FramebufferInfo>;
+    public framebufferPixelsIndex: number = 0;
+    public bufferOffsets!: twgl.BufferInfo;
+
+    private initWebgl() {
+        if (this.context instanceof WebGL2RenderingContext) {
+            return;
+        }
+        let precision = `
+            precision mediump float;
+            precision mediump int;
+            precision mediump sampler2D;
+            `;
+        // init canvas & context
+        this.context = twgl.getContext(this.canvas, {
+            depth: false,
+            preserveDrawingBuffer: true,
+        }) as WebGL2RenderingContext;
+
+        // init framebuffers
+        const vInit = `#version 300 es
+            ${precision}
+
+            in vec2 position;
+
+            void main() {
+                gl_Position = vec4(position, 0.0, 1.0);
+            }`;
+        const fInit = `#version 300 es
+            precision mediump float;
+
+            uniform vec3 baseColor;
+            
+            out vec4 outColor;
+
+            void main() {
+                outColor = vec4(baseColor, 0.0);
+            }`;
+
+        const vDraw = `#version 300 es
+            ${precision}
+        
+            in vec2 position;
+            out vec2 v_position;
+            
+            uniform mat4 world;
+        
+            void main() {
+               gl_Position = vec4(position, 0.0, 1.0);
+               v_position = 0.5 * (position + 1.0);
+            }`;
+        const fDraw = `#version 300 es
+            ${precision}
+            
+            in vec2 v_position;
+            out vec4 outColor;
+            
+            uniform sampler2D pixels;
+           
+            void main() {
+              outColor = vec4(texture(pixels, v_position).rgb, 1.0); 
+            }`;
+        this.programDraw = twgl.createProgramInfo(this.context, [vDraw, fDraw]);
+        this.context.useProgram(this.programDraw.program);
+
+        const vOffsets = `#version 300 es
+            ${precision}
+        
+            in vec4 block;
+            out vec4 color;
+            
+            uniform float pixelSize;
+            uniform float blockWidthHeight;
+            
+            uniform mat4 world;
+        
+            void main() {
+               // ignore inactive ones
+               if (block.x == 0.0 && block.y == 0.0 && block.z == 0.0 && block.w == 0.0) {
+                    color = vec4(0.0);
+                    gl_PointSize = 0.0;
+                    gl_Position = world * vec4(0.0, 0.0, 0.0, 1.0);
+               } else {
+                   color = vec4(0.5 * (block.zw + 1.0), 1.0, 0.0); // convert to color 0-1
+                   gl_PointSize = pixelSize;
+                   gl_Position = world * vec4(block.x + blockWidthHeight, block.y - blockWidthHeight, 0.0, 1.0);
+               }        
+            }`;
+        const fOffsets = `#version 300 es
+            precision mediump float;
+            
+            in vec4 color;
+            out vec4 outColor;
+            
+            void main() {
+                outColor = color;
+            }`;
+
+        // create framebuffer for texture
+        const vMoveBlocks = `#version 300 es
+            ${precision}
+
+            in vec2 position;
+            out vec2 v_position;
+            
+            uniform float pixelSize;
+            uniform mat4 world;
+        
+            void main() {
+               gl_Position = world * vec4(position, 0.0, 1.0);
+               v_position = 0.5 * (position + 1.0);
+            }`;
+        const fMoveBlocks = `#version 300 es
+            ${precision}
+        
+            in vec2 v_position;
+            in vec2 offset;
+            
+            out vec4 outColor;
+            
+            uniform int drawId;
+            uniform sampler2D pixels;
+            uniform sampler2D offsets;
+            uniform int gradientSteps;
+            uniform vec3[6] gradient;
+            uniform sampler2D u_offsets;
+            uniform vec3 baseColor;
+            uniform float pixelSize;
+            uniform float pixelWidth;
+            uniform ivec3 colorRGBIndex;
+            uniform vec3 colorRGBMin;
+            uniform float colorShiftFactor;
+            uniform vec2 colorShiftRGBDir;
+            uniform float colorShiftDir;
+            uniform float  timeMs;
+    
+            float rollover(float value, float min, float max) {
+                if (value > max) {
+                    return abs(max - value) + min;
+                }
+                
+                if (value < min) {
+                    return max - abs(value - min);
+                }
+                
+                return value;
+            }
+            
+            // see https://github.com/dmnsgn/glsl-rotate
+            mat2 rotation2d(float angle) {
+              float s = sin(angle);
+              float c = cos(angle);
+            
+              return mat2(
+                c, -s,
+                s, c
+              );
+            }
+            
+            vec2 rotate(vec2 v, float angle) {
+              return rotation2d(angle) * v;
+            }
+            
+            mat4 rotation3d(vec3 axis, float angle) {
+              axis = normalize(axis);
+              float s = sin(angle);
+              float c = cos(angle);
+              float oc = 1.0 - c;
+            
+              return mat4(
+                oc * axis.x * axis.x + c,           oc * axis.x * axis.y - axis.z * s,  oc * axis.z * axis.x + axis.y * s,  0.0,
+                oc * axis.x * axis.y + axis.z * s,  oc * axis.y * axis.y + c,           oc * axis.y * axis.z - axis.x * s,  0.0,
+                oc * axis.z * axis.x - axis.y * s,  oc * axis.y * axis.z + axis.x * s,  oc * axis.z * axis.z + c,           0.0,
+                0.0,                                0.0,                                0.0,                                1.0
+              );
+            }
+            
+            vec3 rotate(vec3 v, vec3 axis, float angle) {
+              return (rotation3d(axis, angle) * vec4(v, 1.0)).xyz;
+            }
+            
+            vec3 bezier(vec3 A, vec3 B, float t) {
+              return mix(A, B, t);
+            }
+            
+            vec3 bezier(vec3 A, vec3 B, vec3 C, float t) {
+              vec3 E = mix(A, B, t);
+              vec3 F = mix(B, C, t);
+            
+              vec3 P = mix(E, F, t);
+            
+              return P;
+            }
+            
+            vec3 bezier(vec3 A, vec3 B, vec3 C, vec3 D, float t) {
+              vec3 E = mix(A, B, t);
+              vec3 F = mix(B, C, t);
+              vec3 G = mix(C, D, t);
+            
+              vec3 H = mix(E, F, t);
+              vec3 I = mix(F, G, t);
+            
+              vec3 P = mix(H, I, t);
+            
+              return P;
+            }
+
+            vec3 bezier(vec3 A, vec3 B, vec3 C, vec3 D, vec3 E, float t) {
+              vec3 A1 = mix(A, B, t);
+              vec3 B1 = mix(B, C, t);
+              vec3 C1 = mix(C, D, t);
+              vec3 D1 = mix(D, E, t);
+            
+              vec3 A2 = mix(A1, B1, t);
+              vec3 B2 = mix(B1, C1, t);
+              vec3 C2 = mix(C1, D1, t);
+            
+              vec3 A3 = mix(A2, B2, t);
+              vec3 B3 = mix(B2, C2, t);
+              
+              vec3 P = mix(A3, B3, t);
+            
+              return P;
+            }
+            
+            vec3 bezier(vec3 A, vec3 B, vec3 C, vec3 D, vec3 E, vec3 F, vec3 G, float t) {
+              vec3 A1 = mix(A, B, t);
+              vec3 B1 = mix(B, C, t);
+              vec3 C1 = mix(C, D, t);
+              vec3 D1 = mix(D, E, t);
+              vec3 E1 = mix(E, F, t);
+              vec3 F1 = mix(F, G, t);
+            
+              vec3 A2 = mix(A1, B1, t);
+              vec3 B2 = mix(B1, C1, t);
+              vec3 C2 = mix(C1, D1, t);
+              vec3 D2 = mix(D1, E1, t);
+              vec3 E2 = mix(E1, F1, t);
+            
+              vec3 A3 = mix(A2, B2, t);
+              vec3 B3 = mix(B2, C2, t);
+              vec3 C3 = mix(C2, D2, t);
+              vec3 D3 = mix(D2, E2, t);
+            
+              vec3 A4 = mix(A3, B3, t);
+              vec3 B4 = mix(B3, C3, t);
+              vec3 C4 = mix(C3, D3, t);
+            
+              vec3 A5 = mix(A4, B4, t);
+              vec3 B5 = mix(B4, C4, t);
+              
+              vec3 P = mix(A5, B5, t);
+            
+              return P;
+            }
+
+            vec4 shiftColor(vec4 color) {
+                if (gradientSteps == 1) {
+                    return vec4(
+                        bezier(
+                            baseColor.rgb, 
+                            gradient[1],
+                            color.a
+                        ),
+                        color.a
+                    );
+                }
+                
+                if (gradientSteps == 2) {
+                    return vec4(
+                        bezier(
+                            baseColor.rgb, 
+                            gradient[1],
+                            gradient[2],
+                            color.a
+                        ),
+                        color.a
+                    );
+                }
+                
+                return vec4(
+                    bezier(
+                        baseColor.rgb, 
+                        gradient[0], 
+                        gradient[1],
+                        gradient[2], 
+                        gradient[3], 
+                        gradient[4],
+                        gradient[5],
+                        color.a
+                    ),
+                    color.a
+                );
+            }
+
+            void main() {
+                vec4 singleOffset;
+                vec2 offset;
+                vec2 offsetPos;
+                vec4 color;
+    
+                singleOffset = texture(offsets, v_position);
+                
+                offset = singleOffset.rg * 2.0 - 1.0; // convert back from color > -1 to 1
+                offsetPos = offset.xy * 40.0 * pixelWidth; // convert back to -100 / 100 and normalize 
+                
+                if (singleOffset.b == 0.0) {
+                    color = texture(pixels, v_position);
+                } else {
+                    color = texture(pixels, v_position - offsetPos.xy);
+                    color.a = rollover(color.a + colorShiftDir * colorShiftFactor, 0.0, 1.0);
+                    color = shiftColor(color);
+                }
+                outColor = color;
+            }`;
+
+        const n = this.baseHeightWidth; //this.gl.canvas.width;
+        const m = this.baseHeightWidth; //this.gl.canvas.height;
+        // const initColor = [...this.features.color.rgb.map((c) => c / 255), 1.0];
+        this.framebuffers = [
+            ...Array(
+                this.features.framebufferForOffsets +
+                    this.features.framebufferForMovingBlocks
+            ),
+        ].map((_) => {
+            let attachments = [
+                {
+                    attachmentPoint: WebGL2RenderingContext.COLOR_ATTACHMENT0,
+                    format: this.context.RGBA,
+                    type: this.context.UNSIGNED_BYTE,
+                    min: this.context.NEAREST,
+                    mag: this.context.NEAREST,
+                    wrap: this.context.CLAMP_TO_EDGE,
+                    // color: [1.0, 0.5, 0.0, 1.0],
+                },
+            ];
+
+            return twgl.createFramebufferInfo(this.context, attachments, n, m);
+        });
+
+        this.framebufferPixelsIndex = 0; // point to the first index
+        this.programPixels = twgl.createProgramInfo(this.context, [
+            vMoveBlocks,
+            fMoveBlocks,
+        ]);
+
+        const blocks = {
+            block: {
+                data: this.movingBlocks.normalized(),
+                numComponents: 4,
+            },
+        };
+        this.bufferOffsets = twgl.createBufferInfoFromArrays(
+            this.context,
+            blocks
+        );
+
+        const position = {
+            position: {
+                data: [-1, 1, 1, 1, 1, -1, 1, -1, -1, -1, -1, 1],
+                numComponents: 2,
+            },
+        };
+        this.positionBuffer = twgl.createBufferInfoFromArrays(
+            this.context,
+            position
+        );
+
+        // init offsets program
+        this.programOffsets = twgl.createProgramInfo(this.context, [
+            vOffsets,
+            fOffsets,
+        ]);
+
+        // colorize framebuffers that are used for moving pixels
+        this.programInit = twgl.createProgramInfo(this.context, [vInit, fInit]);
+
+        this.context.useProgram(this.programInit.program);
+        twgl.setBuffersAndAttributes(
+            this.context,
+            this.programInit,
+            this.positionBuffer
+        );
+
+        twgl.setUniforms(this.programInit, {
+            baseColor: this.features.color.rgb.map((v) => v / 255),
+        });
+        twgl.bindFramebufferInfo(
+            this.context,
+            this.framebuffers[this.features.framebufferForOffsets]
+        );
+        twgl.drawBufferInfo(this.context, this.positionBuffer);
+
+        twgl.bindFramebufferInfo(
+            this.context,
+            this.framebuffers[1 + this.features.framebufferForOffsets]
+        );
+        twgl.drawBufferInfo(this.context, this.positionBuffer);
     }
 
     public updateSize(
@@ -290,6 +696,7 @@ export class Piece {
         this.initState();
         let wh = Math.min(width, height);
         let f = wh / this.baseHeightWidth;
+        // todo: handle pixel ratio on webgl2 context
         if (pixelRatio === null) {
             this.pixelRatio = Math.ceil(
                 (wh + wh) / 2 / this.baseHeightWidth / 2
@@ -299,7 +706,6 @@ export class Piece {
         }
         this.previewPhaseEndsAfter =
             this.previewPhaseEndsAfterBase / this.pixelRatio;
-        this.context.scale(this.pixelRatio, this.pixelRatio);
         this.width = (this.baseHeightWidth / this.pixelRatio) << 0;
         this.height = (this.baseHeightWidth / this.pixelRatio) << 0;
         this.canvas.width = this.width;
@@ -312,45 +718,47 @@ export class Piece {
         }%`;
 
         this.canvas.dispatchEvent(new Event('piece.updateSize'));
-        this.initImage();
+
+        // twgl.resizeCanvasToDisplaySize(this.gl.canvas);
+        this.context.canvas.width = this.width;
+        this.context.canvas.height = this.height;
+        this.context.canvas.style.width = `${
+            ((this.width * f) / width) * 100 * this.pixelRatio
+        }%`;
+        this.context.canvas.style.height = `${
+            ((this.height * f) / height) * 100 * this.pixelRatio
+        }%`;
+        this.context.viewport(
+            0,
+            0,
+            this.context.canvas.width,
+            this.context.canvas.height
+        );
+
+        this.initBackground();
     }
 
-    private setSmoothing(active: boolean) {
-        this.context.imageSmoothingEnabled = active;
-        this.canvas.style.imageRendering = active ? 'auto' : 'pixelated';
-    }
-
-    private getSmoothing(): boolean {
-        return this.context.imageSmoothingEnabled;
-    }
-
-    public toggleSmoothing(): boolean {
-        let active: boolean = !this.getSmoothing();
-        this.setSmoothing(active);
-        return active;
-    }
-
-    public initImage() {
-        let css = color.hsvCss(
+    public initBackground() {
+        document.body.style.backgroundColor = color.hsvCss(
             this.features.colorHue,
             this.features.colorSaturation,
             this.features.colorValueMax
         );
-        document.body.style.backgroundColor = css;
-        this.context.fillStyle = css;
-        this.context.fillRect(0, 0, this.width, this.height);
     }
 
-    public tick() {
+    public init: number = 1;
+    public tick(timeMs: number) {
+        this.tickCaptureImage();
+
         if (this.paused) {
             return;
         }
 
         this.debug.tickPiece();
 
-        if (!this.movingBlocks.tick()) {
-            return;
-        }
+        this.movingBlocks.tick();
+
+        this.tickWebgl(timeMs);
 
         if (
             this.inPreviewPhase &&
@@ -361,13 +769,168 @@ export class Piece {
         }
     }
 
-    public captureImage(name: string) {
-        let previewCanvas = this.preparePreviewCanvas();
+    public tickWebgl(timeMs: number) {
+        if (this.positionBuffer === undefined) {
+            return;
+        }
 
-        let link = document.createElement('a');
-        link.download = name + '.png';
-        link.href = previewCanvas.toDataURL();
-        link.click();
+        this.rotationState += 1000 / 60; // 60fps
+
+        let world = twgl.m4.identity();
+
+        // todo: use fix array reference instead of building up new one each frame
+        const movingBlocks = this.movingBlocks.normalized();
+        const movingBlocksChunkLength =
+            this.features.maxMovingBlocks / this.features.framebufferForOffsets;
+
+        // draw offsets maps - distribute blocks over multiple layers to minimize overlapping / enable multi offset shifts
+        this.context.useProgram(this.programOffsets.program);
+        twgl.setBuffersAndAttributes(
+            this.context,
+            this.programOffsets,
+            this.bufferOffsets
+        );
+        twgl.setAttribInfoBufferFromArray(
+            this.context,
+            this.bufferOffsets.attribs?.block as twgl.AttribInfo,
+            movingBlocks
+        );
+        twgl.setUniforms(this.programOffsets, {
+            pixelSize:
+                (this.features.blockSize / this.features.gridSize) *
+                this.context.canvas.width,
+            blockWidthHeight: this.features.blockSize / this.features.gridSize,
+            world: twgl.m4.rotateZ(world, -0.005 * this.features.rotationDir),
+        });
+
+        for (let i = 0; i < this.features.framebufferForOffsets; i++) {
+            twgl.bindFramebufferInfo(this.context, this.framebuffers[i]);
+
+            this.context.clearColor(0.0, 0.0, 0.0, 0.0);
+            this.context.clear(this.context.COLOR_BUFFER_BIT);
+
+            twgl.drawBufferInfo(
+                this.context,
+                this.bufferOffsets,
+                WebGL2RenderingContext.POINTS,
+                movingBlocksChunkLength,
+                movingBlocksChunkLength * i
+            );
+        }
+
+        // draw moving pixels based on offset layers - toggle pixel buffers per layer
+        this.context.useProgram(this.programPixels.program);
+        twgl.setBuffersAndAttributes(
+            this.context,
+            this.programPixels,
+            this.positionBuffer
+        );
+
+        let uniform = {
+            baseColor: this.features.color.rgb.map((c) => c / 255),
+            pixelSize:
+                (this.features.blockSize / this.features.gridSize) *
+                this.context.canvas.width,
+            pixelWidth: 1 / this.context.canvas.width,
+            pixels: this.framebuffers[
+                this.framebufferPixelsIndex +
+                    this.features.framebufferForOffsets
+            ].attachments[0],
+            offsets: this.framebuffers[0].attachments[0],
+            gradientSteps: this.features.gradientSteps,
+            gradient: this.features.gradient
+                .map((cs) => cs.rgb.map((c) => c / 255))
+                .flat(),
+            timeMs: timeMs,
+            colorShiftFactor: this.features.colorShiftFactor,
+            colorShiftDir: this.features.colorShiftDir / 255,
+        };
+        let scaleFactor = this.features.rotationDir === 0 ? 0.996 : 0.998;
+        twgl.setUniforms(this.programPixels, uniform);
+        for (let i = 0; i < this.features.framebufferForOffsets; i++) {
+            twgl.setUniforms(this.programPixels, {
+                world:
+                    i === this.features.framebufferForOffsets - 1
+                        ? twgl.m4.rotateZ(
+                              twgl.m4.scaling(
+                                  [scaleFactor, scaleFactor, scaleFactor],
+                                  world
+                              ),
+                              0.005 * this.features.rotationDir
+                          )
+                        : world,
+                offsets: this.framebuffers[i].attachments[0],
+                pixels: this.framebuffers[
+                    this.framebufferPixelsIndex +
+                        this.features.framebufferForOffsets
+                ].attachments[0],
+            });
+
+            twgl.bindFramebufferInfo(
+                this.context,
+                this.framebuffers[
+                    1 -
+                        this.framebufferPixelsIndex +
+                        this.features.framebufferForOffsets
+                ]
+            );
+            twgl.drawBufferInfo(this.context, this.positionBuffer);
+            this.framebufferPixelsIndex = 1 - this.framebufferPixelsIndex;
+        }
+
+        // draw latest moving blocks buffer to screen
+        this.context.useProgram(this.programDraw.program);
+        twgl.setBuffersAndAttributes(
+            this.context,
+            this.programDraw,
+            this.positionBuffer
+        );
+
+        if (this.outputBuffer === null) {
+            let uniforms = {
+                pixels: this.framebuffers[
+                    this.framebufferPixelsIndex +
+                        this.features.framebufferForOffsets
+                ].attachments[0],
+                world: world,
+            };
+            twgl.setUniforms(this.programDraw, uniforms);
+        } else {
+            twgl.setUniforms(this.programDraw, {
+                pixels: this.framebuffers[this.outputBuffer].attachments[0],
+            });
+        }
+
+        twgl.bindFramebufferInfo(this.context, null);
+        twgl.drawBufferInfo(this.context, this.positionBuffer);
+
+        this.init = 0;
+    }
+
+    private captureImageName: string | null = null;
+    public captureImage(name: string) {
+        this.captureImageName = name;
+    }
+
+    private tickCaptureImage() {
+        if (this.captureImageName === null) {
+            return;
+        }
+
+        let name = this.captureImageName;
+        this.captureImageName = null;
+
+        this.context.canvas.toBlob((blob) => {
+            if (blob === null) {
+                return;
+            }
+            const a = document.createElement('a');
+            document.body.appendChild(a);
+            a.style.display = 'none';
+            a.href = window.URL.createObjectURL(blob);
+            a.download = name;
+            a.click();
+        });
     }
 
     public preparePreviewCanvas(): HTMLCanvasElement {
@@ -382,10 +945,8 @@ export class Piece {
         previewCanvas.width =
             this.width * (this.pixelRatio < 1 ? 1 : this.pixelRatio);
 
-        resizedContext.imageSmoothingEnabled =
-            this.context.imageSmoothingEnabled;
         resizedContext?.drawImage(
-            this.canvas,
+            this.context.canvas,
             0,
             0,
             previewCanvas.width,
@@ -594,6 +1155,31 @@ export class MovingBlocks {
             this.add();
         } while (this.total < this.piece.features.maxMovingBlocks);
     }
+
+    public normalized(): Float32Array {
+        return (
+            this.blocks
+                // .sort((a, b) =>
+                //     a.active &&
+                //     b.active &&
+                //     a.area.x + a.area.y > b.area.x + b.area.y
+                //         ? -1
+                //         : 1
+                // )
+                // .sort((a, b) =>
+                //     a.active &&
+                //     b.active &&
+                //     Math.abs(a.area.x - b.area.x) > a.area.w * 2 &&
+                //     Math.abs(a.area.y - b.area.y) > a.area.h * 2
+                //         ? -1
+                //         : 1
+                // )
+                .reduce((r, block, currentIndex) => {
+                    block.normalized(r, currentIndex * 4);
+                    return r;
+                }, new Float32Array(this.piece.features.maxMovingBlocks * 4))
+        );
+    }
 }
 
 export class MovingBlock {
@@ -605,6 +1191,22 @@ export class MovingBlock {
 
     public constructor(public readonly piece: Piece) {
         this.piece = piece;
+    }
+
+    public normalized(r: Float32Array, index: number): Float32Array {
+        if (this.active) {
+            r[index] = ((this.area.x + 0) / this.piece.width) * 2 - 1;
+            r[index + 1] = 2 - ((this.area.y + 0) / this.piece.height) * 2 - 1;
+            r[index + 2] = this.dirX / 40; // max -40 / 40 => - 1 / 1
+            r[index + 3] = -this.dirY / 40; // max -40 / 40  => - 1 / 1
+        } else {
+            r[index] = 0.0;
+            r[index + 1] = 0.0;
+            r[index + 2] = 0.0;
+            r[index + 3] = 0.0;
+        }
+
+        return r;
     }
 
     public activate() {
@@ -624,10 +1226,10 @@ export class MovingBlock {
         this.area.y =
             (this.area.y * this.piece.height) / this.piece.features.gridSize;
         this.area.w =
-            ((this.area.w + 1) * this.piece.width) /
+            ((this.area.w + 0) * this.piece.width) /
             this.piece.features.gridSize;
         this.area.h =
-            ((this.area.h + 1) * this.piece.height) /
+            ((this.area.h + 0) * this.piece.height) /
             this.piece.features.gridSize;
 
         this.area.x = this.area.x << 0;
@@ -663,8 +1265,8 @@ export class MovingBlock {
             this.activate();
         }
 
-        let sx: number = this.area.x - this.dirX;
-        let sy: number = this.area.y - this.dirY;
+        let sx: number = this.area.x - this.dirX * (this.inShape ? -1 : 1);
+        let sy: number = this.area.y - this.dirY * (this.inShape ? -1 : 1);
 
         if (!this.intersectsWithDrawingArea(sx, sy, this.area.w, this.area.h)) {
             this.deactivate();
@@ -683,8 +1285,6 @@ export class MovingBlock {
         }
 
         this.inShape = inShape < 2;
-
-        this.move(sx, sy, this.area.w, this.area.h, this.area.x, this.area.y);
 
         this.area.x = sx;
         this.area.y = sy;
@@ -764,34 +1364,5 @@ export class MovingBlock {
             [w / 2 + 1, h / 2 + 1],
             [this.piece.width - w - 2, this.piece.height - h - 2]
         );
-    }
-
-    private move(
-        sx: number,
-        sy: number,
-        sw: number,
-        sh: number,
-        tx: number,
-        ty: number
-    ) {
-        this.piece.context.putImageData(
-            this.shiftColor(this.piece.context.getImageData(sx, sy, sw, sh)),
-            tx,
-            ty
-        );
-    }
-
-    private shiftColor(data: ImageData) {
-        let l: number = data.data.length;
-
-        for (let i: number = 0; i < l; i += 4) {
-            this.piece.features.colorShiftPixelFn(
-                data,
-                i,
-                this.inShape,
-                this.piece.pixelRatio
-            );
-        }
-        return data;
     }
 }

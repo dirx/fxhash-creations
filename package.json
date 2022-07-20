@@ -14,9 +14,11 @@
     "@thi.ng/geom-isec": "^2.1.14",
     "@thi.ng/math": "^5.3.3",
     "@thi.ng/random": "^3.3.2",
-    "@thi.ng/random-fxhash": "^0.2.2"
+    "@thi.ng/random-fxhash": "^0.2.2",
+    "twgl.js": "^4.24.0"
   },
   "devDependencies": {
+    "@types/three": "^0.141.0",
     "adm-zip": "^0.5.9",
     "copy-webpack-plugin": "^9.0.1",
     "css-loader": "^6.4.0",
