@@ -80,11 +80,13 @@ export class Features {
             ['right', 'down'],
         ];
 
-        let combi: Array<Array<Array<'left' | 'up' | 'down' | 'right'>>> = [];
+        let combinations: Array<
+            Array<Array<'left' | 'up' | 'down' | 'right'>>
+        > = [];
         let temp: Array<Array<'left' | 'up' | 'down' | 'right'>> = [];
-        let slent = Math.pow(2, all.length);
+        let length = Math.pow(2, all.length);
 
-        for (let i = 0; i < slent; i++) {
+        for (let i = 0; i < length; i++) {
             temp = [];
             for (let j = 0; j < all.length; j++) {
                 if (i & Math.pow(2, j)) {
@@ -92,16 +94,17 @@ export class Features {
                 }
             }
             if (temp.length > 0) {
-                combi.push(temp);
+                combinations.push(temp);
             }
         }
 
-        Features.directionOptions = combi.filter(
+        Features.directionOptions = combinations.filter(
             (c) => c.length >= 3 && c.length <= 4
         );
         return Features.directionOptions;
     }
 
+    // todo: improve combination handling
     public static combinations: number =
         2 *
         4 *
@@ -320,6 +323,17 @@ export class Piece {
     public paused: boolean = false;
     private autoPause: boolean;
 
+    public programInit!: twgl.ProgramInfo;
+    public programOffsets!: twgl.ProgramInfo;
+    public programPixels!: twgl.ProgramInfo;
+    public programDraw!: twgl.ProgramInfo;
+
+    public positionBuffer!: twgl.BufferInfo;
+    public bufferOffsets!: twgl.BufferInfo;
+
+    public framebuffers!: Array<twgl.FramebufferInfo>;
+    public framebufferPixelsIndex: number = 0;
+
     public outputBuffer: number | null = null;
 
     public constructor(
@@ -352,17 +366,6 @@ export class Piece {
         this.initWebgl();
     }
 
-    public programDraw!: twgl.ProgramInfo;
-    public positionBuffer!: twgl.BufferInfo;
-    public programPixels!: twgl.ProgramInfo;
-
-    public programOffsets!: twgl.ProgramInfo;
-    public programInit!: twgl.ProgramInfo;
-
-    public framebuffers!: Array<twgl.FramebufferInfo>;
-    public framebufferPixelsIndex: number = 0;
-    public bufferOffsets!: twgl.BufferInfo;
-
     private initWebgl() {
         if (this.context instanceof WebGL2RenderingContext) {
             return;
@@ -377,6 +380,14 @@ export class Piece {
             depth: false,
             preserveDrawingBuffer: true,
         }) as WebGL2RenderingContext;
+
+        if (!twgl.isWebGL2(this.context)) {
+            console.error(
+                'A browser with webgl2 enabled is required to view this piece.'
+            );
+            this.paused = true;
+            return;
+        }
 
         // init framebuffers
         const vInit = `#version 300 es
