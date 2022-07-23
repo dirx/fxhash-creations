@@ -35,10 +35,16 @@ export class Container {
             window.innerWidth,
             window.innerHeight,
             null,
-            combination
+            combination,
+            this.getAutopauseParam()
         );
 
         window.$fxhashFeatures = this.piece.features.getFxhashFeatures();
+    }
+
+    private getAutopauseParam(): boolean {
+        let search = new URLSearchParams(window.location.search);
+        return !search.has('autopause') || search.get('autopause') == 'on';
     }
 
     private initResizeHandler() {

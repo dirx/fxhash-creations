@@ -12,7 +12,6 @@
   "dependencies": {
     "@fontsource/vt323": "^4.5.6",
     "@thi.ng/geom-isec": "^2.1.14",
-    "@thi.ng/math": "^5.3.3",
     "@thi.ng/random": "^3.3.2",
     "@thi.ng/random-fxhash": "^0.2.2",
     "twgl.js": "^4.24.0"

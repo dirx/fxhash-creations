@@ -143,7 +143,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.`,
 
 Monochromatic Edition
 
-Real-time deterministic animation based on vanilla js & canvas 2d rendering context, variable size, 2022
+Real-time deterministic webgl2 animation, fixed size, 2022
 Be inspired. If you need help please press 'h'.
 
 Dirk Adler, https://twitter.com/d_rx`,

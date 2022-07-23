@@ -15,9 +15,7 @@ if (combinationParam !== '') {
 
 console.info('Moving Blocks');
 console.info('Monochromatic Edition');
-console.info(
-    'Real-time deterministic animation based on vanilla js & canvas 2d rendering context, variable size, 2022'
-);
+console.info('Real-time deterministic webgl2 animation, fixed size, 2022');
 console.info("Be inspired. If you need help please press 'h'.");
 console.info('Dirk Adler, https://twitter.com/d_rx');
 console.info(`FXHASH: ${window.fxhash}`);

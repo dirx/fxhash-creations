@@ -57,41 +57,19 @@ export class Features {
     public rotationCos: number;
     public rotationSin: number;
 
-    public static directionOptions: Array<
+    public directionBase: number;
+    public direction: Array<Array<'left' | 'up' | 'down' | 'right'>>;
+
+    private static directionOptions: Array<
         Array<Array<'left' | 'up' | 'down' | 'right'>>
-    > = [
-        [['up'], ['left'], ['down'], ['right']],
-        [
-            ['left', 'up'],
-            ['left', 'down'],
-            ['right', 'up'],
-            ['right', 'down'],
-        ],
-        // [
-        //     ['left', 'up'],
-        //     ['left', 'down'],
-        // ],
-        // [
-        //     ['right', 'up'],
-        //     ['right', 'down'],
-        // ],
-        // [
-        //     ['left', 'up'],
-        //     ['right', 'up'],
-        // ],
-        // [
-        //     ['left', 'down'],
-        //     ['right', 'up'],
-        // ],
-        // [
-        //     ['left', 'up'],
-        //     ['right', 'down'],
-        // ],
-        [['right'], ['right', 'up'], ['right', 'down']],
-        [['left'], ['left', 'up'], ['left', 'down']],
-        // [['up'], ['left', 'up'], ['right', 'up']],
-        // [['down'], ['left', 'down'], ['right', 'down']],
-        [
+    >;
+    public static getDirectionOptions(): Array<
+        Array<Array<'left' | 'up' | 'down' | 'right'>>
+    > {
+        if (Features.directionOptions) {
+            return Features.directionOptions;
+        }
+        const all: Array<Array<'left' | 'up' | 'down' | 'right'>> = [
             ['up'],
             ['left'],
             ['down'],
@@ -100,17 +78,29 @@ export class Features {
             ['left', 'down'],
             ['right', 'up'],
             ['right', 'down'],
-        ],
-        [['left'], ['left', 'up'], ['up']],
-        [['left'], ['left', 'down'], ['down']],
-        [['right'], ['right', 'up'], ['up']],
-        [['right'], ['right', 'down'], ['down']],
-        [['right'], ['right', 'down'], ['left'], ['left', 'up']],
-        [['right'], ['right', 'up'], ['left'], ['left', 'down']],
-        [['down'], ['right', 'down'], ['up'], ['left', 'up']],
-    ];
-    public directionBase: number;
-    public direction: Array<Array<'left' | 'up' | 'down' | 'right'>>;
+        ];
+
+        let combi: Array<Array<Array<'left' | 'up' | 'down' | 'right'>>> = [];
+        let temp: Array<Array<'left' | 'up' | 'down' | 'right'>> = [];
+        let slent = Math.pow(2, all.length);
+
+        for (let i = 0; i < slent; i++) {
+            temp = [];
+            for (let j = 0; j < all.length; j++) {
+                if (i & Math.pow(2, j)) {
+                    temp.push(all[j]);
+                }
+            }
+            if (temp.length > 0) {
+                combi.push(temp);
+            }
+        }
+
+        Features.directionOptions = combi.filter(
+            (c) => c.length >= 3 && c.length <= 4
+        );
+        return Features.directionOptions;
+    }
 
     public static combinations: number =
         2 *
@@ -119,7 +109,7 @@ export class Features {
         3 *
         3 *
         Object.keys(color.palettes['unique-css']).length *
-        Features.directionOptions.length *
+        Features.getDirectionOptions().length *
         8;
 
     public constructor(combination: number) {
@@ -154,22 +144,29 @@ export class Features {
         combination = (combination / 3) << 0;
 
         this.clusters = (combination % 3) + 1;
+        combination = (combination / 3) << 0;
         for (let i = 0; i < numOfShapes; i++) {
             let cluster = i % this.clusters;
-            let wh = randOptions([blocks[0], blocks[1]], [numOfShapes - 1, 1]);
-            let anglePadding = (Math.PI * 60) / 180;
-            let centerPadding = this.clusters > 1 ? wh / 2 + this.blockSize : 0;
+            let wh = randOptions([blocks[0], blocks[1]], [numOfShapes, 1]);
+            let centerPadding =
+                this.clusters > 1 ? wh / 2 + this.blockSize * 2 : 0;
             let angle =
-                (((Math.PI * 180) / 180 - anglePadding * 2) / this.clusters) *
-                    rand() +
-                (cluster + 1) * ((Math.PI * 360) / 180 / this.clusters) +
-                anglePadding +
-                (Math.PI * 45) / 180;
+                (120 / this.clusters) * rand() +
+                cluster * (360 / this.clusters) +
+                90;
             let distance =
-                (this.gridSize * 0.5 - this.blockSize - wh) * rand() +
+                (this.gridSize * 0.5 -
+                    wh -
+                    this.blockSize -
+                    centerPadding / 2) *
+                    rand() +
                 centerPadding;
-            let x = this.gridSize / 2 + distance * Math.cos(angle);
-            let y = this.gridSize / 2 + distance * Math.sin(angle);
+            let x =
+                this.gridSize / 2 +
+                distance * Math.cos((angle / 180) * Math.PI);
+            let y =
+                this.gridSize / 2 +
+                distance * Math.sin((angle / 180) * Math.PI);
             if (randInt(2) !== 0) {
                 this.shapes.push(
                     new Circle(
@@ -188,9 +185,15 @@ export class Features {
                 );
             }
         }
-        this.shapes.forEach((s) => {
-            s.valueX = (rand() + 0.25) * 2 * randOptions([1, -1]);
-            s.valueY = (rand() + 0.25) * 2 * randOptions([1, -1]);
+        this.shapes.forEach((s, _index) => {
+            s.valueX =
+                (rand() + randOptions([0.23, 0.29, 0.37])) *
+                2 *
+                randOptions([1, -1]);
+            s.valueY =
+                (rand() + randOptions([0.23, 0.29, 0.37])) *
+                2 *
+                randOptions([1, -1]);
         });
         [this.shapesCenterX, this.shapesCenterY] = this.shapes.reduce(
             (center: Array<number>, shape) => {
@@ -201,11 +204,12 @@ export class Features {
             },
             [0, 0]
         );
-        combination = (combination / 3) << 0;
 
-        this.directionBase = combination % Features.directionOptions.length;
-        this.direction = Features.directionOptions[this.directionBase];
-        combination = (combination / Features.directionOptions.length) << 0;
+        this.directionBase =
+            combination % Features.getDirectionOptions().length;
+        this.direction = Features.getDirectionOptions()[this.directionBase];
+        combination =
+            (combination / Features.getDirectionOptions().length) << 0;
 
         let colors = Object.values(color.palettes['unique-css']);
         this.colorHueBase = combination % colors.length;
@@ -314,6 +318,7 @@ export class Piece {
     public debug!: DebugPiece;
 
     public paused: boolean = false;
+    private autoPause: boolean;
 
     public outputBuffer: number | null = null;
 
@@ -322,11 +327,14 @@ export class Piece {
         width: number,
         height: number,
         pixelRatio: number | null = null,
-        combination: number
+        combination: number,
+        autoPause: boolean = true
     ) {
         this.canvas = canvas;
         this.combination = combination;
+        this.autoPause = autoPause;
 
+        this.initState();
         this.updateSize(width, height, pixelRatio);
 
         this.debug = new DebugPiece(this);
@@ -471,19 +479,11 @@ export class Piece {
             
             out vec4 outColor;
             
-            uniform int drawId;
             uniform sampler2D pixels;
             uniform sampler2D offsets;
-
-            uniform sampler2D u_offsets;
             uniform vec3 baseColor;
             uniform float pixelSize;
             uniform float pixelWidth;
-            uniform ivec3 colorRGBIndex;
-            uniform vec3 colorRGBMin;
-            uniform float colorShiftFactor;
-            uniform vec2 colorShiftRGBDir;
-            uniform float colorShiftDir;
             uniform float timeMs;
     
             float rollover(float value, float min, float max) {
@@ -496,39 +496,6 @@ export class Piece {
                 }
                 
                 return value;
-            }
-            
-            // see https://github.com/dmnsgn/glsl-rotate
-            mat2 rotation2d(float angle) {
-              float s = sin(angle);
-              float c = cos(angle);
-            
-              return mat2(
-                c, -s,
-                s, c
-              );
-            }
-            
-            vec2 rotate(vec2 v, float angle) {
-              return rotation2d(angle) * v;
-            }
-            
-            mat4 rotation3d(vec3 axis, float angle) {
-              axis = normalize(axis);
-              float s = sin(angle);
-              float c = cos(angle);
-              float oc = 1.0 - c;
-            
-              return mat4(
-                oc * axis.x * axis.x + c,           oc * axis.x * axis.y - axis.z * s,  oc * axis.z * axis.x + axis.y * s,  0.0,
-                oc * axis.x * axis.y + axis.z * s,  oc * axis.y * axis.y + c,           oc * axis.y * axis.z - axis.x * s,  0.0,
-                oc * axis.z * axis.x - axis.y * s,  oc * axis.y * axis.z + axis.x * s,  oc * axis.z * axis.z + c,           0.0,
-                0.0,                                0.0,                                0.0,                                1.0
-              );
-            }
-            
-            vec3 rotate(vec3 v, vec3 axis, float angle) {
-              return (rotation3d(axis, angle) * vec4(v, 1.0)).xyz;
             }
             
             vec3 bezier(vec3 A, vec3 B, float t) {
@@ -553,55 +520,6 @@ export class Piece {
               vec3 I = mix(F, G, t);
             
               vec3 P = mix(H, I, t);
-            
-              return P;
-            }
-
-            vec3 bezier(vec3 A, vec3 B, vec3 C, vec3 D, vec3 E, float t) {
-              vec3 A1 = mix(A, B, t);
-              vec3 B1 = mix(B, C, t);
-              vec3 C1 = mix(C, D, t);
-              vec3 D1 = mix(D, E, t);
-            
-              vec3 A2 = mix(A1, B1, t);
-              vec3 B2 = mix(B1, C1, t);
-              vec3 C2 = mix(C1, D1, t);
-            
-              vec3 A3 = mix(A2, B2, t);
-              vec3 B3 = mix(B2, C2, t);
-              
-              vec3 P = mix(A3, B3, t);
-            
-              return P;
-            }
-            
-            vec3 bezier(vec3 A, vec3 B, vec3 C, vec3 D, vec3 E, vec3 F, vec3 G, float t) {
-              vec3 A1 = mix(A, B, t);
-              vec3 B1 = mix(B, C, t);
-              vec3 C1 = mix(C, D, t);
-              vec3 D1 = mix(D, E, t);
-              vec3 E1 = mix(E, F, t);
-              vec3 F1 = mix(F, G, t);
-            
-              vec3 A2 = mix(A1, B1, t);
-              vec3 B2 = mix(B1, C1, t);
-              vec3 C2 = mix(C1, D1, t);
-              vec3 D2 = mix(D1, E1, t);
-              vec3 E2 = mix(E1, F1, t);
-            
-              vec3 A3 = mix(A2, B2, t);
-              vec3 B3 = mix(B2, C2, t);
-              vec3 C3 = mix(C2, D2, t);
-              vec3 D3 = mix(D2, E2, t);
-            
-              vec3 A4 = mix(A3, B3, t);
-              vec3 B4 = mix(B3, C3, t);
-              vec3 C4 = mix(C3, D3, t);
-            
-              vec3 A5 = mix(A4, B4, t);
-              vec3 B5 = mix(B4, C4, t);
-              
-              vec3 P = mix(A5, B5, t);
             
               return P;
             }
@@ -729,7 +647,6 @@ export class Piece {
         height: number,
         pixelRatio: number | null = null
     ) {
-        this.initState();
         let wh = Math.min(width, height);
         let f = wh / this.baseHeightWidth;
         // todo: handle pixel ratio on webgl2 context
@@ -755,7 +672,6 @@ export class Piece {
 
         this.canvas.dispatchEvent(new Event('piece.updateSize'));
 
-        // twgl.resizeCanvasToDisplaySize(this.gl.canvas);
         this.context.canvas.width = this.width;
         this.context.canvas.height = this.height;
         this.context.canvas.style.width = `${
@@ -801,7 +717,7 @@ export class Piece {
         ) {
             this.inPreviewPhase = false;
             this.canvas.dispatchEvent(new Event('piece.previewPhaseEnded'));
-            this.paused = true;
+            this.paused = this.autoPause;
         }
     }
 
@@ -872,8 +788,6 @@ export class Piece {
             ].attachments[0],
             offsets: this.framebuffers[0].attachments[0],
             timeMs: timeMs,
-            // colorShiftFactor: this.features.colorShiftFactor,
-            // colorShiftDir: this.features.colorShiftDir / 255,
         };
         twgl.setUniforms(this.programPixels, uniform);
         for (let i = 0; i < this.features.framebufferForOffsets; i++) {
@@ -1191,23 +1105,6 @@ export class DebugPiece {
             );
         });
     }
-
-    public moveMovingBlock(
-        tx: number,
-        ty: number,
-        sw: number,
-        sh: number
-    ): boolean {
-        if (!this.debugContext || !this.debugCanvas) {
-            return false;
-        }
-
-        this.debugContext.strokeStyle = `rgba(255, 255, 255, 0.3)`;
-        this.debugContext.fillStyle = `rgba(255, 255, 255, 0.1)`;
-        this.debugContext.fillRect(tx, ty, sw, sh);
-        this.debugContext.strokeRect(tx, ty, sw, sh);
-        return true;
-    }
 }
 
 export class MovingBlocks {
@@ -1265,6 +1162,8 @@ export class MovingBlock {
     public vMin!: number;
     public vMax!: number;
     public vDir!: number;
+    public shapeX: number = 0;
+    public shapeY: number = 0;
 
     public tx!: number;
     public ty!: number;
@@ -1282,8 +1181,8 @@ export class MovingBlock {
         if (this.active) {
             r[index] = (this.area.x / this.piece.width) * 2 - 1;
             r[index + 1] = 2 - (this.area.y / this.piece.height) * 2 - 1;
-            r[index + 2] = this.dirX / 40; // max -40 / 40 => - 1 / 1
-            r[index + 3] = -this.dirY / 40; // max -40 / 40  => - 1 / 1
+            r[index + 2] = (this.dirX + this.shapeX) / 40; // max -40 / 40 => - 1 / 1
+            r[index + 3] = -(this.dirY + this.shapeY) / 40; // max -40 / 40  => - 1 / 1
         } else {
             r[index] = 0.0;
             r[index + 1] = 0.0;
@@ -1297,6 +1196,9 @@ export class MovingBlock {
     public activate() {
         let move = randOptions(this.piece.features.direction);
         let stepSize = this.piece.features.maxStepSize;
+
+        this.shapeX = 0;
+        this.shapeY = 0;
 
         this.dirX = 0;
         this.dirY = 0;
@@ -1385,9 +1287,14 @@ export class MovingBlock {
         let sx: number = this.area.x;
         let sy: number = this.area.y;
 
-        let v = this.intersectsWithShapes(sx, sy, this.area.w, this.area.h);
+        [this.shapeX, this.shapeY] = this.intersectsWithShapes(
+            sx,
+            sy,
+            this.area.w,
+            this.area.h
+        );
 
-        if (v[0] == 0.0 && v[1] == 0.0) {
+        if (this.shapeX == 0.0 && this.shapeY == 0.0) {
             this.deactivate();
             return false;
         }
@@ -1397,8 +1304,8 @@ export class MovingBlock {
             return false;
         }
 
-        let tx: number = this.area.x + v[0] * this.dirXShapesFactor;
-        let ty: number = this.area.y + v[1] * this.dirXShapesFactor;
+        let tx: number = this.area.x + this.shapeX * this.dirXShapesFactor;
+        let ty: number = this.area.y + this.shapeY * this.dirYShapesFactor;
 
         if (this.dirX !== 0) {
             tx +=
@@ -1418,9 +1325,11 @@ export class MovingBlock {
         this.ty = ty;
 
         this.area.x -=
-            this.dirX * this.piece.features.movingDistanceDirection + v[0];
+            this.dirX * this.piece.features.movingDistanceDirection +
+            this.shapeX;
         this.area.y -=
-            this.dirY * this.piece.features.movingDistanceDirection + v[1];
+            this.dirY * this.piece.features.movingDistanceDirection +
+            this.shapeY;
 
         // note: this runs towards 0 or runs into box constraints
         this.movingDistanceX -=
