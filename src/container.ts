@@ -153,7 +153,7 @@ export class Container {
                 } (${piece.features.getShapes()})`,
                 direction: `${piece.features.getDirectionName()}`,
                 movingDistanceBehavior: `${piece.features.getMovingDistanceDirectionName()}`,
-                stepSize: `${piece.features.stepSize}`,
+                stepSize: `${piece.features.maxStepSize}`,
                 size: `${piece.canvas.width} / ${piece.canvas.height}`,
                 pixelRatio: `${piece.pixelRatio}`,
                 previewPhase: piece.inPreviewPhase,
@@ -234,16 +234,6 @@ export class Intercom {
                     this.display.show('capture image');
                     break;
 
-                case 'b':
-                    this.captureBigImage(
-                        this.piece.features.getFeatureName(),
-                        window.innerWidth << 0,
-                        window.innerHeight << 0,
-                        0.5
-                    );
-                    this.display.show('capture big image');
-                    break;
-
                 case 'h':
                     let help = this.help.toggleShow();
                     this.display.show('help ' + (help ? 'on' : 'off'));
@@ -272,23 +262,6 @@ export class Intercom {
         } else {
             document.documentElement.requestFullscreen();
         }
-    }
-
-    private captureBigImage(
-        name: string,
-        width: number,
-        height: number,
-        pixelRatio: number
-    ) {
-        this.piece.updateSize(width, height, pixelRatio);
-        let listener = () => {
-            this.piece.canvas.removeEventListener(
-                'piece.previewPhaseEnded',
-                listener
-            );
-            this.piece.captureImage(name);
-        };
-        this.piece.canvas.addEventListener('piece.previewPhaseEnded', listener);
     }
 }
 
@@ -356,7 +329,6 @@ export class Help {
           <p><em>p</em> pause</p>
           <p><em>f</em> toggle fullscreen</p>
           <p><em>c</em> capture image</p>
-          <p><em>b</em> capture big image (takes time)</p>
           <p><em>d</em> debug view</p>
           <p><em>h</em> show help</p>
         `;

@@ -6,6 +6,8 @@ export class Rect {
     public readonly h: number;
     public readonly centerX: number;
     public readonly centerY: number;
+    public valueX: number = 0;
+    public valueY: number = 0;
 
     public constructor(x: number, y: number, w: number, h: number) {
         this.x = x;
@@ -33,6 +35,8 @@ export class Circle {
     public readonly r: number;
     public readonly centerX: number;
     public readonly centerY: number;
+    public valueX: number = 0;
+    public valueY: number = 0;
 
     public constructor(x: number, y: number, r: number) {
         this.x = x;

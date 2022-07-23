@@ -1,18 +1,19 @@
-import { Area, randInit, randInt, randOptions } from './rand';
+import { Area, rand, randInit, randInt, randOptions } from './rand';
 import { color, ColorSpec } from './color';
 import * as isec from '@thi.ng/geom-isec';
 import { Circle, Quad, Rect } from './shapes';
-import { floorTo } from '@thi.ng/math';
 import * as twgl from 'twgl.js';
 
 export type FxhashFeatures = {
     color: string;
     'grid size': number;
-    'limiting shapes': string;
+    shapes: string;
+    cluster: number;
     rotation: string;
     'moving blocks': number;
     'moving direction': string;
     'moving distance direction': string;
+    'max step size': number;
 };
 
 export class Features {
@@ -30,13 +31,14 @@ export class Features {
     public readonly colorValueMin: number;
     public readonly colorValueMax: number;
     public blockConfig: Array<any> = [
-        21, 42, 84, 168, 252, 420, 672, 1092, 1764, 2856, 4620,
+        13, 21, 34, 55, 89, 144, 233, 377, 610, 987, 1597, 2584, 4181, 6765,
+        10946,
     ];
     public movingDistances: Array<any> = [];
     public blockBase: number;
     public blockSize: number;
-    public stepSizeBase: number;
-    public stepSize: number;
+    public maxStepSizeBase: number;
+    public maxStepSize: number;
 
     public movingDistanceDirectionBase: number;
     public movingDistanceDirection: number;
@@ -45,6 +47,8 @@ export class Features {
     public shapeBase: number;
     public shapesCenterX: number;
     public shapesCenterY: number;
+
+    public clusters: number;
 
     private rotationOptions: Array<number> = [-42, -21, -7, -3, 3, 7, 21, 42];
     public rotationBase: number;
@@ -56,56 +60,54 @@ export class Features {
     public static directionOptions: Array<
         Array<Array<'left' | 'up' | 'down' | 'right'>>
     > = [
-        // [['up'], ['left'], ['down'], ['right']],
-        // [
-        //     ['left', 'up'],
-        //     ['left', 'down'],
-        //     ['right', 'up'],
-        //     ['right', 'down'],
-        // ],
-        // [
-        //     ['left', 'up'],
-        //     ['left', 'down'],
-        // ],
-        // [
-        //     ['right', 'up'],
-        //     ['right', 'down'],
-        // ],
-        // [
-        //     ['left', 'up'],
-        //     ['right', 'up'],
-        // ],
-        // looks like wood:
-        [
-            ['left', 'down'],
-            ['right', 'up'],
-        ],
-        // looks like wood:
+        [['up'], ['left'], ['down'], ['right']],
         [
             ['left', 'up'],
+            ['left', 'down'],
+            ['right', 'up'],
             ['right', 'down'],
         ],
-        // [['right'], ['right', 'up'], ['right', 'down']],
-        // [['left'], ['left', 'up'], ['left', 'down']],
-        // [['up'], ['left', 'up'], ['right', 'up']],
-        // [['down'], ['left', 'down'], ['right', 'down']],
         // [
-        //     ['up'],
-        //     ['left'],
-        //     ['down'],
-        //     ['right'],
         //     ['left', 'up'],
         //     ['left', 'down'],
+        // ],
+        // [
         //     ['right', 'up'],
         //     ['right', 'down'],
         // ],
-        // [['left'], ['left', 'up'], ['up']],
-        // [['left'], ['left', 'down'], ['down']],
-        // [['right'], ['right', 'up'], ['up']],
-        // [['right'], ['right', 'down'], ['down']],
-        // [['right'], ['right', 'down'], ['left'], ['left', 'up']],
-        // [['right'], ['right', 'up'], ['left'], ['left', 'down']],
-        // [['down'], ['right', 'down'], ['up'], ['left', 'up']],
+        // [
+        //     ['left', 'up'],
+        //     ['right', 'up'],
+        // ],
+        // [
+        //     ['left', 'down'],
+        //     ['right', 'up'],
+        // ],
+        // [
+        //     ['left', 'up'],
+        //     ['right', 'down'],
+        // ],
+        [['right'], ['right', 'up'], ['right', 'down']],
+        [['left'], ['left', 'up'], ['left', 'down']],
+        // [['up'], ['left', 'up'], ['right', 'up']],
+        // [['down'], ['left', 'down'], ['right', 'down']],
+        [
+            ['up'],
+            ['left'],
+            ['down'],
+            ['right'],
+            ['left', 'up'],
+            ['left', 'down'],
+            ['right', 'up'],
+            ['right', 'down'],
+        ],
+        [['left'], ['left', 'up'], ['up']],
+        [['left'], ['left', 'down'], ['down']],
+        [['right'], ['right', 'up'], ['up']],
+        [['right'], ['right', 'down'], ['down']],
+        [['right'], ['right', 'down'], ['left'], ['left', 'up']],
+        [['right'], ['right', 'up'], ['left'], ['left', 'down']],
+        [['down'], ['right', 'down'], ['up'], ['left', 'up']],
     ];
     public directionBase: number;
     public direction: Array<Array<'left' | 'up' | 'down' | 'right'>>;
@@ -113,7 +115,9 @@ export class Features {
     public static combinations: number =
         2 *
         4 *
-        2 *
+        3 *
+        3 *
+        3 *
         Object.keys(color.palettes['unique-css']).length *
         Features.directionOptions.length *
         8;
@@ -122,71 +126,72 @@ export class Features {
         this.combination = combination % Features.combinations;
 
         this.movingDistanceDirectionBase = combination % 2;
-        this.movingDistanceDirection = [-1, -1][
+        this.movingDistanceDirection = [-1, 1][
             this.movingDistanceDirectionBase
         ];
         combination = (combination / 2) << 0;
 
-        this.stepSizeBase = 0; // fix 1 pixel
-        this.stepSize = [1, 2, 3, 5][this.stepSizeBase];
+        this.maxStepSizeBase = combination % 3;
+        this.maxStepSize = [1, 2, 3][this.maxStepSizeBase];
+        combination = (combination / 3) << 0;
 
-        this.blockBase = (combination % 4) + 1;
+        this.blockBase = (combination % 4) * 2 + 3;
         let blocks = this.blockConfig.slice(this.blockBase, this.blockBase + 4);
-        this.maxMovingBlocks = blocks[3];
+        this.maxMovingBlocks = blocks[2];
         this.movingDistances = this.blockConfig.slice(
-            this.blockBase,
+            this.blockBase - 2,
             this.blockBase + 2
         );
         this.gridSize = blocks[3];
         this.waitBlocks =
-            this.blockConfig[this.blockBase + this.stepSizeBase + 2];
-        this.blockSize = 21;
+            this.blockConfig[this.blockBase + this.maxStepSizeBase + 2];
+        this.blockSize = this.blockConfig[2];
         combination = (combination / 4) << 0;
 
-        this.shapeBase = combination % 2;
-        let numOfShapes = [3, 5][this.shapeBase];
+        this.shapeBase = combination % 3;
+        let numOfShapes = [3, 5, 7][this.shapeBase];
         this.shapes = [];
+        combination = (combination / 3) << 0;
+
+        this.clusters = (combination % 3) + 1;
         for (let i = 0; i < numOfShapes; i++) {
+            let cluster = i % this.clusters;
+            let wh = randOptions([blocks[0], blocks[1]], [numOfShapes - 1, 1]);
+            let anglePadding = (Math.PI * 60) / 180;
+            let centerPadding = this.clusters > 1 ? wh / 2 + this.blockSize : 0;
+            let angle =
+                (((Math.PI * 180) / 180 - anglePadding * 2) / this.clusters) *
+                    rand() +
+                (cluster + 1) * ((Math.PI * 360) / 180 / this.clusters) +
+                anglePadding +
+                (Math.PI * 45) / 180;
+            let distance =
+                (this.gridSize * 0.5 - this.blockSize - wh) * rand() +
+                centerPadding;
+            let x = this.gridSize / 2 + distance * Math.cos(angle);
+            let y = this.gridSize / 2 + distance * Math.sin(angle);
             if (randInt(2) !== 0) {
                 this.shapes.push(
                     new Circle(
-                        floorTo(
-                            randInt(this.gridSize - blocks[0] * 2) + blocks[0],
-                            this.blockSize / 3
-                        ) / this.gridSize,
-                        floorTo(
-                            randInt(this.gridSize - blocks[0] * 2.5) +
-                                blocks[0] * 1.5,
-                            this.blockSize / 3
-                        ) / this.gridSize,
-                        (randOptions(
-                            [blocks[1], blocks[2]],
-                            [numOfShapes + 2, 1]
-                        ) /
-                            this.gridSize) *
-                            0.5641895835
+                        x / this.gridSize,
+                        y / this.gridSize,
+                        (wh / this.gridSize) * 0.5641895835
                     )
                 );
             } else {
                 this.shapes.push(
                     new Quad(
-                        floorTo(
-                            randInt(this.gridSize - blocks[0] * 3) + blocks[0],
-                            this.blockSize / 3
-                        ) / this.gridSize,
-                        floorTo(
-                            randInt(this.gridSize - blocks[0] * 3.5) +
-                                blocks[0],
-                            this.blockSize / 3
-                        ) / this.gridSize,
-                        randOptions(
-                            [blocks[1] + 10, blocks[2]],
-                            [numOfShapes + 2, 1]
-                        ) / this.gridSize
+                        (x - wh / 2) / this.gridSize,
+                        (y - wh / 2) / this.gridSize,
+                        wh / this.gridSize
                     )
                 );
             }
         }
+        this.shapes.forEach((s) => {
+            s.valueX = (rand() + 0.25) * 2 * randOptions([1, -1]);
+            s.valueY = (rand() + 0.25) * 2 * randOptions([1, -1]);
+        });
         [this.shapesCenterX, this.shapesCenterY] = this.shapes.reduce(
             (center: Array<number>, shape) => {
                 return [
@@ -196,12 +201,11 @@ export class Features {
             },
             [0, 0]
         );
-        combination = (combination / 2) << 0;
+        combination = (combination / 3) << 0;
 
         this.directionBase = combination % Features.directionOptions.length;
         this.direction = Features.directionOptions[this.directionBase];
         combination = (combination / Features.directionOptions.length) << 0;
-        console.log(this.direction.map((a) => a.join('-')).join(','));
 
         let colors = Object.values(color.palettes['unique-css']);
         this.colorHueBase = combination % colors.length;
@@ -216,20 +220,22 @@ export class Features {
         this.rotationBase = combination % this.rotationOptions.length;
         this.rotation = this.rotationOptions[this.rotationBase];
         this.rotationRadians = (Math.PI / 180) * this.rotation;
-        this.rotationCos = Math.cos(this.rotationRadians);
-        this.rotationSin = Math.sin(this.rotationRadians);
+        this.rotationCos = Math.cos(-this.rotationRadians);
+        this.rotationSin = Math.sin(-this.rotationRadians);
         combination = (combination / this.rotationOptions.length) << 0;
     }
 
     public getFxhashFeatures(): FxhashFeatures {
         return {
             color: this.getColorName(),
-            'limiting shapes': this.getShapes(),
+            shapes: this.getShapes(),
+            cluster: this.clusters,
             'grid size': this.gridSize,
             rotation: `${this.rotation}°`,
             'moving blocks': this.maxMovingBlocks,
             'moving direction': this.getDirectionName(),
             'moving distance direction': this.getMovingDistanceDirectionName(),
+            'max step size': this.maxStepSize,
         };
     }
 
@@ -290,7 +296,7 @@ export class Piece {
 
     public width: number = 0;
     public height: number = 0;
-    public baseHeightWidth: number = 1600;
+    public baseHeightWidth: number = 1980;
     public fps: number = 60;
     public pixelRatio: number = 1;
 
@@ -603,8 +609,10 @@ export class Piece {
             vec4 shiftColor(vec4 color) {
                 return vec4(
                     bezier(
+                        vec3(0.00),
                         vec3(0.05),
-                        baseColor.rgb - 0.1, 
+                        baseColor.rgb, 
+                        baseColor.rgb + 0.05, 
                         color.a
                     ),
                     color.a
@@ -904,7 +912,7 @@ export class Piece {
                     this.framebufferPixelsIndex +
                         this.features.framebufferForOffsets
                 ].attachments[0],
-                world: world, // todo rotate: twgl.m4.rotateZ(world, -this.features.rotationRadians),
+                world: twgl.m4.rotateZ(world, -this.features.rotationRadians),
             };
             twgl.setUniforms(this.programDraw, uniforms);
         } else {
@@ -912,8 +920,16 @@ export class Piece {
                 pixels: this.framebuffers[this.outputBuffer].attachments[0],
             });
         }
-
         twgl.bindFramebufferInfo(this.context, null);
+
+        this.context.clearColor(
+            this.features.color.rgb[0] / 255,
+            this.features.color.rgb[1] / 255,
+            this.features.color.rgb[2] / 255,
+            1.0
+        );
+        this.context.clear(this.context.COLOR_BUFFER_BIT);
+
         twgl.drawBufferInfo(this.context, this.positionBuffer);
     }
 
@@ -1061,7 +1077,10 @@ export class DebugPiece {
             }
             if (shape instanceof Rect) {
                 this.debugContext.strokeStyle = '#00ffff';
-                this.debugContext.fillStyle = `rgba(0, 255, 255, 0.1)`;
+                this.debugContext.lineWidth = 1;
+                this.debugContext.fillStyle = `rgba(0, ${
+                    230 - shape.valueX * 10
+                }, ${230 - shape.valueY * 10}, 0.2)`;
                 this.debugContext.strokeRect(
                     shape.x * this.piece.width - this.translationX,
                     shape.y * this.piece.height - this.translationY,
@@ -1076,7 +1095,10 @@ export class DebugPiece {
                 );
             } else {
                 this.debugContext.strokeStyle = '#ffff00';
-                this.debugContext.fillStyle = `rgba(255, 255, 0, 0.1)`;
+                this.debugContext.lineWidth = 1;
+                this.debugContext.fillStyle = `rgba(${
+                    230 - shape.valueX * 10
+                }, ${230 - shape.valueY * 10}, 0, 0.2)`;
                 this.debugContext.beginPath();
                 this.debugContext.arc(
                     shape.x * this.piece.width - this.translationX,
@@ -1090,6 +1112,7 @@ export class DebugPiece {
                 this.debugContext.stroke();
                 this.debugContext.fill();
             }
+            this.debugContext.lineWidth = 1;
             this.debugContext.fillStyle = `rgba(255, 255, 255, 0.1)`;
             this.debugContext.beginPath();
             this.debugContext.arc(
@@ -1122,6 +1145,8 @@ export class DebugPiece {
         this.debugContext.stroke();
         this.debugContext.fill();
 
+        this.movingBlocks();
+
         this.unRotate();
 
         this.debugContext.strokeStyle = '#333333';
@@ -1137,8 +1162,6 @@ export class DebugPiece {
             this.piece.width - blockSizeX * 2,
             this.piece.height - blockSizeX * 2
         );
-
-        this.movingBlocks();
     }
 
     private movingBlocks() {
@@ -1155,14 +1178,14 @@ export class DebugPiece {
             this.debugContext.strokeStyle = `rgba(255, 255, 255, 0.3)`;
             this.debugContext.fillStyle = `rgba(255, 255, 255, 0.1)`;
             this.debugContext.fillRect(
-                block.tx,
-                block.ty,
+                block.tx - this.translationX,
+                block.ty - this.translationY,
                 block.area.w,
                 block.area.h
             );
             this.debugContext.strokeRect(
-                block.tx,
-                block.ty,
+                block.tx - this.translationX,
+                block.ty - this.translationY,
                 block.area.w,
                 block.area.h
             );
@@ -1227,28 +1250,10 @@ export class MovingBlocks {
     }
 
     public normalized(): Float32Array {
-        return (
-            this.blocks
-                // .sort((a, b) =>
-                //     a.active &&
-                //     b.active &&
-                //     a.area.x + a.area.y > b.area.x + b.area.y
-                //         ? -1
-                //         : 1
-                // )
-                // .sort((a, b) =>
-                //     a.active &&
-                //     b.active &&
-                //     Math.abs(a.area.x - b.area.x) > a.area.w * 2 &&
-                //     Math.abs(a.area.y - b.area.y) > a.area.h * 2
-                //         ? -1
-                //         : 1
-                // )
-                .reduce((r, block, currentIndex) => {
-                    block.normalized(r, currentIndex * 4);
-                    return r;
-                }, new Float32Array(this.piece.features.maxMovingBlocks * 4))
-        );
+        return this.blocks.reduce((r, block, currentIndex) => {
+            block.normalized(r, currentIndex * 4);
+            return r;
+        }, new Float32Array(this.piece.features.maxMovingBlocks * 4));
     }
 }
 
@@ -1291,7 +1296,7 @@ export class MovingBlock {
 
     public activate() {
         let move = randOptions(this.piece.features.direction);
-        let stepSize = this.piece.features.stepSize;
+        let stepSize = this.piece.features.maxStepSize;
 
         this.dirX = 0;
         this.dirY = 0;
@@ -1306,6 +1311,11 @@ export class MovingBlock {
         }
         if (move.includes('down')) {
             this.dirY = stepSize;
+        }
+
+        if (randInt(this.piece.features.maxStepSize + 1) == 0) {
+            this.dirX *= rand() * (this.piece.features.maxStepSize - 1) + 1.0;
+            this.dirY *= rand() * (this.piece.features.maxStepSize - 1) + 1.0;
         }
 
         let blocksX: number = randOptions(this.piece.features.movingDistances);
@@ -1374,29 +1384,10 @@ export class MovingBlock {
 
         let sx: number = this.area.x;
         let sy: number = this.area.y;
-        let tx: number = this.area.x;
-        let ty: number = this.area.y;
 
-        if (this.dirX !== 0) {
-            tx =
-                this.area.x +
-                this.dirX *
-                    this.dirXShapesFactor *
-                    Math.sin(this.movingDistanceX / this.piece.width);
-        }
+        let v = this.intersectsWithShapes(sx, sy, this.area.w, this.area.h);
 
-        if (this.dirY !== 0) {
-            ty =
-                this.area.y +
-                this.dirY *
-                    this.dirYShapesFactor *
-                    Math.cos(this.movingDistanceY / this.piece.height);
-        }
-
-        this.tx = tx;
-        this.ty = ty;
-
-        if (!this.intersectsWithShapes(sx, sy, this.area.w, this.area.h)) {
+        if (v[0] == 0.0 && v[1] == 0.0) {
             this.deactivate();
             return false;
         }
@@ -1406,8 +1397,30 @@ export class MovingBlock {
             return false;
         }
 
-        this.area.x -= this.dirX * this.piece.features.movingDistanceDirection;
-        this.area.y -= this.dirY * this.piece.features.movingDistanceDirection;
+        let tx: number = this.area.x + v[0] * this.dirXShapesFactor;
+        let ty: number = this.area.y + v[1] * this.dirXShapesFactor;
+
+        if (this.dirX !== 0) {
+            tx +=
+                this.dirX *
+                this.dirXShapesFactor *
+                Math.sin(this.movingDistanceX / this.piece.width);
+        }
+
+        if (this.dirY !== 0) {
+            ty +=
+                this.dirY *
+                this.dirYShapesFactor *
+                Math.cos(this.movingDistanceY / this.piece.height);
+        }
+
+        this.tx = tx;
+        this.ty = ty;
+
+        this.area.x -=
+            this.dirX * this.piece.features.movingDistanceDirection + v[0];
+        this.area.y -=
+            this.dirY * this.piece.features.movingDistanceDirection + v[1];
 
         // note: this runs towards 0 or runs into box constraints
         this.movingDistanceX -=
@@ -1424,8 +1437,15 @@ export class MovingBlock {
         w: number,
         h: number
     ) {
+        [x, y] = this.rotatePoint(
+            this.piece.width / 2,
+            this.piece.height / 2,
+            x + w / 2,
+            y + h / 2
+        );
+
         return isec.testRectRect(
-            [x + w / 2, y + h / 2],
+            [x, y],
             [1, 1],
             [w, h],
             [this.piece.width - w * 2, this.piece.height - h * 2]
@@ -1451,111 +1471,52 @@ export class MovingBlock {
         ];
     }
 
-    private intersectsWithShapes(x: number, y: number, w: number, h: number) {
-        [x, y] = this.rotatePoint(
-            this.piece.width / 2,
-            this.piece.height / 2,
-            x + w / 2,
-            y + h / 2
-        );
+    private intersectsWithShapes(
+        x: number,
+        y: number,
+        w: number,
+        h: number
+    ): Array<number> {
+        [x, y] = [x + w / 2, y + h / 2];
 
-        return this.piece.features.shapes.some(
-            (shape: Circle | Rect | Quad) => {
+        return this.piece.features.shapes.reduce(
+            (v: Array<number>, shape: Circle | Rect | Quad) => {
                 if (shape instanceof Circle) {
-                    return isec.testRectCircle(
+                    if (
+                        isec.testRectCircle(
+                            [x, y],
+                            [1, 1],
+                            [
+                                shape.x * this.piece.width,
+                                shape.y * this.piece.height,
+                            ],
+                            shape.r *
+                                Math.min(this.piece.width, this.piece.height)
+                        )
+                    ) {
+                        v[0] += shape.valueX;
+                        v[1] += shape.valueY;
+                    }
+                } else if (
+                    isec.testRectRect(
                         [x, y],
                         [1, 1],
                         [
                             shape.x * this.piece.width,
                             shape.y * this.piece.height,
                         ],
-                        shape.r * Math.min(this.piece.width, this.piece.height)
-                    );
+                        [
+                            shape.w * this.piece.width,
+                            shape.h * this.piece.height,
+                        ]
+                    )
+                ) {
+                    v[0] += shape.valueX;
+                    v[1] += shape.valueY;
                 }
-                return isec.testRectRect(
-                    [x, y],
-                    [1, 1],
-                    [shape.x * this.piece.width, shape.y * this.piece.height],
-                    [shape.w * this.piece.width, shape.h * this.piece.height]
-                );
-            }
+                return v;
+            },
+            [0, 0]
         );
     }
-
-    // public shiftColor(data: ImageData, sx: number, sy: number) {
-    //     let l: number = data.data.length;
-    //     let f: number = Math.sin(
-    //         (sx + sy) /
-    //             (this.piece.width + this.piece.height) /
-    //             this.piece.pixelRatio
-    //     );
-    //     let fC = f * 7;
-    //     let hBase = mod(this.piece.features.colorHue - fC, 360) / 60;
-    //
-    //     for (let i: number = 0; i < l; i += 4) {
-    //         this.shiftColorPixel(data, i, hBase);
-    //     }
-    //     return data;
-    // }
-    //
-    // private shiftColorPixel(data: ImageData, offset: number, h: number): void {
-    //     // get v
-    //     let s = this.piece.features.colorSaturation,
-    //         v = Math.max(
-    //             data.data[offset],
-    //             data.data[offset + 1],
-    //             data.data[offset + 2]
-    //         );
-    //
-    //     // rotate value
-    //     v += this.vDir;
-    //     if (v > this.vMax) v = this.vMin;
-    //     else if (v < this.vMin) v = this.vMax;
-    //
-    //     // back to rgb
-    //     if (s === 0) {
-    //         data.data[offset] = v;
-    //         data.data[offset + 1] = v;
-    //         data.data[offset + 2] = v;
-    //     } else {
-    //         const i = h << 0;
-    //         const f = h - i;
-    //         const p = v * (1 - s);
-    //         const q = v * (1 - s * f);
-    //         const t = v * (1 - s * (1 - f));
-    //
-    //         switch (i) {
-    //             case 0:
-    //                 data.data[offset] = v;
-    //                 data.data[offset + 1] = t;
-    //                 data.data[offset + 2] = p;
-    //                 break;
-    //             case 1:
-    //                 data.data[offset] = q;
-    //                 data.data[offset + 1] = v;
-    //                 data.data[offset + 2] = p;
-    //                 break;
-    //             case 2:
-    //                 data.data[offset] = p;
-    //                 data.data[offset + 1] = v;
-    //                 data.data[offset + 2] = t;
-    //                 break;
-    //             case 3:
-    //                 data.data[offset] = p;
-    //                 data.data[offset + 1] = q;
-    //                 data.data[offset + 2] = v;
-    //                 break;
-    //             case 4:
-    //                 data.data[offset] = t;
-    //                 data.data[offset + 1] = p;
-    //                 data.data[offset + 2] = v;
-    //                 break;
-    //             case 5:
-    //             default:
-    //                 data.data[offset] = v;
-    //                 data.data[offset + 1] = p;
-    //                 data.data[offset + 2] = q;
-    //         }
-    //     }
-    // }
 }
