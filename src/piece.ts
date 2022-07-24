@@ -27,12 +27,11 @@ export class Features {
     public framebufferForOffsets: number = 8;
     public framebufferForMovingBlocks: number = 2;
     public readonly gridSize: number;
-    public readonly waitBlocks: number;
+    public readonly maxFramesBeforeReset: number;
     public readonly colorValueMin: number;
     public readonly colorValueMax: number;
     public blockConfig: Array<any> = [
-        13, 21, 34, 55, 89, 144, 233, 377, 610, 987, 1597, 2584, 4181, 6765,
-        10946,
+        21, 34, 55, 89, 144, 233, 377, 610, 987, 1597, 2584, 4181, 6765, 10946,
     ];
     public movingDistances: Array<any> = [];
     public blockBase: number;
@@ -107,7 +106,7 @@ export class Features {
     // todo: improve combination handling
     public static combinations: number =
         2 *
-        4 *
+        5 *
         3 *
         3 *
         3 *
@@ -128,18 +127,20 @@ export class Features {
         this.maxStepSize = [1, 2, 3][this.maxStepSizeBase];
         combination = (combination / 3) << 0;
 
-        this.blockBase = (combination % 4) * 2 + 3;
-        let blocks = this.blockConfig.slice(this.blockBase, this.blockBase + 4);
-        this.maxMovingBlocks = blocks[2];
-        this.movingDistances = this.blockConfig.slice(
-            this.blockBase - 2,
-            this.blockBase + 2
+        this.blockBase = (combination % 5) + 3;
+        let blocks = this.blockConfig.slice(
+            this.blockBase - 1,
+            this.blockBase + 4
         );
-        this.gridSize = blocks[3];
-        this.waitBlocks =
-            this.blockConfig[this.blockBase + this.maxStepSizeBase + 2];
-        this.blockSize = this.blockConfig[2];
-        combination = (combination / 4) << 0;
+        this.maxMovingBlocks = blocks[3];
+        this.movingDistances = this.blockConfig.slice(
+            this.blockBase - 1,
+            this.blockBase + 3
+        );
+        this.gridSize = blocks[4];
+        this.maxFramesBeforeReset = blocks[3];
+        this.blockSize = this.blockConfig[0];
+        combination = (combination / 5) << 0;
 
         this.shapeBase = combination % 3;
         let numOfShapes = [3, 5, 7][this.shapeBase];
@@ -150,18 +151,20 @@ export class Features {
         combination = (combination / 3) << 0;
         for (let i = 0; i < numOfShapes; i++) {
             let cluster = i % this.clusters;
-            let wh = randOptions([blocks[0], blocks[1]], [numOfShapes, 1]);
-            let centerPadding =
-                this.clusters > 1 ? wh / 2 + this.blockSize * 2 : 0;
+            let wh = randOptions(
+                [blocks[0], blocks[1], blocks[2]],
+                [1, numOfShapes, 1]
+            );
+            let centerPadding = this.clusters > 1 ? wh / 2 + this.blockSize : 0;
             let angle =
                 (120 / this.clusters) * rand() +
                 cluster * (360 / this.clusters) +
                 90;
             let distance =
                 (this.gridSize * 0.5 -
-                    wh -
+                    wh / 2 -
                     this.blockSize -
-                    centerPadding / 2) *
+                    centerPadding) *
                     rand() +
                 centerPadding;
             let x =
@@ -456,7 +459,7 @@ export class Piece {
                    color = vec4(0.5 * (block.zw + 1.0), 1.0, 0.0); // convert to color 0-1
                    gl_PointSize = pixelSize;
                    gl_Position = world * vec4(block.x + blockWidthHeight, block.y - blockWidthHeight, 0.0, 1.0);
-               }        
+               }
             }`;
         const fOffsets = `#version 300 es
             precision mediump float;
@@ -601,7 +604,7 @@ export class Piece {
 
         const blocks = {
             block: {
-                data: this.movingBlocks.normalized(),
+                data: this.movingBlocks.data,
                 numComponents: 4,
             },
         };
@@ -712,15 +715,14 @@ export class Piece {
     public tick(timeMs: number) {
         this.tickCaptureImage();
 
-        if (this.paused) {
-            return;
-        }
-
         this.debug.tickPiece();
 
-        this.movingBlocks.tick();
+        if (!this.paused) {
+            this.movingBlocks.tick();
+            this.tickWebgl(timeMs);
+        }
 
-        this.tickWebgl(timeMs);
+        this.draw();
 
         if (
             this.inPreviewPhase &&
@@ -739,8 +741,6 @@ export class Piece {
 
         let world = twgl.m4.identity();
 
-        // todo: use fix array reference instead of building up new one each frame
-        const movingBlocks = this.movingBlocks.normalized();
         const movingBlocksChunkLength =
             this.features.maxMovingBlocks / this.features.framebufferForOffsets;
 
@@ -754,7 +754,7 @@ export class Piece {
         twgl.setAttribInfoBufferFromArray(
             this.context,
             this.bufferOffsets.attribs?.block as twgl.AttribInfo,
-            movingBlocks
+            this.movingBlocks.data
         );
         twgl.setUniforms(this.programOffsets, {
             pixelSize:
@@ -822,6 +822,10 @@ export class Piece {
             twgl.drawBufferInfo(this.context, this.positionBuffer);
             this.framebufferPixelsIndex = 1 - this.framebufferPixelsIndex;
         }
+    }
+
+    private draw() {
+        let world = twgl.m4.identity();
 
         // draw latest moving blocks buffer to screen
         this.context.useProgram(this.programDraw.program);
@@ -1103,14 +1107,14 @@ export class DebugPiece {
             this.debugContext.strokeStyle = `rgba(255, 255, 255, 0.3)`;
             this.debugContext.fillStyle = `rgba(255, 255, 255, 0.1)`;
             this.debugContext.fillRect(
-                block.tx - this.translationX,
-                block.ty - this.translationY,
+                block.area.x - this.translationX,
+                block.area.y - this.translationY,
                 block.area.w,
                 block.area.h
             );
             this.debugContext.strokeRect(
-                block.tx - this.translationX,
-                block.ty - this.translationY,
+                block.area.x - this.translationX,
+                block.area.y - this.translationY,
                 block.area.w,
                 block.area.h
             );
@@ -1124,6 +1128,7 @@ export class MovingBlocks {
     public count: number = 0;
     public total: number = 0;
     private piece: Piece;
+    public data!: Float32Array;
 
     public constructor(piece: Piece) {
         this.piece = piece;
@@ -1143,7 +1148,9 @@ export class MovingBlocks {
     }
 
     private add(): void {
-        this.blocks.push(new MovingBlock(this.piece));
+        this.blocks.push(
+            new MovingBlock(this.blocks.length, this.data, this.piece)
+        );
         this.total++;
     }
 
@@ -1151,62 +1158,43 @@ export class MovingBlocks {
         this.blocks = [];
         this.count = 0;
         this.total = 0;
+        this.data = new Float32Array(
+            this.piece.features.maxMovingBlocks * MovingBlock.dataPoints
+        );
 
         do {
             this.add();
         } while (this.total < this.piece.features.maxMovingBlocks);
     }
-
-    public normalized(): Float32Array {
-        return this.blocks.reduce((r, block, currentIndex) => {
-            block.normalized(r, currentIndex * 4);
-            return r;
-        }, new Float32Array(this.piece.features.maxMovingBlocks * 4));
-    }
 }
 
 export class MovingBlock {
+    public static dataPoints: number = 4;
+    private dataIndex: number;
     public active: boolean = false;
     public area!: Area;
     public dirX: number = 0;
     public dirY: number = 0;
-    public vMin!: number;
-    public vMax!: number;
-    public vDir!: number;
     public shapeX: number = 0;
     public shapeY: number = 0;
-
-    public tx!: number;
-    public ty!: number;
     private movingDistanceX!: number;
     private movingDistanceY!: number;
+    private maxTicks!: number;
 
-    private dirXShapesFactor!: number;
-    private dirYShapesFactor!: number;
-
-    public constructor(public readonly piece: Piece) {
+    public constructor(
+        public index: number,
+        public data: Float32Array,
+        public readonly piece: Piece
+    ) {
         this.piece = piece;
-    }
-
-    public normalized(r: Float32Array, index: number): Float32Array {
-        if (this.active) {
-            r[index] = (this.area.x / this.piece.width) * 2 - 1;
-            r[index + 1] = 2 - (this.area.y / this.piece.height) * 2 - 1;
-            r[index + 2] = (this.dirX + this.shapeX) / 40; // max -40 / 40 => - 1 / 1
-            r[index + 3] = -(this.dirY + this.shapeY) / 40; // max -40 / 40  => - 1 / 1
-        } else {
-            r[index] = 0.0;
-            r[index + 1] = 0.0;
-            r[index + 2] = 0.0;
-            r[index + 3] = 0.0;
-        }
-
-        return r;
+        this.dataIndex = index * MovingBlock.dataPoints;
     }
 
     public activate() {
         let move = randOptions(this.piece.features.direction);
         let stepSize = this.piece.features.maxStepSize;
+
+        this.maxTicks = this.piece.features.maxFramesBeforeReset + this.index;
 
         this.shapeX = 0;
         this.shapeY = 0;
@@ -1233,8 +1221,22 @@ export class MovingBlock {
 
         let blocksX: number = randOptions(this.piece.features.movingDistances);
         let blocksY: number = randOptions(this.piece.features.movingDistances);
-        let x: number = randInt(this.piece.features.gridSize - blocksX);
-        let y: number = randInt(this.piece.features.gridSize - blocksY);
+        this.movingDistanceX = 0;
+        this.movingDistanceY = 0;
+        if (this.dirX !== 0) {
+            this.movingDistanceX =
+                ((blocksX * this.piece.width) / this.piece.features.gridSize) <<
+                0;
+        }
+        if (this.dirY !== 0) {
+            this.movingDistanceY =
+                ((blocksY * this.piece.height) /
+                    this.piece.features.gridSize) <<
+                0;
+        }
+
+        let x: number = randInt(this.piece.features.gridSize);
+        let y: number = randInt(this.piece.features.gridSize);
 
         this.area = {
             x: ((x * this.piece.width) / this.piece.features.gridSize) << 0,
@@ -1249,45 +1251,34 @@ export class MovingBlock {
                 0,
         };
 
-        this.vMin = 255 * this.piece.features.colorValueMin;
-        this.vMax = 255 * this.piece.features.colorValueMax;
-        this.vDir = this.piece.pixelRatio * 2;
-
-        this.dirXShapesFactor =
-            this.area.x > this.piece.features.shapesCenterX * this.piece.width
-                ? -1
-                : 1;
-        this.dirYShapesFactor =
-            this.area.y > this.piece.features.shapesCenterY * this.piece.height
-                ? -1
-                : 1;
-
-        this.movingDistanceX = 0;
-        this.movingDistanceY = 0;
-        if (this.dirX !== 0) {
-            this.movingDistanceX =
-                ((blocksX * this.piece.width) / this.piece.features.gridSize) <<
-                0;
-        }
-        if (this.dirY !== 0) {
-            this.movingDistanceY =
-                ((blocksY * this.piece.height) /
-                    this.piece.features.gridSize) <<
-                0;
-        }
-        this.area.x += this.movingDistanceX;
-        this.area.y += this.movingDistanceY;
+        this.data[this.dataIndex] = (this.area.x / this.piece.width) * 2 - 1;
+        this.data[this.dataIndex + 1] =
+            2 - (this.area.y / this.piece.height) * 2 - 1;
+        this.data[this.dataIndex + 2] = (this.dirX + this.shapeX) / 40; // max -40 / 40 => - 1 / 1
+        this.data[this.dataIndex + 3] = -(this.dirY + this.shapeY) / 40; // max -40 / 40  => - 1 / 1
 
         this.active = true;
     }
 
     public deactivate() {
+        this.data[this.dataIndex] = 0.0;
+        this.data[this.dataIndex + 1] = 0.0;
+        this.data[this.dataIndex + 2] = 0.0;
+        this.data[this.dataIndex + 3] = 0.0;
+
         this.active = false;
     }
 
     public tick(): boolean {
         if (!this.active) {
             this.activate();
+        }
+
+        // release blocks to prevent lock-ins (but allow pseudo-lock-ins).
+        this.maxTicks--;
+        if (this.maxTicks == 0) {
+            this.deactivate();
+            return false;
         }
 
         if (this.movingDistanceX < 0 || this.movingDistanceY < 0) {
@@ -1310,85 +1301,31 @@ export class MovingBlock {
             return false;
         }
 
-        if (!this.intersectsWithDrawingArea(sx, sy, this.area.w, this.area.h)) {
+        let mx =
+            this.dirX * this.piece.features.movingDistanceDirection +
+            this.shapeX;
+        let my =
+            this.dirY * this.piece.features.movingDistanceDirection +
+            this.shapeY;
+
+        if (mx == 0 && my == 0) {
             this.deactivate();
             return false;
         }
 
-        let tx: number = this.area.x + this.shapeX * this.dirXShapesFactor;
-        let ty: number = this.area.y + this.shapeY * this.dirYShapesFactor;
+        this.area.x -= mx;
+        this.area.y -= my;
 
-        if (this.dirX !== 0) {
-            tx +=
-                this.dirX *
-                this.dirXShapesFactor *
-                Math.sin(this.movingDistanceX / this.piece.width);
-        }
+        this.movingDistanceX -= mx;
+        this.movingDistanceY -= my;
 
-        if (this.dirY !== 0) {
-            ty +=
-                this.dirY *
-                this.dirYShapesFactor *
-                Math.cos(this.movingDistanceY / this.piece.height);
-        }
-
-        this.tx = tx;
-        this.ty = ty;
-
-        this.area.x -=
-            this.dirX * this.piece.features.movingDistanceDirection +
-            this.shapeX;
-        this.area.y -=
-            this.dirY * this.piece.features.movingDistanceDirection +
-            this.shapeY;
-
-        // note: this runs towards 0 or runs into box constraints
-        this.movingDistanceX -=
-            this.dirX * this.piece.features.movingDistanceDirection;
-        this.movingDistanceY -=
-            this.dirY * this.piece.features.movingDistanceDirection;
+        this.data[this.dataIndex] = (this.area.x / this.piece.width) * 2 - 1;
+        this.data[this.dataIndex + 1] =
+            2 - (this.area.y / this.piece.height) * 2 - 1;
+        this.data[this.dataIndex + 2] = (this.dirX + this.shapeX) / 40; // max -40 / 40 => - 1 / 1
+        this.data[this.dataIndex + 3] = -(this.dirY + this.shapeY) / 40; // max -40 / 40  => - 1 / 1
 
         return true;
-    }
-
-    private intersectsWithDrawingArea(
-        x: number,
-        y: number,
-        w: number,
-        h: number
-    ) {
-        [x, y] = this.rotatePoint(
-            this.piece.width / 2,
-            this.piece.height / 2,
-            x + w / 2,
-            y + h / 2
-        );
-
-        return isec.testRectRect(
-            [x, y],
-            [1, 1],
-            [w, h],
-            [this.piece.width - w * 2, this.piece.height - h * 2]
-        );
-    }
-
-    private rotatePoint(
-        cx: number,
-        cy: number,
-        x: number,
-        y: number
-    ): Array<number> {
-        if (this.piece.features.rotation === 0) {
-            return [x, y];
-        }
-        return [
-            this.piece.features.rotationCos * (x - cx) +
-                this.piece.features.rotationSin * (y - cy) +
-                cx,
-            this.piece.features.rotationCos * (y - cy) -
-                this.piece.features.rotationSin * (x - cx) +
-                cy,
-        ];
     }
 
     private intersectsWithShapes(
