@@ -8,39 +8,36 @@ export type FxhashFeatures = {
     color: string;
     'grid size': number;
     shapes: string;
-    cluster: number;
+    clusters: number;
     rotation: string;
     'moving blocks': number;
     'moving direction': string;
-    'moving distance direction': string;
+    'moving behavior': string;
     'max step size': number;
 };
 
 export class Features {
     public combination: number = 0;
-    public readonly colorHue: number;
-    public readonly colorName: string;
-    public readonly colorHueBase: number;
+    public readonly colorBase: number;
     public readonly color: ColorSpec;
-    public readonly colorSaturation: number;
-    public maxMovingBlocks: number;
-    public framebufferForOffsets: number = 8;
-    public framebufferForMovingBlocks: number = 2;
-    public readonly gridSize: number;
-    public readonly maxFramesBeforeReset: number;
-    public readonly colorValueMin: number;
-    public readonly colorValueMax: number;
+
     public blockConfig: Array<any> = [
-        21, 34, 55, 89, 144, 233, 377, 610, 987, 1597, 2584, 4181, 6765, 10946,
+        13, 21, 34, 55, 89, 144, 233, 377, 610, 987, 1597, 2584, 4181, 6765,
+        10946,
     ];
-    public movingDistances: Array<any> = [];
     public blockBase: number;
     public blockSize: number;
-    public maxStepSizeBase: number;
-    public maxStepSize: number;
+    public readonly gridSize: number;
+    public maxMovingBlocks: number;
 
+    public movingStepSizeBase: number;
+    public movingStepSize: number;
     public movingDistanceDirectionBase: number;
     public movingDistanceDirection: number;
+    public movingDistances: Array<any> = [];
+    public readonly maxFramesBeforeReset: number;
+    public framebufferForOffsets: number = 8;
+    public framebufferForMovingBlocks: number = 2;
 
     public shapes: Array<Circle | Quad | Rect>;
     public shapeBase: number;
@@ -49,7 +46,9 @@ export class Features {
 
     public clusters: number;
 
-    private rotationOptions: Array<number> = [-42, -21, -7, -3, 3, 7, 21, 42];
+    private static rotationOptions: Array<number> = [
+        -168, -84, -42, -21, -7, -3, 3, 7, 21, 42, 84, 168,
+    ];
     public rotationBase: number;
     public rotation: number;
     public rotationRadians: number;
@@ -82,87 +81,102 @@ export class Features {
         let combinations: Array<
             Array<Array<'left' | 'up' | 'down' | 'right'>>
         > = [];
-        let temp: Array<Array<'left' | 'up' | 'down' | 'right'>> = [];
-        let length = Math.pow(2, all.length);
+        let active: Array<Array<'left' | 'up' | 'down' | 'right'>> = [];
+        let variations = 2 ** all.length;
 
-        for (let i = 0; i < length; i++) {
-            temp = [];
+        for (let i = 0; i < variations; i++) {
+            active = [];
             for (let j = 0; j < all.length; j++) {
-                if (i & Math.pow(2, j)) {
-                    temp.push(all[j]);
+                if (i & (2 ** j)) {
+                    active.push(all[j]);
                 }
             }
-            if (temp.length > 0) {
-                combinations.push(temp);
+            if (active.length > 0) {
+                combinations.push(active);
             }
         }
 
         Features.directionOptions = combinations.filter(
-            (c) => c.length >= 3 && c.length <= 4
+            (c) => (c.length >= 3 && c.length <= 4) || c.length == 8
         );
+
         return Features.directionOptions;
     }
 
-    // todo: improve combination handling
+    public static colors: Array<ColorSpec> = Object.values(
+        color.palettes['unique-css']
+    );
+    public static movingDistanceDirectionOptions = [-1, 1];
+    public static movingStepSizeOptions = [1, 2, 3];
+    public static shapesOptions = [3, 5, 7];
+    public static clusterOption = 3;
+    public static blockOption = 5;
+
     public static combinations: number =
-        2 *
-        5 *
-        3 *
-        3 *
-        3 *
-        Object.keys(color.palettes['unique-css']).length *
+        Features.movingDistanceDirectionOptions.length *
+        Features.blockOption *
+        Features.movingStepSizeOptions.length *
+        Features.shapesOptions.length *
+        Features.clusterOption *
+        Features.colors.length *
         Features.getDirectionOptions().length *
-        8;
+        Features.rotationOptions.length;
 
     public constructor(combination: number) {
         this.combination = combination % Features.combinations;
 
-        this.movingDistanceDirectionBase = combination % 2;
-        this.movingDistanceDirection = [-1, 1][
-            this.movingDistanceDirectionBase
-        ];
-        combination = (combination / 2) << 0;
+        this.movingDistanceDirectionBase =
+            combination % Features.movingDistanceDirectionOptions.length;
+        combination =
+            (combination / Features.movingDistanceDirectionOptions.length) << 0;
+        this.movingDistanceDirection =
+            Features.movingDistanceDirectionOptions[
+                this.movingDistanceDirectionBase
+            ];
 
-        this.maxStepSizeBase = combination % 3;
-        this.maxStepSize = [1, 2, 3][this.maxStepSizeBase];
-        combination = (combination / 3) << 0;
+        this.movingStepSizeBase =
+            combination % Features.movingStepSizeOptions.length;
+        combination =
+            (combination / Features.movingStepSizeOptions.length) << 0;
+        this.movingStepSize =
+            Features.movingStepSizeOptions[this.movingStepSizeBase];
 
-        this.blockBase = (combination % 5) + 3;
+        this.blockBase = (combination % Features.blockOption) + 4;
+        combination = (combination / Features.blockOption) << 0;
         let blocks = this.blockConfig.slice(
             this.blockBase - 1,
             this.blockBase + 4
         );
         this.maxMovingBlocks = blocks[3];
         this.movingDistances = this.blockConfig.slice(
-            this.blockBase - 1,
-            this.blockBase + 3
+            this.blockBase - 2,
+            this.blockBase
         );
         this.gridSize = blocks[4];
-        this.maxFramesBeforeReset = blocks[3];
-        this.blockSize = this.blockConfig[0];
-        combination = (combination / 5) << 0;
+        this.maxFramesBeforeReset = blocks[2];
+        this.blockSize = this.blockConfig[1];
 
-        this.shapeBase = combination % 3;
-        let numOfShapes = [3, 5, 7][this.shapeBase];
+        this.shapeBase = combination % Features.shapesOptions.length;
+        combination = (combination / Features.shapesOptions.length) << 0;
+        let numOfShapes = Features.shapesOptions[this.shapeBase];
         this.shapes = [];
-        combination = (combination / 3) << 0;
 
-        this.clusters = (combination % 3) + 1;
-        combination = (combination / 3) << 0;
+        this.clusters = (combination % Features.clusterOption) + 1;
+        combination = (combination / Features.clusterOption) << 0;
         for (let i = 0; i < numOfShapes; i++) {
             let cluster = i % this.clusters;
             let wh = randOptions(
                 [blocks[0], blocks[1], blocks[2]],
                 [1, numOfShapes, 1]
             );
-            let centerPadding = this.clusters > 1 ? wh / 2 + this.blockSize : 0;
             let angle =
                 (120 / this.clusters) * rand() +
-                cluster * (360 / this.clusters) +
-                90;
+                cluster * (360 / this.clusters) -
+                60;
+            let centerPadding = this.clusters > 1 ? wh / 2 + this.blockSize : 0;
             let distance =
                 (this.gridSize * 0.5 -
-                    wh / 2 -
+                    wh * 0.6 -
                     this.blockSize -
                     centerPadding) *
                     rand() +
@@ -194,12 +208,10 @@ export class Features {
         this.shapes.forEach((s, _index) => {
             s.valueX =
                 (rand() + randOptions([0.23, 0.29, 0.37])) *
-                2 *
-                randOptions([1, -1]);
+                randOptions([-2, 2]);
             s.valueY =
                 (rand() + randOptions([0.23, 0.29, 0.37])) *
-                2 *
-                randOptions([1, -1]);
+                randOptions([-2, 2]);
         });
         [this.shapesCenterX, this.shapesCenterY] = this.shapes.reduce(
             (center: Array<number>, shape) => {
@@ -211,41 +223,35 @@ export class Features {
             [0, 0]
         );
 
-        this.directionBase =
-            combination % Features.getDirectionOptions().length;
-        this.direction = Features.getDirectionOptions()[this.directionBase];
-        combination =
-            (combination / Features.getDirectionOptions().length) << 0;
-
-        let colors = Object.values(color.palettes['unique-css']);
-        this.colorHueBase = combination % colors.length;
-        this.colorName = colors[this.colorHueBase].name;
-        this.color = colors[this.colorHueBase];
-        this.colorHue = this.color.hsv[0];
-        this.colorSaturation = this.color.hsv[1];
-        this.colorValueMin = 0.05;
-        this.colorValueMax = this.color.hsv[2];
-        combination = (combination / colors.length) << 0;
-
-        this.rotationBase = combination % this.rotationOptions.length;
-        this.rotation = this.rotationOptions[this.rotationBase];
+        this.rotationBase = combination % Features.rotationOptions.length;
+        combination = (combination / Features.rotationOptions.length) << 0;
+        this.rotation = Features.rotationOptions[this.rotationBase];
         this.rotationRadians = (Math.PI / 180) * this.rotation;
         this.rotationCos = Math.cos(-this.rotationRadians);
         this.rotationSin = Math.sin(-this.rotationRadians);
-        combination = (combination / this.rotationOptions.length) << 0;
+
+        this.directionBase =
+            combination % Features.getDirectionOptions().length;
+        combination =
+            (combination / Features.getDirectionOptions().length) << 0;
+        this.direction = Features.getDirectionOptions()[this.directionBase];
+
+        this.colorBase = combination % Features.colors.length;
+        combination = (combination / Features.length) << 0;
+        this.color = Features.colors[this.colorBase];
     }
 
     public getFxhashFeatures(): FxhashFeatures {
         return {
             color: this.getColorName(),
             shapes: this.getShapes(),
-            cluster: this.clusters,
+            clusters: this.clusters,
             'grid size': this.gridSize,
             rotation: `${this.rotation}°`,
             'moving blocks': this.maxMovingBlocks,
-            'moving direction': this.getDirectionName(),
-            'moving distance direction': this.getMovingDistanceDirectionName(),
-            'max step size': this.maxStepSize,
+            'moving direction': this.getMovingDirection(),
+            'moving behavior': this.getMovingBehavior(),
+            'max step size': this.movingStepSize,
         };
     }
 
@@ -260,14 +266,14 @@ export class Features {
     }
 
     public getColorName(): string {
-        return this.colorName;
+        return this.color.name;
     }
 
-    public getMovingDistanceDirectionName(): string {
+    public getMovingBehavior(): string {
         return this.movingDistanceDirection === -1 ? 'negative' : 'positive';
     }
 
-    public getDirectionName(): string {
+    public getMovingDirection(): string {
         return this.direction.map((a) => a.join('-')).join(', ');
     }
 
@@ -544,7 +550,7 @@ export class Piece {
                         vec3(0.00),
                         vec3(0.05),
                         baseColor.rgb, 
-                        baseColor.rgb + 0.05, 
+                        mix(baseColor.rgb, vec3(1.0), 0.1), 
                         color.a
                     ),
                     color.a
@@ -705,11 +711,7 @@ export class Piece {
     }
 
     public initBackground() {
-        document.body.style.backgroundColor = color.hsvCss(
-            this.features.colorHue,
-            this.features.colorSaturation,
-            this.features.colorValueMax
-        );
+        document.body.style.backgroundColor = this.features.color.hex;
     }
 
     public tick(timeMs: number) {
@@ -913,8 +915,9 @@ export class Piece {
 }
 
 export class DebugPiece {
-    public debugCanvas: HTMLCanvasElement | null = null;
-    public debugContext: CanvasRenderingContext2D | null = null;
+    private active: boolean = false;
+    public canvas!: HTMLCanvasElement;
+    public context!: CanvasRenderingContext2D;
     private piece: Piece;
 
     private translationX!: number;
@@ -923,16 +926,15 @@ export class DebugPiece {
     public constructor(piece: Piece) {
         this.piece = piece;
         this.piece.canvas.addEventListener('piece.updateSize', () => {
-            let active = this.debugContext && this.debugCanvas;
-            this.remove();
-            if (active) {
+            if (this.active) {
+                this.remove();
                 this.create();
             }
         });
     }
 
     public toggle() {
-        if (this.debugContext && this.debugCanvas) {
+        if (this.active) {
             this.remove();
         } else {
             this.create();
@@ -940,96 +942,91 @@ export class DebugPiece {
     }
 
     private remove() {
-        if (!this.debugContext || !this.debugCanvas) {
+        if (!this.active) {
             return;
         }
-
-        this.debugCanvas.remove();
-        this.debugCanvas = null;
-        this.debugContext = null;
+        this.canvas.remove();
+        this.active = false;
     }
 
     private create() {
-        if (this.debugContext && this.debugCanvas) {
+        if (this.active) {
             return;
         }
-
-        this.debugCanvas = this.piece.canvas.cloneNode(
-            false
-        ) as HTMLCanvasElement;
-        this.debugCanvas.id = 'debug-canvas';
-        this.debugCanvas.style.backgroundColor = 'transparent';
-        this.debugCanvas.width = this.piece.width;
-        this.debugCanvas.height = this.piece.height;
-        document.body.prepend(this.debugCanvas);
-        this.debugContext = this.debugCanvas.getContext(
-            '2d'
-        ) as CanvasRenderingContext2D;
+        this.canvas = this.piece.canvas.cloneNode(false) as HTMLCanvasElement;
+        this.canvas.id = 'debug-canvas';
+        this.canvas.style.backgroundColor = 'transparent';
+        this.canvas.width = this.piece.width;
+        this.canvas.height = this.piece.height;
+        document.body.prepend(this.canvas);
+        this.context = this.canvas.getContext('2d') as CanvasRenderingContext2D;
 
         this.translationX = this.piece.width / 2;
         this.translationY = this.piece.height / 2;
 
+        this.active = true;
+
         this.tickPiece();
     }
 
-    public isEnabled(): boolean {
-        return this.debugContext !== null;
+    public isActive(): boolean {
+        return this.active;
     }
 
     private rotate() {
-        if (!this.debugContext || !this.debugCanvas) {
-            return;
-        }
-        this.debugContext.translate(this.translationX, this.translationY);
-        this.debugContext.rotate(this.piece.features.rotationRadians);
+        this.context.translate(this.translationX, this.translationY);
+        this.context.rotate(this.piece.features.rotationRadians);
     }
 
     private unRotate() {
-        if (!this.debugContext || !this.debugCanvas) {
-            return;
-        }
-        this.debugContext.resetTransform();
+        this.context.resetTransform();
     }
 
     public tickPiece() {
-        if (!this.debugContext || !this.debugCanvas) {
+        if (!this.active) {
             return;
         }
 
-        this.debugContext.clearRect(0, 0, this.piece.width, this.piece.height);
+        this.context.clearRect(0, 0, this.piece.width, this.piece.height);
 
         this.rotate();
 
+        this.shapes();
+        this.shapesCenter();
+        this.movingBlocks();
+        this.cluster();
+
+        this.unRotate();
+    }
+
+    private shapes() {
         this.piece.features.shapes.map((shape) => {
-            if (!this.debugContext) {
-                return;
-            }
             if (shape instanceof Rect) {
-                this.debugContext.strokeStyle = '#00ffff';
-                this.debugContext.lineWidth = 1;
-                this.debugContext.fillStyle = `rgba(0, ${
-                    230 - shape.valueX * 10
-                }, ${230 - shape.valueY * 10}, 0.2)`;
-                this.debugContext.strokeRect(
+                this.context.strokeStyle = '#00ffff';
+                this.context.lineWidth = 1;
+                this.context.fillStyle = `rgba(0, ${230 - shape.valueX * 10}, ${
+                    230 - shape.valueY * 10
+                }, 0.2)`;
+                this.context.strokeRect(
                     shape.x * this.piece.width - this.translationX,
                     shape.y * this.piece.height - this.translationY,
                     shape.w * this.piece.width,
                     shape.h * this.piece.height
                 );
-                this.debugContext.fillRect(
+                this.context.fillRect(
                     shape.x * this.piece.width - this.translationX,
                     shape.y * this.piece.height - this.translationY,
                     shape.w * this.piece.width,
                     shape.h * this.piece.height
                 );
             } else {
-                this.debugContext.strokeStyle = '#ffff00';
-                this.debugContext.lineWidth = 1;
-                this.debugContext.fillStyle = `rgba(${
-                    230 - shape.valueX * 10
-                }, ${230 - shape.valueY * 10}, 0, 0.2)`;
-                this.debugContext.beginPath();
-                this.debugContext.arc(
+                this.context.strokeStyle = '#ffff00';
+                this.context.lineWidth = 1;
+                this.context.fillStyle = `rgba(${230 - shape.valueX * 10}, ${
+                    230 - shape.valueY * 10
+                }, 0, 0.2)`;
+                this.context.beginPath();
+                this.context.arc(
                     shape.x * this.piece.width - this.translationX,
                     shape.y * this.piece.height - this.translationY,
                     shape.r * Math.min(this.piece.width, this.piece.height),
@@ -1037,14 +1034,14 @@ export class DebugPiece {
                     2 * Math.PI,
                     false
                 );
-                this.debugContext.closePath();
-                this.debugContext.stroke();
-                this.debugContext.fill();
+                this.context.closePath();
+                this.context.stroke();
+                this.context.fill();
             }
-            this.debugContext.lineWidth = 1;
-            this.debugContext.fillStyle = `rgba(255, 255, 255, 0.1)`;
-            this.debugContext.beginPath();
-            this.debugContext.arc(
+            this.context.lineWidth = 1;
+            this.context.fillStyle = `rgba(255, 255, 255, 0.1)`;
+            this.context.beginPath();
+            this.context.arc(
                 shape.centerX * this.piece.width - this.translationX,
                 shape.centerY * this.piece.height - this.translationY,
                 Math.min(this.piece.width, this.piece.height) * 0.01,
@@ -1052,15 +1049,17 @@ export class DebugPiece {
                 2 * Math.PI,
                 false
             );
-            this.debugContext.closePath();
-            this.debugContext.stroke();
-            this.debugContext.fill();
+            this.context.closePath();
+            this.context.stroke();
+            this.context.fill();
         });
+    }
 
-        this.debugContext.strokeStyle = '#00ff00';
-        this.debugContext.fillStyle = `rgba(0, 255, 0, 0.1)`;
-        this.debugContext.beginPath();
-        this.debugContext.arc(
+    private shapesCenter() {
+        this.context.strokeStyle = '#00ff00';
+        this.context.fillStyle = `rgba(0, 255, 0, 0.1)`;
+        this.context.beginPath();
+        this.context.arc(
             this.piece.features.shapesCenterX * this.piece.width -
                 this.translationX,
             this.piece.features.shapesCenterY * this.piece.height -
@@ -1070,49 +1069,64 @@ export class DebugPiece {
             2 * Math.PI,
             false
         );
-        this.debugContext.closePath();
-        this.debugContext.stroke();
-        this.debugContext.fill();
+        this.context.closePath();
+        this.context.stroke();
+        this.context.fill();
+    }
 
-        this.movingBlocks();
+    private cluster() {
+        this.context.strokeStyle = '#000000';
+        this.context.fillStyle = `rgba(0, 0, 0, 0.1)`;
+        this.context.lineWidth = 2;
+        for (let i = 0; i < this.piece.features.clusters; i++) {
+            let angleStart = (360 / this.piece.features.clusters) * i - 60;
+            let angleEnd =
+                (360 / this.piece.features.clusters) * i +
+                120 / this.piece.features.clusters -
+                60;
 
-        this.unRotate();
-
-        this.debugContext.strokeStyle = '#333333';
-        let blockSizeX =
-            (this.piece.features.blockSize / this.piece.features.gridSize) *
-            this.piece.width;
-        let blockSizeY =
-            (this.piece.features.blockSize / this.piece.features.gridSize) *
-            this.piece.width;
-        this.debugContext.strokeRect(
-            blockSizeX,
-            blockSizeY,
-            this.piece.width - blockSizeX * 2,
-            this.piece.height - blockSizeX * 2
-        );
+            this.context.beginPath();
+            this.context.moveTo(
+                this.piece.width / 2 - this.translationX,
+                this.piece.height / 2 - this.translationY
+            );
+            this.context.arc(
+                this.piece.width / 2 - this.translationX,
+                this.piece.height / 2 - this.translationY,
+                Math.min(this.piece.width, this.piece.height) *
+                    (0.5 -
+                        this.piece.features.blockSize /
+                            this.piece.features.gridSize),
+                (angleStart / 180) * Math.PI,
+                (angleEnd / 180) * Math.PI,
+                false
+            );
+            this.context.lineTo(
+                this.piece.width / 2 - this.translationX,
+                this.piece.height / 2 - this.translationY
+            );
+            this.context.stroke();
+            this.context.fill();
+        }
     }
 
     private movingBlocks() {
-        if (!this.debugContext || !this.debugCanvas) {
-            return;
-        }
         this.piece.movingBlocks.blocks.forEach((block) => {
-            if (!this.debugContext || !this.debugCanvas) {
+            if (!this.context || !this.canvas) {
                 return;
             }
             if (!block.active) {
                 return;
             }
-            this.debugContext.strokeStyle = `rgba(255, 255, 255, 0.3)`;
-            this.debugContext.fillStyle = `rgba(255, 255, 255, 0.1)`;
-            this.debugContext.fillRect(
+            this.context.strokeStyle = `rgba(255, 255, 255, 0.3)`;
+            this.context.fillStyle = `rgba(255, 255, 255, 0.1)`;
+            this.context.fillRect(
                 block.area.x - this.translationX,
                 block.area.y - this.translationY,
                 block.area.w,
                 block.area.h
             );
-            this.debugContext.strokeRect(
+            this.context.strokeRect(
                 block.area.x - this.translationX,
                 block.area.y - this.translationY,
                 block.area.w,
@@ -1192,7 +1206,7 @@ export class MovingBlock {
 
     public activate() {
         let move = randOptions(this.piece.features.direction);
-        let stepSize = this.piece.features.maxStepSize;
+        let stepSize = this.piece.features.movingStepSize;
 
         this.maxTicks = this.piece.features.maxFramesBeforeReset + this.index;
 
@@ -1214,9 +1228,11 @@ export class MovingBlock {
             this.dirY = stepSize;
         }
 
-        if (randInt(this.piece.features.maxStepSize + 1) == 0) {
-            this.dirX *= rand() * (this.piece.features.maxStepSize - 1) + 1.0;
-            this.dirY *= rand() * (this.piece.features.maxStepSize - 1) + 1.0;
+        if (randInt(this.piece.features.movingStepSize + 1) == 0) {
+            this.dirX *=
+                rand() * (this.piece.features.movingStepSize - 1) + 1.0;
+            this.dirY *=
+                rand() * (this.piece.features.movingStepSize - 1) + 1.0;
         }
 
         let blocksX: number = randOptions(this.piece.features.movingDistances);

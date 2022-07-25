@@ -148,26 +148,30 @@ export class Container {
 
         setInterval(() => {
             info.update({
-                combination: `${piece.features.combination} / ${Features.combinations}`,
+                combination: `${piece.features.combination} [${Features.combinations}]`,
                 color: `${piece.features.getColorName()} (${
-                    piece.features.colorHue
-                }, ${piece.features.color.rgb})`,
-                gridSize: `${piece.features.gridSize}`,
-                rotation: `${piece.features.rotation}°`,
+                    piece.features.color.rgb
+                }) [${Features.colors.length}]`,
                 shapes: `${
                     piece.features.shapes.length
-                } (${piece.features.getShapes()})`,
-                direction: `${piece.features.getDirectionName()}`,
-                movingDistanceBehavior: `${piece.features.getMovingDistanceDirectionName()}`,
-                stepSize: `${piece.features.maxStepSize}`,
+                } (${piece.features.getShapes()}) [${
+                    Features.shapesOptions.length
+                }]`,
+                clusters: `${piece.features.clusters} [${Features.clusterOption}]`,
+                rotation: `${piece.features.rotation}°`,
+                gridSize: `${piece.features.gridSize} [${Features.blockOption}]`,
+                movingBlocks: `${piece.features.maxMovingBlocks} (${piece.movingBlocks.count} / ${piece.movingBlocks.total})`,
+                movingDirection: `${piece.features.getMovingDirection()} [${
+                    Features.movingDistanceDirectionOptions.length
+                }]`,
+                movingDistanceBehavior: `${piece.features.getMovingBehavior()}  [${
+                    Features.movingDistanceDirectionOptions.length
+                }]`,
+                movingStepSize: `${piece.features.movingStepSize}  [${Features.movingStepSizeOptions.length}]`,
                 size: `${piece.canvas.width} / ${piece.canvas.height}`,
                 pixelRatio: `${piece.pixelRatio}`,
                 previewPhase: piece.inPreviewPhase,
                 previewPhaseEndsAfter: piece.previewPhaseEndsAfter,
-                movingBlocks: `${piece.movingBlocks.count} / ${piece.features.maxMovingBlocks} / ${piece.movingBlocks.total}`,
-                saturation: piece.features.colorSaturation,
-                valueMin: piece.features.colorValueMin,
-                valueMax: piece.features.colorValueMax,
                 currentFps: `${this.loop.currentFps() << 0}`,
                 totalFrames: `${piece.movingBlocks.totalFrames}`,
                 paused: `${piece.paused}`,
@@ -192,7 +196,51 @@ export class Intercom {
         this.info = info;
         this.help = help;
         this.display = new Display(container);
+        this.initTouchEndHandler();
         this.initKeyUpHandler();
+    }
+
+    private initTouchEndHandler() {
+        let lastIdentifier: null | number = null;
+        let lastPageX: number = 0;
+        let lastPageY: number = 0;
+        let endListener = (ev: TouchEvent) => {
+            let pageX = ev.changedTouches.item(0)?.pageX || 0;
+            let pageY = ev.changedTouches.item(0)?.pageY || 0;
+
+            // ignore scroll
+            if (
+                Math.abs(pageX - lastPageX) < 20 &&
+                Math.abs(pageY - lastPageY) < 20
+            ) {
+                this.piece.paused = !this.piece.paused;
+                this.display.show(
+                    'pausing ' + (this.piece.paused ? 'on' : 'off')
+                );
+            }
+
+            lastIdentifier = null;
+            lastPageX = 0;
+            lastPageY = 0;
+            window.removeEventListener('touchend', endListener);
+        };
+        window.addEventListener('touchstart', (ev: TouchEvent) => {
+            let identifier: null | number =
+                ev.targetTouches.item(0)?.identifier || null;
+
+            // ignore zoom
+            if (ev.touches.length > 1) {
+                window.removeEventListener('touchend', endListener);
+                lastIdentifier = null;
+                lastPageX = 0;
+                lastPageY = 0;
+            } else if (lastIdentifier == null) {
+                lastIdentifier = identifier;
+                lastPageX = ev.targetTouches.item(0)?.pageX || 0;
+                lastPageY = ev.targetTouches.item(0)?.pageY || 0;
+                window.addEventListener('touchend', endListener);
+            }
+        });
     }
 
     private initKeyUpHandler() {
@@ -224,7 +272,7 @@ export class Intercom {
                 case 'd':
                     this.piece.debug.toggle();
                     this.display.show(
-                        'debug ' + (this.piece.debug.isEnabled() ? 'on' : 'off')
+                        'debug ' + (this.piece.debug.isActive() ? 'on' : 'off')
                     );
                     break;
 
@@ -300,14 +348,18 @@ export class Info {
         container.prepend(this.element);
     }
 
+    public isActive(): boolean {
+        return !this.element.classList.contains('hide');
+    }
+
     public toggleShow(): boolean {
         this.element.classList.remove('loading');
-        if (this.element.classList.contains('hide')) {
-            this.element.classList.remove('hide');
-            this.element.classList.add('show');
-        } else {
+        if (this.isActive()) {
             this.element.classList.remove('show');
             this.element.classList.add('hide');
+        } else {
+            this.element.classList.remove('hide');
+            this.element.classList.add('show');
         }
         return this.element.classList.contains('show');
     }
@@ -332,7 +384,7 @@ export class Help {
         this.element.innerHTML = `
           <p><em>i</em> info</p>
           <p><em>0 - 9</em> show buffer</p>
-          <p><em>p</em> pause</p>
+          <p><em>p</em> toggle pausing</p>
           <p><em>f</em> toggle fullscreen</p>
           <p><em>c</em> capture image</p>
           <p><em>d</em> debug view</p>
@@ -341,14 +393,18 @@ export class Help {
         container.prepend(this.element);
     }
 
+    public isActive(): boolean {
+        return !this.element.classList.contains('hide');
+    }
+
     public toggleShow(): boolean {
         this.element.classList.remove('loading');
-        if (this.element.classList.contains('hide')) {
-            this.element.classList.remove('hide');
-            this.element.classList.add('show');
-        } else {
+        if (this.isActive()) {
             this.element.classList.remove('show');
             this.element.classList.add('hide');
+        } else {
+            this.element.classList.remove('hide');
+            this.element.classList.add('show');
         }
         return this.element.classList.contains('show');
     }
