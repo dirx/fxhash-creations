@@ -11,8 +11,7 @@ __soon on fxhash__
 ### About
 
 <img src="./resources/moving-blocks/orange-3circlesand2quads-3-2584--21°-1597-left,left-up,right-down-negative-1-31947444-ootn2iTgutBGJMq2hSBWbA8kEJS54cGWWhbH1Ttx4MepLY7F4j4.png" align="right" width="50%" style="margin: 0 20px 0 20px" />
-
-<img src="./resources/moving-blocks/orangered-2circlesand3quads-1-610-7°-377-up,left,down-positive-3-32097371-oo1111115FBfoH1111111111111111114YMUGC1111111111111.png" align="right" width="50%" style="margin: 20px 20px 0 20px" />
+<img src="./resources/moving-blocks/orangered-2circlesand3quads-1-610-7°-377-up,left,down-positive-3-32097371-oo1111115FBfoH1111111111111111114YMUGC1111111111111.png" align="right" width="50%" style="margin: 20px 20px 0 20px; padding-top: 20px" />
 
 Moving blocks formed by moving blocks.
 
