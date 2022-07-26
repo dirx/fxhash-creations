@@ -6,15 +6,18 @@ import * as twgl from 'twgl.js';
 
 export type FxhashFeatures = {
     color: string;
-    'grid size': number;
     shapes: string;
     clusters: number;
     rotation: string;
+    'grid size': number;
     'moving blocks': number;
     'moving direction': string;
+    'moving speed': number;
     'moving behavior': string;
-    'max step size': number;
 };
+
+export type MoveDirection = ('left' | 'up' | 'down' | 'right')[];
+export type MoveDirections = MoveDirection[];
 
 export class Features {
     public combination: number = 0;
@@ -30,14 +33,12 @@ export class Features {
     public readonly gridSize: number;
     public maxMovingBlocks: number;
 
-    public movingStepSizeBase: number;
-    public movingStepSize: number;
-    public movingDistanceDirectionBase: number;
-    public movingDistanceDirection: number;
-    public movingDistances: Array<any> = [];
+    public movingSpeedBase: number;
+    public movingSpeed: number;
+    public movingBehaviorBase: number;
+    public movingBehavior: number;
+    public movingDistances: Array<number> = [];
     public readonly maxFramesBeforeReset: number;
-    public framebufferForOffsets: number = 8;
-    public framebufferForMovingBlocks: number = 2;
 
     public shapes: Array<Circle | Quad | Rect>;
     public shapeBase: number;
@@ -46,28 +47,30 @@ export class Features {
 
     public clusters: number;
 
-    private static rotationOptions: Array<number> = [
-        -168, -84, -42, -21, -7, -3, 3, 7, 21, 42, 84, 168,
-    ];
     public rotationBase: number;
     public rotation: number;
     public rotationRadians: number;
     public rotationCos: number;
     public rotationSin: number;
 
-    public directionBase: number;
-    public direction: Array<Array<'left' | 'up' | 'down' | 'right'>>;
+    public directionsBase: number;
+    public directions: MoveDirections;
 
-    private static directionOptions: Array<
-        Array<Array<'left' | 'up' | 'down' | 'right'>>
-    >;
-    public static getDirectionOptions(): Array<
-        Array<Array<'left' | 'up' | 'down' | 'right'>>
-    > {
-        if (Features.directionOptions) {
-            return Features.directionOptions;
+    public static colors: Array<ColorSpec> = Object.values(
+        color.palettes['unique-css']
+    );
+    public static shapesOptions = [3, 5, 7];
+    public static clusterOption = 3;
+    public static rotationOptions: Array<number> = [
+        -168, -84, -42, -21, -7, -3, 3, 7, 21, 42, 84, 168,
+    ];
+    public static blockOption = 5;
+    private static movingDirectionOptions: Array<MoveDirections>;
+    public static getMovingDirectionOptions(): Array<MoveDirections> {
+        if (Features.movingDirectionOptions) {
+            return Features.movingDirectionOptions;
         }
-        const all: Array<Array<'left' | 'up' | 'down' | 'right'>> = [
+        const all: MoveDirections = [
             ['up'],
             ['left'],
             ['down'],
@@ -78,10 +81,8 @@ export class Features {
             ['right', 'down'],
         ];
 
-        let combinations: Array<
-            Array<Array<'left' | 'up' | 'down' | 'right'>>
-        > = [];
-        let active: Array<Array<'left' | 'up' | 'down' | 'right'>> = [];
+        let combinations: Array<MoveDirections> = [];
+        let active: MoveDirections = [];
         let variations = 2 ** all.length;
 
         for (let i = 0; i < variations; i++) {
@@ -96,50 +97,38 @@ export class Features {
             }
         }
 
-        Features.directionOptions = combinations.filter(
+        Features.movingDirectionOptions = combinations.filter(
             (c) => (c.length >= 3 && c.length <= 4) || c.length == 8
         );
 
-        return Features.directionOptions;
+        return Features.movingDirectionOptions;
     }
-
-    public static colors: Array<ColorSpec> = Object.values(
-        color.palettes['unique-css']
-    );
-    public static movingDistanceDirectionOptions = [-1, 1];
-    public static movingStepSizeOptions = [1, 2, 3];
-    public static shapesOptions = [3, 5, 7];
-    public static clusterOption = 3;
-    public static blockOption = 5;
+    public static movingSpeedOptions = [1, 2, 3];
+    public static movingBehaviorOptions = [-1, 1];
 
     public static combinations: number =
-        Features.movingDistanceDirectionOptions.length *
-        Features.blockOption *
-        Features.movingStepSizeOptions.length *
+        Features.colors.length *
         Features.shapesOptions.length *
         Features.clusterOption *
-        Features.colors.length *
-        Features.getDirectionOptions().length *
-        Features.rotationOptions.length;
+        Features.rotationOptions.length *
+        Features.blockOption *
+        Features.getMovingDirectionOptions().length *
+        Features.movingSpeedOptions.length *
+        Features.movingBehaviorOptions.length;
 
     public constructor(combination: number) {
         this.combination = combination % Features.combinations;
 
-        this.movingDistanceDirectionBase =
-            combination % Features.movingDistanceDirectionOptions.length;
+        this.movingBehaviorBase =
+            combination % Features.movingBehaviorOptions.length;
         combination =
-            (combination / Features.movingDistanceDirectionOptions.length) << 0;
-        this.movingDistanceDirection =
-            Features.movingDistanceDirectionOptions[
-                this.movingDistanceDirectionBase
-            ];
+            (combination / Features.movingBehaviorOptions.length) << 0;
+        this.movingBehavior =
+            Features.movingBehaviorOptions[this.movingBehaviorBase];
 
-        this.movingStepSizeBase =
-            combination % Features.movingStepSizeOptions.length;
-        combination =
-            (combination / Features.movingStepSizeOptions.length) << 0;
-        this.movingStepSize =
-            Features.movingStepSizeOptions[this.movingStepSizeBase];
+        this.movingSpeedBase = combination % Features.movingSpeedOptions.length;
+        combination = (combination / Features.movingSpeedOptions.length) << 0;
+        this.movingSpeed = Features.movingSpeedOptions[this.movingSpeedBase];
 
         this.blockBase = (combination % Features.blockOption) + 4;
         combination = (combination / Features.blockOption) << 0;
@@ -230,11 +219,12 @@ export class Features {
         this.rotationCos = Math.cos(-this.rotationRadians);
         this.rotationSin = Math.sin(-this.rotationRadians);
 
-        this.directionBase =
-            combination % Features.getDirectionOptions().length;
+        this.directionsBase =
+            combination % Features.getMovingDirectionOptions().length;
         combination =
-            (combination / Features.getDirectionOptions().length) << 0;
-        this.direction = Features.getDirectionOptions()[this.directionBase];
+            (combination / Features.getMovingDirectionOptions().length) << 0;
+        this.directions =
+            Features.getMovingDirectionOptions()[this.directionsBase];
 
         this.colorBase = combination % Features.colors.length;
         combination = (combination / Features.length) << 0;
@@ -246,12 +236,12 @@ export class Features {
             color: this.getColorName(),
             shapes: this.getShapes(),
             clusters: this.clusters,
-            'grid size': this.gridSize,
             rotation: `${this.rotation}°`,
+            'grid size': this.gridSize,
             'moving blocks': this.maxMovingBlocks,
             'moving direction': this.getMovingDirection(),
+            'moving speed': this.movingSpeed,
             'moving behavior': this.getMovingBehavior(),
-            'max step size': this.movingStepSize,
         };
     }
 
@@ -270,11 +260,11 @@ export class Features {
     }
 
     public getMovingBehavior(): string {
-        return this.movingDistanceDirection === -1 ? 'negative' : 'positive';
+        return this.movingBehavior === -1 ? 'negative' : 'positive';
     }
 
     public getMovingDirection(): string {
-        return this.direction.map((a) => a.join('-')).join(', ');
+        return this.directions.map((a) => a.join('-')).join(', ');
     }
 
     public getShapes(): string {
@@ -332,18 +322,21 @@ export class Piece {
     public paused: boolean = false;
     private autoPause: boolean;
 
-    public programInit!: twgl.ProgramInfo;
-    public programOffsets!: twgl.ProgramInfo;
-    public programPixels!: twgl.ProgramInfo;
-    public programDraw!: twgl.ProgramInfo;
+    private programInit!: twgl.ProgramInfo;
+    private programOffsets!: twgl.ProgramInfo;
+    private programPixels!: twgl.ProgramInfo;
+    private programDraw!: twgl.ProgramInfo;
 
-    public positionBuffer!: twgl.BufferInfo;
-    public bufferOffsets!: twgl.BufferInfo;
+    private positionBuffer!: twgl.BufferInfo;
+    private bufferOffsets!: twgl.BufferInfo;
 
-    public framebuffers!: Array<twgl.FramebufferInfo>;
-    public framebufferPixelsIndex: number = 0;
+    private framebuffers!: Array<twgl.FramebufferInfo>;
+    private framebufferPixelsIndex: number = 0;
+    private framebufferForOffsets: number = 8;
+    private framebufferForPixels: number = 2;
 
     public outputBuffer: number | null = null;
+    public totalOutputBuffer!: number;
 
     public constructor(
         canvas: HTMLCanvasElement,
@@ -379,106 +372,30 @@ export class Piece {
         if (this.context instanceof WebGL2RenderingContext) {
             return;
         }
+
         let precision = `
             precision mediump float;
             precision mediump int;
             precision mediump sampler2D;
             `;
+
         // init canvas & context
         this.context = twgl.getContext(this.canvas, {
             depth: false,
             preserveDrawingBuffer: true,
+            premultipliedAlpha: false,
         }) as WebGL2RenderingContext;
 
         if (!twgl.isWebGL2(this.context)) {
             console.error(
-                'A browser with webgl2 enabled is required to view this piece.'
+                'A webgl2 enabled browser is required to view this piece.'
             );
             this.paused = true;
             return;
         }
 
-        // init framebuffers
-        const vInit = `#version 300 es
-            ${precision}
-
-            in vec2 position;
-
-            void main() {
-                gl_Position = vec4(position, 0.0, 1.0);
-            }`;
-        const fInit = `#version 300 es
-            precision mediump float;
-
-            uniform vec3 baseColor;
-            
-            out vec4 outColor;
-
-            void main() {
-                outColor = vec4(baseColor, 0.0);
-            }`;
-
-        const vDraw = `#version 300 es
-            ${precision}
-        
-            in vec2 position;
-            out vec2 v_position;
-            
-            uniform mat4 world;
-        
-            void main() {
-               gl_Position = world * vec4(position, 0.0, 1.0);
-               v_position = 0.5 * (position + 1.0);
-            }`;
-        const fDraw = `#version 300 es
-            ${precision}
-            
-            in vec2 v_position;
-            out vec4 outColor;
-            
-            uniform sampler2D pixels;
-           
-            void main() {
-              outColor = vec4(texture(pixels, v_position).rgb, 1.0); 
-            }`;
-        this.programDraw = twgl.createProgramInfo(this.context, [vDraw, fDraw]);
-        this.context.useProgram(this.programDraw.program);
-
-        const vOffsets = `#version 300 es
-            ${precision}
-        
-            in vec4 block;
-            out vec4 color;
-            
-            uniform float pixelSize;
-            uniform float blockWidthHeight;
-            
-            uniform mat4 world;
-        
-            void main() {
-               // ignore inactive ones
-               if (block.x == 0.0 && block.y == 0.0 && block.z == 0.0 && block.w == 0.0) {
-                    color = vec4(0.0);
-                    gl_PointSize = 0.0;
-                    gl_Position = world * vec4(0.0, 0.0, 0.0, 1.0);
-               } else {
-                   color = vec4(0.5 * (block.zw + 1.0), 1.0, 0.0); // convert to color 0-1
-                   gl_PointSize = pixelSize;
-                   gl_Position = world * vec4(block.x + blockWidthHeight, block.y - blockWidthHeight, 0.0, 1.0);
-               }
-            }`;
-        const fOffsets = `#version 300 es
-            precision mediump float;
-            
-            in vec4 color;
-            out vec4 outColor;
-            
-            void main() {
-                outColor = color;
-            }`;
-
-        // create framebuffer for texture
-        const vMoveBlocks = `#version 300 es
+        // init pixels program that applies offset maps to alternating framebuffers
+        const vPixels = `#version 300 es
             ${precision}
 
             in vec2 position;
@@ -491,7 +408,7 @@ export class Piece {
                gl_Position = world * vec4(position, 0.0, 1.0);
                v_position = 0.5 * (position + 1.0);
             }`;
-        const fMoveBlocks = `#version 300 es
+        const fPixels = `#version 300 es
             ${precision}
         
             in vec2 v_position;
@@ -518,19 +435,6 @@ export class Piece {
                 return value;
             }
             
-            vec3 bezier(vec3 A, vec3 B, float t) {
-              return mix(A, B, t);
-            }
-            
-            vec3 bezier(vec3 A, vec3 B, vec3 C, float t) {
-              vec3 E = mix(A, B, t);
-              vec3 F = mix(B, C, t);
-            
-              vec3 P = mix(E, F, t);
-            
-              return P;
-            }
-            
             vec3 bezier(vec3 A, vec3 B, vec3 C, vec3 D, float t) {
               vec3 E = mix(A, B, t);
               vec3 F = mix(B, C, t);
@@ -539,12 +443,12 @@ export class Piece {
               vec3 H = mix(E, F, t);
               vec3 I = mix(F, G, t);
             
-              vec3 P = mix(H, I, t);
-            
-              return P;
+              return mix(H, I, t);
             }
 
-            vec4 shiftColor(vec4 color) {
+            // using alpha for gradient state
+            vec4 shiftColor(vec4 color, float t) {
+                color.a = rollover(color.a + t, 0.0, 1.0);
                 return vec4(
                     bezier(
                         vec3(0.00),
@@ -572,40 +476,15 @@ export class Piece {
                     color = texture(pixels, v_position);
                 } else {
                     color = texture(pixels, v_position - offsetPos.xy);
-                    color.a = rollover(color.a + 1.0/255.0, 0.0, 1.0);
-                    color = shiftColor(color);
+                    color = shiftColor(color, 1.0/255.0);
                 }
                 outColor = color;
             }`;
 
-        const n = this.baseHeightWidth; //this.gl.canvas.width;
-        const m = this.baseHeightWidth; //this.gl.canvas.height;
-        // const initColor = [...this.features.color.rgb.map((c) => c / 255), 1.0];
-        this.framebuffers = [
-            ...Array(
-                this.features.framebufferForOffsets +
-                    this.features.framebufferForMovingBlocks
-            ),
-        ].map((_) => {
-            let attachments = [
-                {
-                    attachmentPoint: WebGL2RenderingContext.COLOR_ATTACHMENT0,
-                    format: this.context.RGBA,
-                    type: this.context.UNSIGNED_BYTE,
-                    min: this.context.NEAREST,
-                    mag: this.context.NEAREST,
-                    wrap: this.context.CLAMP_TO_EDGE,
-                    // color: [1.0, 0.5, 0.0, 1.0],
-                },
-            ];
-
-            return twgl.createFramebufferInfo(this.context, attachments, n, m);
-        });
-
-        this.framebufferPixelsIndex = 0; // point to the first index
+        this.framebufferPixelsIndex = 0;
         this.programPixels = twgl.createProgramInfo(this.context, [
-            vMoveBlocks,
-            fMoveBlocks,
+            vPixels,
+            fPixels,
         ]);
 
         const blocks = {
@@ -631,12 +510,85 @@ export class Piece {
         );
 
         // init offsets program
+        const vOffsets = `#version 300 es
+            ${precision}
+        
+            in vec4 block;
+            out vec4 color;
+            
+            uniform float pixelSize;
+            uniform float blockWidthHeight;
+            
+            uniform mat4 world;
+        
+            void main() {
+               // ignore inactive ones
+               if (block.x == 0.0 && block.y == 0.0 && block.z == 0.0 && block.w == 0.0) {
+                    color = vec4(0.0);
+                    gl_PointSize = 0.0;
+                    gl_Position = world * vec4(0.0, 0.0, 0.0, 1.0);
+               } else {
+                   color = vec4(0.5 * (block.zw + 1.0), 1.0, 1.0); // convert to color 0-1
+                   gl_PointSize = pixelSize;
+                   gl_Position = world * vec4(block.x + blockWidthHeight, block.y - blockWidthHeight, 0.0, 1.0);
+               }
+            }`;
+        const fOffsets = `#version 300 es
+            precision mediump float;
+            
+            in vec4 color;
+            out vec4 outColor;
+            
+            void main() {
+                outColor = color;
+            }`;
         this.programOffsets = twgl.createProgramInfo(this.context, [
             vOffsets,
             fOffsets,
         ]);
 
+        // init framebuffers for offsets and pixels
+        this.totalOutputBuffer =
+            this.framebufferForOffsets + this.framebufferForPixels;
+        this.framebuffers = [...Array(this.totalOutputBuffer)].map((_) => {
+            let attachments = [
+                {
+                    attachmentPoint: WebGL2RenderingContext.COLOR_ATTACHMENT0,
+                    format: this.context.RGBA,
+                    type: this.context.UNSIGNED_BYTE,
+                    min: this.context.NEAREST,
+                    mag: this.context.NEAREST,
+                    wrap: this.context.CLAMP_TO_EDGE,
+                },
+            ];
+
+            return twgl.createFramebufferInfo(
+                this.context,
+                attachments,
+                this.baseHeightWidth,
+                this.baseHeightWidth
+            );
+        });
+
         // colorize framebuffers that are used for moving pixels
+        const vInit = `#version 300 es
+            ${precision}
+
+            in vec2 position;
+
+            void main() {
+                gl_Position = vec4(position, 0.0, 1.0);
+            }`;
+        const fInit = `#version 300 es
+            precision mediump float;
+
+            uniform vec3 baseColor;
+            
+            out vec4 outColor;
+
+            void main() {
+                outColor = vec4(baseColor, 0.0);
+            }`;
         this.programInit = twgl.createProgramInfo(this.context, [vInit, fInit]);
 
         this.context.useProgram(this.programInit.program);
@@ -651,15 +603,46 @@ export class Piece {
         });
         twgl.bindFramebufferInfo(
             this.context,
-            this.framebuffers[this.features.framebufferForOffsets]
+            this.framebuffers[this.framebufferForOffsets]
         );
         twgl.drawBufferInfo(this.context, this.positionBuffer);
 
         twgl.bindFramebufferInfo(
             this.context,
-            this.framebuffers[1 + this.features.framebufferForOffsets]
+            this.framebuffers[1 + this.framebufferForOffsets]
         );
         twgl.drawBufferInfo(this.context, this.positionBuffer);
+
+        // init canvas drawing
+        const vDraw = `#version 300 es
+            ${precision}
+        
+            in vec2 position;
+            out vec2 v_position;
+            
+            uniform mat4 world;
+        
+            void main() {
+               gl_Position = world * vec4(position, 0.0, 1.0);
+               v_position = 0.5 * (position + 1.0);
+            }`;
+        const fDraw = `#version 300 es
+            ${precision}
+            
+            in vec2 v_position;
+            out vec4 outColor;
+            
+            uniform sampler2D pixels;
+            uniform bool debug;
+           
+            void main() {
+                if (debug == true) {
+                    outColor = texture(pixels, v_position); 
+                } else {
+                    outColor = vec4(texture(pixels, v_position).rgb, 1.0); 
+                }
+            }`;
+        this.programDraw = twgl.createProgramInfo(this.context, [vDraw, fDraw]);
     }
 
     public updateSize(
@@ -669,7 +652,6 @@ export class Piece {
     ) {
         let wh = Math.min(width, height);
         let f = wh / this.baseHeightWidth;
-        // todo: handle pixel ratio on webgl2 context
         if (pixelRatio === null) {
             this.pixelRatio = Math.ceil(
                 (wh + wh) / 2 / this.baseHeightWidth / 2
@@ -744,7 +726,7 @@ export class Piece {
         let world = twgl.m4.identity();
 
         const movingBlocksChunkLength =
-            this.features.maxMovingBlocks / this.features.framebufferForOffsets;
+            this.features.maxMovingBlocks / this.framebufferForOffsets;
 
         // draw offsets maps - distribute blocks over multiple layers to minimize overlapping / enable multi offset shifts
         this.context.useProgram(this.programOffsets.program);
@@ -761,12 +743,12 @@ export class Piece {
         twgl.setUniforms(this.programOffsets, {
             pixelSize:
                 (this.features.blockSize / this.features.gridSize) *
-                this.context.canvas.width,
+                this.baseHeightWidth,
             blockWidthHeight: this.features.blockSize / this.features.gridSize,
             world: world,
         });
 
-        for (let i = 0; i < this.features.framebufferForOffsets; i++) {
+        for (let i = 0; i < this.framebufferForOffsets; i++) {
             twgl.bindFramebufferInfo(this.context, this.framebuffers[i]);
 
             this.context.clearColor(0.0, 0.0, 0.0, 0.0);
@@ -793,32 +775,28 @@ export class Piece {
             baseColor: this.features.color.rgb.map((c) => c / 255),
             pixelSize:
                 (this.features.blockSize / this.features.gridSize) *
-                this.context.canvas.width,
-            pixelWidth: 1 / this.context.canvas.width,
+                this.baseHeightWidth,
+            pixelWidth: 1 / this.baseHeightWidth,
             pixels: this.framebuffers[
-                this.framebufferPixelsIndex +
-                    this.features.framebufferForOffsets
+                this.framebufferPixelsIndex + this.framebufferForOffsets
             ].attachments[0],
             offsets: this.framebuffers[0].attachments[0],
             timeMs: timeMs,
         };
         twgl.setUniforms(this.programPixels, uniform);
-        for (let i = 0; i < this.features.framebufferForOffsets; i++) {
+        for (let i = 0; i < this.framebufferForOffsets; i++) {
             twgl.setUniforms(this.programPixels, {
                 world: world,
                 offsets: this.framebuffers[i].attachments[0],
                 pixels: this.framebuffers[
-                    this.framebufferPixelsIndex +
-                        this.features.framebufferForOffsets
+                    this.framebufferPixelsIndex + this.framebufferForOffsets
                 ].attachments[0],
             });
 
             twgl.bindFramebufferInfo(
                 this.context,
                 this.framebuffers[
-                    1 -
-                        this.framebufferPixelsIndex +
-                        this.features.framebufferForOffsets
+                    1 - this.framebufferPixelsIndex + this.framebufferForOffsets
                 ]
             );
             twgl.drawBufferInfo(this.context, this.positionBuffer);
@@ -829,7 +807,7 @@ export class Piece {
     private draw() {
         let world = twgl.m4.identity();
 
-        // draw latest moving blocks buffer to screen
+        // draw the latest pixel or selected debug buffer to canvas
         this.context.useProgram(this.programDraw.program);
         twgl.setBuffersAndAttributes(
             this.context,
@@ -840,15 +818,16 @@ export class Piece {
         if (this.outputBuffer === null) {
             let uniforms = {
                 pixels: this.framebuffers[
-                    this.framebufferPixelsIndex +
-                        this.features.framebufferForOffsets
+                    this.framebufferPixelsIndex + this.framebufferForOffsets
                 ].attachments[0],
                 world: twgl.m4.rotateZ(world, -this.features.rotationRadians),
+                debug: false,
             };
             twgl.setUniforms(this.programDraw, uniforms);
         } else {
             twgl.setUniforms(this.programDraw, {
                 pixels: this.framebuffers[this.outputBuffer].attachments[0],
+                debug: true,
             });
         }
         twgl.bindFramebufferInfo(this.context, null);
@@ -1137,10 +1116,10 @@ export class DebugPiece {
 }
 
 export class MovingBlocks {
-    public totalFrames: number = 0;
+    public totalFrames: bigint = BigInt(0);
     public blocks: Array<MovingBlock> = [];
     public count: number = 0;
-    public total: number = 0;
+    public total: bigint = BigInt(0);
     private piece: Piece;
     public data!: Float32Array;
 
@@ -1156,7 +1135,7 @@ export class MovingBlocks {
             (c, block) => (block.tick() ? c + 1 : c),
             0
         );
-        this.total += this.piece.features.maxMovingBlocks - this.count;
+        this.total += BigInt(this.piece.features.maxMovingBlocks - this.count);
 
         return true;
     }
@@ -1171,14 +1150,14 @@ export class MovingBlocks {
     public init(): void {
         this.blocks = [];
         this.count = 0;
-        this.total = 0;
+        this.total = BigInt(0);
         this.data = new Float32Array(
             this.piece.features.maxMovingBlocks * MovingBlock.dataPoints
         );
 
         do {
             this.add();
-        } while (this.total < this.piece.features.maxMovingBlocks);
+        } while (this.blocks.length < this.piece.features.maxMovingBlocks);
     }
 }
 
@@ -1205,8 +1184,8 @@ export class MovingBlock {
     }
 
     public activate() {
-        let move = randOptions(this.piece.features.direction);
-        let stepSize = this.piece.features.movingStepSize;
+        let move = randOptions(this.piece.features.directions);
+        let stepSize = this.piece.features.movingSpeed;
 
         this.maxTicks = this.piece.features.maxFramesBeforeReset + this.index;
 
@@ -1228,11 +1207,9 @@ export class MovingBlock {
             this.dirY = stepSize;
         }
 
-        if (randInt(this.piece.features.movingStepSize + 1) == 0) {
-            this.dirX *=
-                rand() * (this.piece.features.movingStepSize - 1) + 1.0;
-            this.dirY *=
-                rand() * (this.piece.features.movingStepSize - 1) + 1.0;
+        if (randInt(this.piece.features.movingSpeed + 1) == 0) {
+            this.dirX *= rand() * (this.piece.features.movingSpeed - 1) + 1.0;
+            this.dirY *= rand() * (this.piece.features.movingSpeed - 1) + 1.0;
         }
 
         let blocksX: number = randOptions(this.piece.features.movingDistances);
@@ -1267,13 +1244,17 @@ export class MovingBlock {
                 0,
         };
 
+        this.updateData();
+
+        this.active = true;
+    }
+
+    private updateData() {
         this.data[this.dataIndex] = (this.area.x / this.piece.width) * 2 - 1;
         this.data[this.dataIndex + 1] =
             2 - (this.area.y / this.piece.height) * 2 - 1;
         this.data[this.dataIndex + 2] = (this.dirX + this.shapeX) / 40; // max -40 / 40 => - 1 / 1
         this.data[this.dataIndex + 3] = -(this.dirY + this.shapeY) / 40; // max -40 / 40  => - 1 / 1
-
-        this.active = true;
     }
 
     public deactivate() {
@@ -1290,7 +1271,7 @@ export class MovingBlock {
             this.activate();
         }
 
-        // release blocks to prevent lock-ins (but allow pseudo-lock-ins).
+        // release blocks to prevent lock-ins (but allow pseudo-lock-ins) after x ticks
         this.maxTicks--;
         if (this.maxTicks == 0) {
             this.deactivate();
@@ -1317,12 +1298,8 @@ export class MovingBlock {
             return false;
         }
 
-        let mx =
-            this.dirX * this.piece.features.movingDistanceDirection +
-            this.shapeX;
-        let my =
-            this.dirY * this.piece.features.movingDistanceDirection +
-            this.shapeY;
+        let mx = this.dirX * this.piece.features.movingBehavior + this.shapeX;
+        let my = this.dirY * this.piece.features.movingBehavior + this.shapeY;
 
         if (mx == 0 && my == 0) {
             this.deactivate();
@@ -1335,11 +1312,7 @@ export class MovingBlock {
         this.movingDistanceX -= mx;
         this.movingDistanceY -= my;
 
-        this.data[this.dataIndex] = (this.area.x / this.piece.width) * 2 - 1;
-        this.data[this.dataIndex + 1] =
-            2 - (this.area.y / this.piece.height) * 2 - 1;
-        this.data[this.dataIndex + 2] = (this.dirX + this.shapeX) / 40; // max -40 / 40 => - 1 / 1
-        this.data[this.dataIndex + 3] = -(this.dirY + this.shapeY) / 40; // max -40 / 40  => - 1 / 1
+        this.updateData();
 
         return true;
     }
@@ -1350,7 +1323,8 @@ export class MovingBlock {
         w: number,
         h: number
     ): Array<number> {
-        [x, y] = [x + w / 2, y + h / 2];
+        x = x + w / 2;
+        y = y + h / 2;
 
         return this.piece.features.shapes.reduce(
             (v: Array<number>, shape: Circle | Rect | Quad) => {

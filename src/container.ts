@@ -147,6 +147,9 @@ export class Container {
         let info = this.info;
 
         setInterval(() => {
+            if (!info.isActive()) {
+                return;
+            }
             info.update({
                 combination: `${piece.features.combination} [${Features.combinations}]`,
                 color: `${piece.features.getColorName()} (${
@@ -158,16 +161,16 @@ export class Container {
                     Features.shapesOptions.length
                 }]`,
                 clusters: `${piece.features.clusters} [${Features.clusterOption}]`,
-                rotation: `${piece.features.rotation}°`,
+                rotation: `${piece.features.rotation}°  [${Features.rotationOptions.length}]`,
                 gridSize: `${piece.features.gridSize} [${Features.blockOption}]`,
-                movingBlocks: `${piece.features.maxMovingBlocks} (${piece.movingBlocks.count} / ${piece.movingBlocks.total})`,
+                movingBlocks: `${piece.movingBlocks.count} / ${piece.features.maxMovingBlocks} / ${piece.movingBlocks.total}`,
                 movingDirection: `${piece.features.getMovingDirection()} [${
-                    Features.movingDistanceDirectionOptions.length
+                    Features.getMovingDirectionOptions().length
                 }]`,
                 movingDistanceBehavior: `${piece.features.getMovingBehavior()}  [${
-                    Features.movingDistanceDirectionOptions.length
+                    Features.movingBehaviorOptions.length
                 }]`,
-                movingStepSize: `${piece.features.movingStepSize}  [${Features.movingStepSizeOptions.length}]`,
+                movingSpeed: `${piece.features.movingSpeed}  [${Features.movingSpeedOptions.length}]`,
                 size: `${piece.canvas.width} / ${piece.canvas.height}`,
                 pixelRatio: `${piece.pixelRatio}`,
                 previewPhase: piece.inPreviewPhase,
@@ -196,11 +199,19 @@ export class Intercom {
         this.info = info;
         this.help = help;
         this.display = new Display(container);
-        this.initTouchEndHandler();
-        this.initKeyUpHandler();
+        this.initTouchHandler();
+        this.initMouseHandler();
+        this.initKeyHandler();
     }
 
-    private initTouchEndHandler() {
+    private initMouseHandler() {
+        window.addEventListener('mouseup', (_ev: MouseEvent) => {
+            this.piece.paused = !this.piece.paused;
+            this.showDisplay('pausing ' + (this.piece.paused ? 'on' : 'off'));
+        });
+    }
+
+    private initTouchHandler() {
         let lastIdentifier: null | number = null;
         let lastPageX: number = 0;
         let lastPageY: number = 0;
@@ -214,7 +225,7 @@ export class Intercom {
                 Math.abs(pageY - lastPageY) < 20
             ) {
                 this.piece.paused = !this.piece.paused;
-                this.display.show(
+                this.showDisplay(
                     'pausing ' + (this.piece.paused ? 'on' : 'off')
                 );
             }
@@ -243,7 +254,13 @@ export class Intercom {
         });
     }
 
-    private initKeyUpHandler() {
+    private showDisplay(msg: string) {
+        if (this.info.isActive() || this.help.isActive()) {
+            this.display.show(msg);
+        }
+    }
+
+    private initKeyHandler() {
         window.addEventListener('keyup', (ev: KeyboardEvent) => {
             switch (ev.key) {
                 case '0':
@@ -261,46 +278,46 @@ export class Intercom {
                         parseInt(ev.key) !== this.piece.outputBuffer
                             ? parseInt(ev.key)
                             : null;
-                    this.display.show(
+                    this.showDisplay(
                         'show buffer ' +
                             (this.piece.outputBuffer === null
-                                ? 'default'
+                                ? 'main'
                                 : this.piece.outputBuffer)
                     );
                     break;
 
                 case 'd':
                     this.piece.debug.toggle();
-                    this.display.show(
+                    this.showDisplay(
                         'debug ' + (this.piece.debug.isActive() ? 'on' : 'off')
                     );
                     break;
 
                 case 'f':
                     Intercom.toggleFullscreen();
-                    this.display.show('toggle fullscreen');
+                    this.showDisplay('toggle fullscreen');
                     break;
 
                 case 'c':
                     this.piece.captureImage(
                         this.piece.features.getFeatureName()
                     );
-                    this.display.show('capture image');
+                    this.showDisplay('capture image');
                     break;
 
                 case 'h':
                     let help = this.help.toggleShow();
-                    this.display.show('help ' + (help ? 'on' : 'off'));
+                    this.showDisplay('help ' + (help ? 'on' : 'off'));
                     break;
 
                 case 'i':
                     let info = this.info.toggleShow();
-                    this.display.show('info ' + (info ? 'on' : 'off'));
+                    this.showDisplay('info ' + (info ? 'on' : 'off'));
                     break;
 
                 case ' ':
                     this.piece.paused = !this.piece.paused;
-                    this.display.show(
+                    this.showDisplay(
                         'pausing ' + (this.piece.paused ? 'on' : 'off')
                     );
                     break;

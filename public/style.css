@@ -58,6 +58,7 @@ body {
     align-items: center;
     animation: showit 1s;
     user-select: none;
+    white-space: nowrap;
 }
 
 @keyframes showit {

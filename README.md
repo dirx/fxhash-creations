@@ -2,7 +2,7 @@
 
 __#generativeart__ __#nft__ __#fxhash__ __#tezos__ __#creativecoding__
 
-## Moving Blocks
+## Moving Blocks Mono
 
 Real-time deterministic animation based webgl2, fixed size, 2022
 
@@ -17,28 +17,28 @@ Moving blocks formed by moving blocks.
 
 How does it work?
 
-Several shapes form boundaries. Within these boundaries, moving blocks copy pixels and rotate their color values from given color to black.
-Each shape has its own direction vector that influences the feature based directions and speed of moving blocks.
+Several shapes form boundaries. Within these boundaries, the moving blocks move pixels and rotate their color values from a specific color to black.
+Each shape has its own direction vector, which affects the feature-based directions and speed of the moving blocks.
 
-Available Features:
+Available features:
 
-- 109 colors: one out of a unified color list (based on W3C SVG 1.0 color keyword names)
+- 109 colors: one from a unified color list (based on W3C SVG 1.0 color keyword names)
 - 3, 5 or 7 shapes: 3 different sizes and 2 types (quads and circles)
 - 1 - 3 clusters: shapes are assigned round-robin
 - 10 rotation angles: from -168° to 168
-- 5 grid sizes: based on fibonacci numbers, starting with 377, block size is always 21
-- moving blocks: related to the grid size,
-- 127 moving directions: based on 8 base direction (up, top, left, left-up, left-down, right, right-up, right-down), limited to the 3, 4, 8
+- 5 grid sizes: based on Fibonacci numbers, starting with 377, block size is always 21
+- Movable blocks: based on grid size (one Fibonacci number before)
+- 127 directions of movement: based on 8 basic directions (up, up, left, left-up, left-down, right, right-up, right-down), limited to the 3, 4, 8
   long combinations
-- 2 moving distance behavior modes: negative = decreasing, limited range or until shape border is hit, positive = increasing, until shape
-  border is hit
+- 2 behavior modes for movement distance: negative = decreasing and limited by range or shape, positive = increasing and limited by shape
 
-Animation and feature selection is based on the deterministic prng XorShift128 seeded with the fxhash. This allows it to be played
-repeatedly in the same sequence.
+Animation and feature selection are based on deterministic prng XorShift128 seeded with the fxhash. This allows repeated playback in the same order.
 
-Preview images are captured after 900 frames. The size is fixed to 1980x1980 pixels.
+The size is fixed at 1980x1980 pixels.
 
-The animation is auto paused at 900 frames. Press `space` or mouse click to toggle pausing.
+The preview images are taken after 900 frames.
+
+The animation will stop automatically at 900 frames. Press spacebar, click mouse or touch to change pausing.
 
 Press `h` to see all options.
 
