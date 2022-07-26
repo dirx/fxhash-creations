@@ -508,11 +508,11 @@ export class Piece {
     
             float rollover(float value, float min, float max) {
                 if (value > max) {
-                    return abs(max - value) + min;
+                    return mod(abs(max - value), abs(max - min)) + min;
                 }
                 
                 if (value < min) {
-                    return max - abs(value - min);
+                    return max - mod(abs(value - min), abs(max - min));
                 }
                 
                 return value;
