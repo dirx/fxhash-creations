@@ -13,8 +13,7 @@ if (combinationParam !== '') {
     combination = (Features.combinations * window.fxrand()) << 0;
 }
 
-console.info('Moving Blocks');
-console.info('Monochromatic Edition');
+console.info('Moving Blocks Mono');
 console.info('Real-time deterministic webgl2 animation, fixed size, 2022');
 console.info("Be inspired. If you need help please press 'h'.");
 console.info('Dirk Adler, https://twitter.com/d_rx');

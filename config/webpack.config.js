@@ -139,9 +139,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.`,
             },
         }),
         new webpack.BannerPlugin({
-            banner: `Moving Blocks
-
-Monochromatic Edition
+            banner: `Moving Blocks Mono
 
 Real-time deterministic webgl2 animation, fixed size, 2022
 Be inspired. If you need help please press 'h'.
