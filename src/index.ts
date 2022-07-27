@@ -10,23 +10,13 @@ if (combinationParam !== '') {
     combination = parseInt(combinationParam);
     window.fxhash = fakeFxhash(combination / Features.combinations);
 } else {
-    combination = (Features.combinations * window.fxrand()) << 0;
+    combination = Math.floor(Features.combinations * window.fxrand());
 }
 
-console.info('Moving Blocks');
-console.info('Disc Edition');
-console.info(
-    'Real-time deterministic animation based on vanilla js & canvas 2d rendering context, variable size, 2022'
-);
+console.info('Driften');
+console.info('Real-time deterministic webgl2 animation, variable size, 2022');
 console.info("Be inspired. If you need help please press 'h'.");
-console.info('Dirk Adler, https://twitter.com/d_rx');
+console.info('Dirk Adler, https://dirx.dev');
 console.info(`FXHASH: ${window.fxhash}`);
 
 window.container = new Container(combination);
-
-console.info(
-    `combination: ${window.container.piece.combination} / ${Features.combinations}`
-);
-Object.entries(window.container.piece.features.getFxhashFeatures()).forEach(
-    (entry) => console.info(`${entry[0]}: ${entry[1]}`)
-);

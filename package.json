@@ -1,7 +1,7 @@
 {
-  "name": "dirx-zebra",
+  "name": "dirx-driften",
   "version": "1.0.0",
-  "description": "pixelated animated zebra coloring",
+  "description": "Driften. Real-time deterministic webgl2 animation, variable size, 2022.",
   "main": "index.js",
   "author": "dirx",
   "scripts": {
@@ -11,22 +11,22 @@
   },
   "dependencies": {
     "@fontsource/vt323": "^4.5.6",
+    "@thi.ng/color": "^5.1.4",
     "@thi.ng/geom-isec": "^2.1.14",
     "@thi.ng/math": "^5.3.3",
     "@thi.ng/random": "^3.3.2",
     "@thi.ng/random-fxhash": "^0.2.2",
-    "twgl.js": "^4.24.0"
+    "twgl.js": "^5.0.1"
   },
   "devDependencies": {
-    "@types/three": "^0.141.0",
     "adm-zip": "^0.5.9",
-    "copy-webpack-plugin": "^9.0.1",
+    "copy-webpack-plugin": "^11.0.0",
     "css-loader": "^6.4.0",
     "html-webpack-plugin": "^5.4.0",
     "license-webpack-plugin": "^4.0.2",
     "prettier": "^2.5.1",
     "remove-files-webpack-plugin": "^1.5.0",
-    "source-map-loader": "^3.0.1",
+    "source-map-loader": "^4.0.0",
     "style-loader": "^3.3.0",
     "ts-loader": "^9.2.6",
     "typescript": "^4.5.5",

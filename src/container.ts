@@ -23,7 +23,6 @@ export class Container {
         this.container = document.createElement('div');
         this.container.id = 'container';
         document.body.prepend(this.container);
-        this.updateSize();
     }
 
     private initPiece(combination: number) {
@@ -34,10 +33,61 @@ export class Container {
             canvas,
             window.innerWidth,
             window.innerHeight,
-            combination
+            combination,
+            this.getAutopauseParam(),
+            this.getPixelRatioParam(),
+            this.getShowAnnouncement(),
+            this.getCycleGradientSpeed(),
+            this.getSpeed(),
+            this.getKioskSpeed()
         );
 
         window.$fxhashFeatures = this.piece.features.getFxhashFeatures();
+    }
+
+    private getAutopauseParam(): boolean {
+        let search = new URLSearchParams(window.location.search);
+        return !search.has('autopause') || search.get('autopause') == 'on';
+    }
+
+    private getPixelRatioParam(): number {
+        let search = new URLSearchParams(window.location.search);
+        let value: string | null = search.get('pixelratio');
+        return value === null
+            ? Piece.defaultPixelRatio
+            : Math.abs(parseFloat(value));
+    }
+
+    private getShowAnnouncement(): boolean {
+        let search = new URLSearchParams(window.location.search);
+        let value: string | null = search.get('showannouncement');
+        return value !== null;
+    }
+
+    private getCycleGradientSpeed(): number | null {
+        let search = new URLSearchParams(window.location.search);
+        let value: string | null = search.get('cyclegradientspeed');
+        return value === null ? null : Math.abs(parseFloat(value));
+    }
+
+    private getSpeed(): number {
+        let search = new URLSearchParams(window.location.search);
+        let value: string | null = search.get('speed');
+        return value === null
+            ? Piece.defaultSpeed
+            : Math.abs(parseFloat(value));
+    }
+
+    private getKioskSpeed(): number | null {
+        let search = new URLSearchParams(window.location.search);
+        let value: string | null = search.get('kioskspeed');
+        return value === null ? null : Math.abs(parseFloat(value));
+    }
+
+    private getShowInfo(): boolean {
+        let search = new URLSearchParams(window.location.search);
+        let value: string | null = search.get('showinfo');
+        return value !== null;
     }
 
     private initResizeHandler() {
@@ -46,31 +96,20 @@ export class Container {
             'resize',
             () => {
                 piece.updateSize(
-                    window.innerWidth << 0,
-                    window.innerHeight << 0
+                    Math.floor(window.innerWidth),
+                    Math.floor(window.innerHeight)
                 );
-                this.updateSize();
             },
             false
         );
     }
 
-    private updateSize() {
-        this.container.style.width = `${
-            (Math.min(window.innerWidth, window.innerHeight) /
-                window.innerWidth) *
-            100
-        }%`;
-        this.container.style.height = `${
-            (Math.min(window.innerWidth, window.innerHeight) /
-                window.innerHeight) *
-            100
-        }%`;
-    }
-
     private initInfo() {
         this.info = new Info(this.container);
         this.initInfoUpdate();
+        if (this.getShowInfo()) {
+            this.info.toggleShow();
+        }
     }
 
     private initHelp() {
@@ -140,17 +179,44 @@ export class Container {
         let info = this.info;
 
         setInterval(() => {
+            if (!info.isActive()) {
+                return;
+            }
             info.update({
-                combination: `${piece.features.combination} / ${Features.combinations}`,
+                combination: `${piece.features.combination} [${Features.combinations}]`,
+                color: `<span style="color:${piece.features.colorCSS}">${piece.features.colorCSS}</span>`,
+                colorShiftDirection: `${piece.features.colorShiftDirection} (${piece.features.variation.value.colorShiftDirection.label}) [${piece.features.variation.value.colorShiftDirection.variations}]`,
+                colorShiftSpeed: `${piece.features.colorShiftSpeed} (${piece.features.variation.value.colorShiftSpeed.label}) [${piece.features.variation.value.colorShiftSpeed.variations}]`,
+                gradientSteps: `${piece.features.gradientSteps} (${piece.features.variation.value.gradient.label}) [1,2,6]`,
+                gradient: piece.features.gradientCSS.map(
+                    (c) => `<span style="color:${c}">${c}</span>`
+                ),
+                gradientLightnessDiff: piece.features.gradientLightnessDiff,
+                cycleGradientSpeed: `${
+                    piece.cycleGradient.active
+                        ? `${piece.cycleGradient.speed}`
+                        : 'off'
+                } / ${piece.cycleGradient.shiftStepNormalized}`,
+                moireIntensity: `${piece.features.moireIntensity} (${piece.features.variation.value.moireIntensity.label}) [${piece.features.variation.value.moireIntensity.variations}]`,
+                brushIntensity: `${piece.features.brushIntensity} (${piece.features.variation.value.brushIntensity.label}) [${piece.features.variation.value.brushIntensity.variations}]`,
+                brushMovingBlockSize: `${piece.features.gridSize}/${
+                    piece.features.gridSize / piece.features.blockSize
+                }`,
+                brushMovingBlocks: `${piece.movingBlocks.count} / ${piece.features.maxMovingBlocks} / ${piece.movingBlocks.total} (${piece.features.variation.value.brushMovingBlocks.label})`,
+                brushMovingDirections: `${piece.features.variation.value.brushMovingDirections.index} (${piece.features.variation.value.brushMovingDirections.label}) [${piece.features.variation.value.brushMovingDirections.numberOfVariations}]`,
+                movingSpeed: `${piece.features.movingSpeed} (${piece.features.variation.value.movingSpeed.label}) [${piece.features.variation.value.movingSpeed.variations}]`,
                 size: `${piece.canvas.width} / ${piece.canvas.height}`,
                 pixelRatio: `${piece.pixelRatio}`,
                 previewPhase: piece.inPreviewPhase,
                 previewPhaseEndsAfter: piece.previewPhaseEndsAfter,
-                movingBlocks: `${piece.movingBlocks.count} / ${piece.features.maxMovingBlocks} / ${piece.movingBlocks.total}`,
-                valueMin: piece.features.colorValueMin,
-                valueMax: piece.features.colorValueMax,
-                currentFps: `${this.loop.currentFps() << 0}`,
+                currentFps: `${Math.floor(this.loop.currentFps())}`,
                 totalFrames: `${piece.movingBlocks.totalFrames}`,
+                speed: `${piece.speed}`,
+                announcement: `${piece.announcement?.active ? 'on' : 'off'}`,
+                kioskspeed: `${
+                    piece.kiosk.active ? `${piece.kiosk.speedSec}s` : 'off'
+                }`,
+                pausing: `${piece.paused ? 'on' : 'off'}`,
             });
         }, 250);
     }
@@ -172,77 +238,228 @@ export class Intercom {
         this.info = info;
         this.help = help;
         this.display = new Display(container);
-        this.initKeyUpHandler();
+        this.initTouchHandler();
+        this.initMouseHandler();
+        this.initKeyHandler();
     }
 
-    private initKeyUpHandler() {
+    private initMouseHandler() {
+        window.addEventListener('mouseup', (_ev: MouseEvent) => {
+            this.piece.paused = !this.piece.paused;
+            this.showDisplay('pausing ' + (this.piece.paused ? 'on' : 'off'));
+        });
+    }
+
+    private initTouchHandler() {
+        let lastIdentifier: null | number = null;
+        let lastPageX: number = 0;
+        let lastPageY: number = 0;
+        let endListener = (ev: TouchEvent) => {
+            let pageX = ev.changedTouches.item(0)?.pageX || 0;
+            let pageY = ev.changedTouches.item(0)?.pageY || 0;
+
+            // ignore scroll
+            if (
+                Math.abs(pageX - lastPageX) < 20 &&
+                Math.abs(pageY - lastPageY) < 20
+            ) {
+                this.piece.paused = !this.piece.paused;
+                this.showDisplay(
+                    'pausing ' + (this.piece.paused ? 'on' : 'off')
+                );
+            }
+
+            lastIdentifier = null;
+            lastPageX = 0;
+            lastPageY = 0;
+            window.removeEventListener('touchend', endListener);
+        };
+        window.addEventListener('touchstart', (ev: TouchEvent) => {
+            let identifier: null | number =
+                ev.targetTouches.item(0)?.identifier || null;
+
+            // ignore zoom
+            if (ev.touches.length > 1) {
+                window.removeEventListener('touchend', endListener);
+                lastIdentifier = null;
+                lastPageX = 0;
+                lastPageY = 0;
+            } else if (lastIdentifier == null) {
+                lastIdentifier = identifier;
+                lastPageX = ev.targetTouches.item(0)?.pageX || 0;
+                lastPageY = ev.targetTouches.item(0)?.pageY || 0;
+                window.addEventListener('touchend', endListener);
+            }
+        });
+    }
+
+    private showDisplay(msg: string) {
+        if (this.info.isActive() || this.help.isActive()) {
+            this.display.show(msg);
+        }
+    }
+
+    private initKeyHandler() {
         window.addEventListener('keyup', (ev: KeyboardEvent) => {
+            let f;
             switch (ev.key) {
                 case '0':
                 case '1':
                 case '2':
                 case '3':
-                case '4':
-                case '5':
-                case '6':
-                case '7':
-                case '8':
-                case '9':
-                    this.piece.outputBuffer =
-                        this.piece.outputBuffer === null ||
-                        parseInt(ev.key) !== this.piece.outputBuffer
-                            ? parseInt(ev.key)
+                    if (!this.piece.outputs) {
+                        return;
+                    }
+                    let index = parseInt(ev.key);
+                    this.piece.outputIndex =
+                        (this.piece.outputIndex === null ||
+                            index !== this.piece.outputIndex) &&
+                        index < this.piece.outputs.buffers.length
+                            ? index
                             : null;
-                    this.display.show(
+
+                    this.showDisplay(
                         'show buffer ' +
-                            (this.piece.outputBuffer === null
-                                ? 'default'
-                                : this.piece.outputBuffer)
+                            (this.piece.outputIndex === null
+                                ? 'main'
+                                : this.piece.outputIndex)
                     );
                     break;
 
-                case 'd':
-                    this.piece.debug.toggle();
-                    this.display.show(
-                        'debug ' + (this.piece.debug.isEnabled() ? 'on' : 'off')
+                case '-':
+                    f = this.piece.pixelRatio;
+                    f =
+                        Math.round(
+                            (f > 1 ? f - 1 : f > 0.1 ? f - 0.1 : f) * 10
+                        ) / 10;
+
+                    this.piece.updateSize(
+                        Math.floor(window.innerWidth),
+                        Math.floor(window.innerHeight),
+                        f
                     );
+                    this.showDisplay(`pixel ratio ${this.piece.pixelRatio}`);
+                    break;
+
+                case '+':
+                    f = this.piece.pixelRatio;
+                    f =
+                        Math.round(
+                            (f >= 1 ? f + 1 : f >= 0.1 ? f + 0.1 : f) * 10
+                        ) / 10;
+                    this.piece.updateSize(
+                        Math.floor(window.innerWidth),
+                        Math.floor(window.innerHeight),
+                        f
+                    );
+                    this.showDisplay(`pixel ratio ${this.piece.pixelRatio}`);
+                    break;
+
+                case 'o':
+                    f = this.piece.speed;
+                    f =
+                        Math.round(
+                            (f > 1 ? f - 1 : f > 0.5 ? f - 0.1 : f) * 10
+                        ) / 10;
+
+                    this.piece.speed = f;
+                    this.showDisplay(`speed ${this.piece.speed}`);
+                    break;
+
+                case 'p':
+                    f = this.piece.speed;
+                    f =
+                        Math.round(
+                            (f >= 1 ? f + 1 : f >= 0.5 ? f + 0.1 : f) * 10
+                        ) / 10;
+                    this.piece.speed = f;
+                    this.showDisplay(`speed ${this.piece.speed}`);
                     break;
 
                 case 'f':
                     Intercom.toggleFullscreen();
-                    this.display.show('toggle fullscreen');
+                    this.showDisplay('toggle fullscreen');
                     break;
 
                 case 'c':
                     this.piece.captureImage(
                         this.piece.features.getFeatureName()
                     );
-                    this.display.show('capture image');
-                    break;
-
-                case 'b':
-                    this.captureBigImage(
-                        this.piece.features.getFeatureName(),
-                        window.innerWidth << 0,
-                        window.innerHeight << 0,
-                        0.5
-                    );
-                    this.display.show('capture big image');
+                    this.showDisplay('capture image');
                     break;
 
                 case 'h':
                     let help = this.help.toggleShow();
-                    this.display.show('help ' + (help ? 'on' : 'off'));
+                    this.showDisplay('help ' + (help ? 'on' : 'off'));
                     break;
 
                 case 'i':
                     let info = this.info.toggleShow();
-                    this.display.show('info ' + (info ? 'on' : 'off'));
+                    this.showDisplay('info ' + (info ? 'on' : 'off'));
+                    break;
+
+                case 'g':
+                    let cycleSpeed = [null, 1, 3, 10, 30];
+                    let nextCycleSpeed = cycleSpeed.indexOf(
+                        this.piece.cycleGradient.speed
+                    );
+                    nextCycleSpeed =
+                        nextCycleSpeed < 0 ||
+                        nextCycleSpeed + 1 >= cycleSpeed.length
+                            ? 0
+                            : nextCycleSpeed + 1;
+                    this.piece.cycleGradient.setSpeed(
+                        cycleSpeed[nextCycleSpeed]
+                    );
+                    this.showDisplay(
+                        'cycle gradient ' +
+                            (this.piece.cycleGradient.speed
+                                ? `${this.piece.cycleGradient.speed}`
+                                : 'off')
+                    );
+                    break;
+
+                case 'a':
+                    if (!this.piece.announcement) {
+                        return;
+                    }
+                    this.piece.announcement.active =
+                        !this.piece.announcement.active;
+                    this.showDisplay(
+                        'announce ' +
+                            (this.piece.announcement?.active ? 'on' : 'off')
+                    );
+                    break;
+
+                case 'd':
+                    this.piece.debug = !this.piece.debug;
+                    this.showDisplay(
+                        'debug ' + this.piece.debug ? 'on' : 'off'
+                    );
+                    break;
+
+                case 'r':
+                    this.piece.kiosk.change();
+                    this.showDisplay('randomize');
+                    break;
+
+                case 'k':
+                    let speedSecs = [null, 1, 3, 10, 30, 100, 300];
+                    let next = speedSecs.indexOf(this.piece.kiosk.speedSec);
+                    next =
+                        next < 0 || next + 1 >= speedSecs.length ? 0 : next + 1;
+                    this.piece.kiosk.setSpeed(speedSecs[next]);
+                    this.showDisplay(
+                        'kiosk ' +
+                            (this.piece.kiosk.speedSec
+                                ? `${this.piece.kiosk.speedSec}s`
+                                : 'off')
+                    );
                     break;
 
                 case ' ':
                     this.piece.paused = !this.piece.paused;
-                    this.display.show(
+                    this.showDisplay(
                         'pausing ' + (this.piece.paused ? 'on' : 'off')
                     );
                     break;
@@ -258,23 +475,6 @@ export class Intercom {
         } else {
             document.documentElement.requestFullscreen();
         }
-    }
-
-    private captureBigImage(
-        name: string,
-        width: number,
-        height: number,
-        pixelRatio: number
-    ) {
-        this.piece.updateSize(width, height, pixelRatio);
-        let listener = () => {
-            this.piece.canvas.removeEventListener(
-                'piece.previewPhaseEnded',
-                listener
-            );
-            this.piece.captureImage(name);
-        };
-        this.piece.canvas.addEventListener('piece.previewPhaseEnded', listener);
     }
 }
 
@@ -307,14 +507,18 @@ export class Info {
         container.prepend(this.element);
     }
 
+    public isActive(): boolean {
+        return !this.element.classList.contains('hide');
+    }
+
     public toggleShow(): boolean {
         this.element.classList.remove('loading');
-        if (this.element.classList.contains('hide')) {
-            this.element.classList.remove('hide');
-            this.element.classList.add('show');
-        } else {
+        if (this.isActive()) {
             this.element.classList.remove('show');
             this.element.classList.add('hide');
+        } else {
+            this.element.classList.remove('hide');
+            this.element.classList.add('show');
         }
         return this.element.classList.contains('show');
     }
@@ -338,25 +542,33 @@ export class Help {
         this.element.classList.add('loading');
         this.element.innerHTML = `
           <p><em>i</em> info</p>
-          <p><em>0 - 9</em> show buffer</p>
-          <p><em>p</em> pause</p>
+          <p><em>space</em> toggle pausing</p>
           <p><em>f</em> toggle fullscreen</p>
           <p><em>c</em> capture image</p>
-          <p><em>b</em> capture big image (takes time)</p>
-          <p><em>d</em> debug view</p>
+          <p><em>g</em> toggle cycle gradient</p>
+          <p><em>k</em> change kiosk mode</p>
+          <p><em>a</em> toggle announce</p>
+          <p><em>r</em> randomize</p>
+          <p><em>- / +</em> change pixel ratio</p>
+          <p><em>o / p</em> change speed</p>
+          <p><em>0 - 3</em> debug buffer</p>
           <p><em>h</em> show help</p>
         `;
         container.prepend(this.element);
     }
 
+    public isActive(): boolean {
+        return !this.element.classList.contains('hide');
+    }
+
     public toggleShow(): boolean {
         this.element.classList.remove('loading');
-        if (this.element.classList.contains('hide')) {
-            this.element.classList.remove('hide');
-            this.element.classList.add('show');
-        } else {
+        if (this.isActive()) {
             this.element.classList.remove('show');
             this.element.classList.add('hide');
+        } else {
+            this.element.classList.remove('hide');
+            this.element.classList.add('show');
         }
         return this.element.classList.contains('show');
     }

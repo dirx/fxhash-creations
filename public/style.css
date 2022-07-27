@@ -18,9 +18,11 @@ body {
     margin: auto;
     display: block;
     z-index: 4;
+    width: 100%;
+    height: 100%;
 }
 
-#main-canvas, #preview-canvas, #debug-canvas {
+#main-canvas, #preview-canvas, #announcement-canvas {
     position: absolute;
     top: 0;
     left: 0;
@@ -33,14 +35,19 @@ body {
 
 #main-canvas {
     z-index: 2;
-}
-
-#debug-canvas {
-    z-index: 3;
+    width: 100%;
+    height: 100%;
 }
 
 #preview-canvas {
     z-index: 1;
+    visibility: hidden;
+}
+
+#announcement-canvas {
+    z-index: 3;
+    width: 100%;
+    height: 100%;
     visibility: hidden;
 }
 
@@ -125,4 +132,15 @@ body {
     display: inline-block;
     width: 20vmin;
     font-style: normal;
+}
+
+#error {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    margin: 0;
+    padding: 1em;
+    font-size: 2vmin;
+    color: #FFFFFF;
+    text-shadow: 0 0 10px black;
 }

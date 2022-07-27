@@ -5,7 +5,7 @@
     "module": "es6",
     "moduleResolution": "node",
     "allowJs": true,
-    "target": "es5",
+    "target": "es6",
     "sourceMap": true,
     "forceConsistentCasingInFileNames": false,
     "removeComments": true,

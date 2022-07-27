@@ -29,7 +29,7 @@ export const createLoop = (
         if (currentDelta >= targetDelta) {
             lastTimestamp = timestamp;
 
-            if (func(currentFps << 0, targetFps, timestamp) === false) {
+            if (func(currentFps, targetFps, timestamp) === false) {
                 stopFunc();
                 cancelAnimationFrame(requestId);
                 return;
@@ -44,7 +44,7 @@ export const createLoop = (
             }
             currentFps = fps;
             targetFps = fps;
-            targetDelta = (1000 / fps) << 0;
+            targetDelta = Math.floor(1000 / fps);
             if (!started) {
                 started = true;
                 lastTimestamp = 0;

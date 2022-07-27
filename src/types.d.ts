@@ -1,4 +1,4 @@
-import { FxhashFeatures } from './zebra';
+import { FxhashFeatures } from './piece';
 import { Container } from './container';
 
 declare global {
