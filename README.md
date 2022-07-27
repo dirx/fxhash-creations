@@ -19,10 +19,11 @@ Moving blocks formed by moving blocks.
 
 How does it work?
 
-Several shapes form boundaries. Within these boundaries, the moving blocks move pixels and rotate their color values from a specific color to black.
+Several shapes form boundaries. Within these boundaries, the moving blocks move pixels and rotate their color values from a specific color
+to black.
 Each shape has its own direction vector, which affects the feature-based directions and speed of the moving blocks.
 
-Available features:
+Features:
 
 - 109 colors: one from a unified color list (based on W3C SVG 1.0 color keyword names)
 - 3, 5 or 7 shapes: 3 different sizes and 2 types (quads and circles)
@@ -30,19 +31,22 @@ Available features:
 - 10 rotation angles: from -168° to 168
 - 5 grid sizes: based on Fibonacci numbers, starting with 377, block size is always 21
 - Movable blocks: based on grid size (one Fibonacci number before)
-- 127 directions of movement: based on 8 basic directions (up, up, left, left-up, left-down, right, right-up, right-down), limited to the 3, 4, 8
+- 127 directions of movement: based on 8 basic directions (up, up, left, left-up, left-down, right, right-up, right-down), limited to the 3,
+  4, 8
   long combinations
 - 2 behavior modes for movement distance: negative = decreasing and limited by range or shape, positive = increasing and limited by shape
 
-Animation and feature selection are based on deterministic prng XorShift128 seeded with the fxhash. This allows repeated playback in the same order.
+Animation and feature selection are based on the deterministic prng XorShift128 seeded with the fxhash. This allows repeated playback in the
+same order.
 
 The size is fixed at 1980x1980 pixels.
 
 The preview images are taken after 900 frames.
 
-The animation will stop automatically at 900 frames. Press spacebar, click mouse or touch to change pausing.
+The animation will stop automatically at 900 frames. Press spacebar, click mouse or touch to change pausing. You can add `autopause` as
+query string parameter to disable automatic pausing.
 
-Press `h` to see all options.
+Press `c` to capture an image. Press `h` to see all options.
 
 ### Source Code
 
