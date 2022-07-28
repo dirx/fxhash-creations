@@ -6,7 +6,7 @@ __#generativeart__ __#nft__ __#fxhash__ __#tezos__ __#creativecoding__
 
 Real-time deterministic animation based webgl2, fixed size, 2022
 
-__soon on fxhash__
+Grab it @ https://www.fxhash.xyz/generative/slug/moving-blocks-mono
 
 ### About
 
@@ -44,7 +44,7 @@ The preview images are taken after 900 frames.
 The animation will stop automatically at 900 frames. Press spacebar, click mouse or touch to change pausing. You can add `autopause` as
 query string parameter to disable automatic pausing.
 
-Press `c` to capture an image. Press `h` to see all options.
+Press `c` to capture an image. Press `f` for fullscreen. Press `h` to see all options.
 
 ### Third Party Licenses
 
