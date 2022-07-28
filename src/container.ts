@@ -104,9 +104,8 @@ export class Container {
                     if (!fxpreviewCalled && !piece.inPreviewPhase) {
                         let previewCanvas = piece.preparePreviewCanvas();
                         document.body.prepend(previewCanvas);
-                        window.fxpreview();
                         fxpreviewCalled = true;
-                        // setTimeout(() => previewCanvas.remove(), 1000);
+                        setTimeout(() => window.fxpreview(), 1000);
 
                         // debug: combination screenshots
                         let search = new URLSearchParams(
