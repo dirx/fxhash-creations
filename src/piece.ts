@@ -156,7 +156,7 @@ export class Features {
         featureSet<number>(
             'colorShiftDirection',
             [-1, 1],
-            ['backwards', 'forwards']
+            ['backward', 'forward']
         ),
         featureSet<number>(
             'colorShiftSpeed',
