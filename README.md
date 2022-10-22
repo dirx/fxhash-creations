@@ -6,7 +6,7 @@ __#generativeart__ __#nft__ __#fxhash__ __#tezos__ __#creativecoding__
 
 Real-time deterministic animation based webgl2, variable size, 2022
 
-Soon on to https://www.fxhash.xyz/
+Coming soon to https://www.fxhash.xyz/
 
 ### About
 
