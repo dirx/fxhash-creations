@@ -17,14 +17,18 @@ Blocks Mono crossed with Zebra. As so often happens, ideas evolve, new ideas eme
 directions through beautiful pixel landscapes. And here we are - in Driften - and - once again - it's all about moving pixels and shifting
 colors.
 
-Driften, by the way, is German for drifting away.
+Driften, by the way, is German for drifting.
 
 How does it work?
 
-The animation is based on several layers. The first layer uses psrdnoise combined with feedback with the last layer. This layer mainly determines
+The animation is based on several layers.
+
+The first layer uses psrdnoise combined with feedback with the last layer. This layer mainly determines
 in which areas the colors should be shifted, which color should be reset (which depends on the color shifting
-direction) and where pixels should be shifted and how and if the brush is applied. It also creates the moiré effects.
+direction) and where and how pixels should be shifted and if the brush is applied. It also creates the moiré effects.
+
 The second layer contains a simple variant of moving blocks, which are applied as brush strokes in the last layer.
+
 The last layer uses a double buffer to store its state, allowing color and pixel shifts.
 
 Features:
@@ -40,12 +44,18 @@ Features:
 - Gradient levels [1, 2, 6] (mono, duo, hexa)
 - Gradient colors
 
+Gradients consist of the base color and, depending on the steps, 1 (mono), 2 (duo) or 6 (hexa) additional colors. They are built from a
+combination of low/high chroma and low/high lightness colors. Hexa gradients actually consist of 2 gradients, similar
+to duo gradients, but with more intermediate steps along the hue.
+
 Animation and feature selection are based on the deterministic prng Xoshiro128 seeded with the fxhash. This allows repeated playback in the
 same sequence. The animation is synchronized with frames and not with time.
 
 The preview images are taken after 400 frames.
 
 The animation is automatically paused at 400 frames. Press spacebar, click mouse or touch to change pause.
+
+Press `c` to take a picture. Press `f` for full screen mode. Press `h` to see all options.
 
 Available query string parameters:
 
@@ -56,8 +66,6 @@ Available query string parameters:
 - speed - sets the overall speed factor (experimental)
 - kioskspeed=10 - activates the kiosk mode and sets the speed in seconds
 - showinfo - activates the info box
-
-Press `c` to take a picture. Press `f` for full screen mode. Press `h` to see all options.
 
 ### Third Party Licenses
 
