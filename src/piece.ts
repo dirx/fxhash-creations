@@ -300,8 +300,6 @@ export class Features {
             let hLite =
                 this.variation.value.gradient.value.lite.value /
                 this.variation.value.gradient.value.lite.variations;
-            hLite *= 0.75;
-            hLite = hLite > 0.25 ? hLite + 0.25 : hLite; // ignore 0.25 - 0.5 (green)
             let liteColor = getColor({
                 h: [
                     [
