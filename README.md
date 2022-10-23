@@ -69,6 +69,10 @@ Available query string parameters:
 - kioskspeed=10 - activates the kiosk mode and sets the speed in seconds
 - showinfo - activates the info box
 
+### Source Code
+
+See https://github.com/dirx/fxhash-creations/tree/driften
+
 ### Third Party Licenses
 
 - based on [fxhash-boilerplate-webpack](https://github.com/fxhash/fxhash-webpack-boilerplate)
