@@ -40,7 +40,7 @@ Features:
 - Brush moving directions - 28 pairs of up, left-up, left, left-down, down, right-down, right, right-up.
 - Brush intensity [0.1, 1.0, 3.0] (low, medium, high)
 - Moiré intensity [0.1, 1.0, 10.0] (fine, coarse, very coarse)
-- Motion Speed [1, 3, 7] (slow, medium, fast)
+- Moving Speed [1, 3, 7] (slow, medium, fast)
 - Gradient levels [1, 2, 6] (mono, duo, hexa)
 - Gradient colors
 
@@ -63,7 +63,7 @@ Available query string parameters:
 - pixelratio=2 - sets the pixel ratio (default: 2)
 - showannouncement - activates the announcement
 - cyclegradientspeed=3 - activates gradient playback and sets the speed factor
-- speed - sets the overall speed factor (experimental)
+- speed=1 - sets the overall speed factor (experimental, default: 1)
 - kioskspeed=10 - activates the kiosk mode and sets the speed in seconds
 - showinfo - activates the info box
 
