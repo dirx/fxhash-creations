@@ -6,7 +6,7 @@ __#generativeart__ __#nft__ __#fxhash__ __#tezos__ __#creativecoding__
 
 Real-time deterministic animation based webgl2, variable size, 2022
 
-Coming soon to https://www.fxhash.xyz/
+Grab it @ https://www.fxhash.xyz/generative/slug/driften
 
 ### About
 
