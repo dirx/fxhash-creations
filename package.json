@@ -16,11 +16,11 @@
     "@thi.ng/math": "^5.3.3",
     "@thi.ng/random": "^3.3.2",
     "@thi.ng/random-fxhash": "^0.2.2",
-    "@types/timsort": "^0.3.0",
     "timsort": "^0.3.0",
     "twgl.js": "^5.0.1"
   },
   "devDependencies": {
+    "@types/timsort": "^0.3.0",
     "adm-zip": "^0.5.9",
     "copy-webpack-plugin": "^11.0.0",
     "css-loader": "^6.4.0",
