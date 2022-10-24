@@ -22,6 +22,7 @@ import {
     featureCollection,
     variation,
 } from './combinations';
+import * as timsort from 'timsort';
 
 export type FxhashFeatures = {
     color: string;
@@ -66,8 +67,8 @@ type FeaturesType = {
 
 export const logColor = (c: TypedColor<any>, msg: string = '') =>
     console.log(
-        `%c${msg}${css(c)}`,
-        `background-color: ${css(c)}; color:#ffffff; padding: 20px;`
+        `%c${msg}       ${css(c)}`,
+        `background-color: ${css(c)}; color:#ffffff; padding: 2px;`
     );
 export const getColor = (range: ColorRange): LCH => {
     return colorsFromRange(range, {
@@ -388,7 +389,9 @@ export class Features {
         this.moireIntensity = this.variation.value.moireIntensity.value;
 
         // shuffle shiftFactors
-        this.shiftFactors = this.shiftFactors.sort(() => randOptions([-1, 1]));
+        timsort.sort(this.shiftFactors, () => {
+            return randOptions([-1, 1]);
+        });
 
         this.log();
     }
@@ -1322,7 +1325,7 @@ export class Piece {
         this.context = twgl.getContext(this.canvas, {
             depth: false,
             preserveDrawingBuffer: true,
-            premultipliedAlpha: false,
+            premultipliedAlpha: true,
         }) as WebGL2RenderingContext;
 
         if (!twgl.isWebGL2(this.context)) {
@@ -1368,7 +1371,7 @@ export class Piece {
         pixelRatio: number | null = null
     ) {
         if (pixelRatio === null) {
-            pixelRatio = Piece.defaultPixelRatio;
+            pixelRatio = this.pixelRatio;
         }
         this.pixelRatio = pixelRatio;
         this.previewPhaseEndsAfter = this.previewPhaseEndsAfterBase;
