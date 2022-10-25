@@ -1382,12 +1382,7 @@ export class Piece {
 
         this.context.canvas.width = this.width;
         this.context.canvas.height = this.height;
-        this.context.viewport(
-            0,
-            0,
-            this.context.canvas.width,
-            this.context.canvas.height
-        );
+        this.context.viewport(0, 0, this.width, this.height);
 
         this.initBackground();
     }
