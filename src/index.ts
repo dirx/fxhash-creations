@@ -1,6 +1,6 @@
 import '@fontsource/vt323/latin.css';
 import { fakeFxhash } from './rand';
-import { Features } from './piece';
+import { Features, Piece } from './piece';
 import { Container } from './container';
 
 let search = new URLSearchParams(window.location.search);
@@ -13,7 +13,7 @@ if (combinationParam !== '') {
     combination = Math.floor(Features.combinations * window.fxrand());
 }
 
-console.info('Driften');
+console.info(Piece.title);
 console.info('Real-time deterministic webgl2 animation, variable size, 2022');
 console.info("Be inspired. If you need help please press 'h'.");
 console.info('Dirk Adler, https://dirx.dev');

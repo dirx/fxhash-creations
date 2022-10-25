@@ -37,8 +37,6 @@ export class Container {
             this.getAutopauseParam(),
             this.getPixelRatioParam(),
             this.getShowAnnouncement(),
-            this.getCycleGradientSpeed(),
-            this.getSpeed(),
             this.getKioskSpeed()
         );
 
@@ -47,7 +45,7 @@ export class Container {
 
     private getAutopauseParam(): boolean {
         let search = new URLSearchParams(window.location.search);
-        return !search.has('autopause') || search.get('autopause') == 'on';
+        return search.has('autopause');
     }
 
     private getPixelRatioParam(): number {
@@ -62,20 +60,6 @@ export class Container {
         let search = new URLSearchParams(window.location.search);
         let value: string | null = search.get('showannouncement');
         return value !== null;
-    }
-
-    private getCycleGradientSpeed(): number | null {
-        let search = new URLSearchParams(window.location.search);
-        let value: string | null = search.get('cyclegradientspeed');
-        return value === null ? null : Math.abs(parseFloat(value));
-    }
-
-    private getSpeed(): number {
-        let search = new URLSearchParams(window.location.search);
-        let value: string | null = search.get('speed');
-        return value === null
-            ? Piece.defaultSpeed
-            : Math.abs(parseFloat(value));
     }
 
     private getKioskSpeed(): number | null {
@@ -184,35 +168,29 @@ export class Container {
             }
             info.update({
                 combination: `${piece.features.combination} [${Features.combinations}]`,
-                color: `<span style="color:${piece.features.colorCSS}">${piece.features.colorCSS}</span>`,
-                colorShiftDirection: `${piece.features.colorShiftDirection} (${piece.features.variation.value.colorShiftDirection.label}) [${piece.features.variation.value.colorShiftDirection.variations}]`,
-                colorShiftSpeed: `${piece.features.colorShiftSpeed} (${piece.features.variation.value.colorShiftSpeed.label}) [${piece.features.variation.value.colorShiftSpeed.variations}]`,
-                gradientSteps: `${piece.features.gradientSteps} (${piece.features.variation.value.gradient.label}) [1,2,6]`,
-                gradient: piece.features.gradientCSS.map(
-                    (c) => `<span style="color:${c}">${c}</span>`
-                ),
-                gradientLightnessDiff: piece.features.gradientLightnessDiff,
-                cycleGradientSpeed: `${
-                    piece.cycleGradient.active
-                        ? `${piece.cycleGradient.speed}`
-                        : 'off'
-                } / ${piece.cycleGradient.shiftStepNormalized}`,
-                moireIntensity: `${piece.features.moireIntensity} (${piece.features.variation.value.moireIntensity.label}) [${piece.features.variation.value.moireIntensity.variations}]`,
-                brushIntensity: `${piece.features.brushIntensity} (${piece.features.variation.value.brushIntensity.label}) [${piece.features.variation.value.brushIntensity.variations}]`,
-                brushMovingBlockSize: `${piece.features.gridSize}/${
-                    piece.features.gridSize / piece.features.blockSize
-                }`,
-                brushMovingBlocks: `${piece.movingBlocks.count} / ${piece.features.maxMovingBlocks} / ${piece.movingBlocks.total} (${piece.features.variation.value.brushMovingBlocks.label})`,
-                brushMovingDirections: `${piece.features.variation.value.brushMovingDirections.index} (${piece.features.variation.value.brushMovingDirections.label}) [${piece.features.variation.value.brushMovingDirections.numberOfVariations}]`,
-                movingSpeed: `${piece.features.movingSpeed} (${piece.features.variation.value.movingSpeed.label}) [${piece.features.variation.value.movingSpeed.variations}]`,
+                topColor: `<span style="color:${piece.features.topColorCSS}">${piece.features.topColorCSS}</span>`,
+                topPhoto: `${piece.features.variation.value.topPhoto.index} (${piece.features.variation.value.topPhoto.label})`,
+                topPhotoOffset: `${piece.features.topPhotoOffset}`,
+                bottomColor: `<span style="color:${piece.features.bottomColorCSS}">${piece.features.bottomColorCSS}</span>`,
+                bottomPhoto: `${piece.features.variation.value.bottomPhoto.index} (${piece.features.variation.value.bottomPhoto.label})`,
+                bottomPhotoOffset: `${piece.features.bottomPhotoOffset}`,
+                horizon: `${piece.features.horizon} (${piece.features.variation.value.horizon.label})`,
+                horizontalFold: `${piece.features.horizontalFold}`,
+                verticalFold: `${piece.features.verticalFold}`,
+                folds: `${piece.features.minStripes} / ${piece.features.currentStripes} / ${piece.features.maxStripes}`,
+                hectic: `${piece.features.hectic} (${piece.features.variation.value.hectic.label})`,
                 size: `${piece.canvas.width} / ${piece.canvas.height}`,
                 pixelRatio: `${piece.pixelRatio}`,
                 previewPhase: piece.inPreviewPhase,
                 previewPhaseEndsAfter: piece.previewPhaseEndsAfter,
+                nextTouch: `${piece.nextTouch}`,
+                collageMode: `${
+                    piece.features.collageMode ? 'replace' : 'add'
+                }`,
                 currentFps: `${Math.floor(this.loop.currentFps())}`,
-                totalFrames: `${piece.movingBlocks.totalFrames}`,
-                speed: `${piece.speed}`,
+                totalFrames: `${piece.stripes.totalFrames}`,
                 announcement: `${piece.announcement?.active ? 'on' : 'off'}`,
+                debug: `${piece.debugLevel ? piece.debugLevel : 'off'}`,
                 kioskspeed: `${
                     piece.kiosk.active ? `${piece.kiosk.speedSec}s` : 'off'
                 }`,
@@ -245,8 +223,8 @@ export class Intercom {
 
     private initMouseHandler() {
         window.addEventListener('mouseup', (_ev: MouseEvent) => {
-            this.piece.paused = !this.piece.paused;
-            this.showDisplay('pausing ' + (this.piece.paused ? 'on' : 'off'));
+            this.piece.touch();
+            this.showDisplay('touched');
         });
     }
 
@@ -263,10 +241,8 @@ export class Intercom {
                 Math.abs(pageX - lastPageX) < 20 &&
                 Math.abs(pageY - lastPageY) < 20
             ) {
-                this.piece.paused = !this.piece.paused;
-                this.showDisplay(
-                    'pausing ' + (this.piece.paused ? 'on' : 'off')
-                );
+                this.piece.touch();
+                this.showDisplay('touched');
             }
 
             lastIdentifier = null;
@@ -305,8 +281,6 @@ export class Intercom {
             switch (ev.key) {
                 case '0':
                 case '1':
-                case '2':
-                case '3':
                     if (!this.piece.outputs) {
                         return;
                     }
@@ -355,27 +329,6 @@ export class Intercom {
                     this.showDisplay(`pixel ratio ${this.piece.pixelRatio}`);
                     break;
 
-                case 'o':
-                    f = this.piece.speed;
-                    f =
-                        Math.round(
-                            (f > 1 ? f - 1 : f > 0.5 ? f - 0.1 : f) * 10
-                        ) / 10;
-
-                    this.piece.speed = f;
-                    this.showDisplay(`speed ${this.piece.speed}`);
-                    break;
-
-                case 'p':
-                    f = this.piece.speed;
-                    f =
-                        Math.round(
-                            (f >= 1 ? f + 1 : f >= 0.5 ? f + 0.1 : f) * 10
-                        ) / 10;
-                    this.piece.speed = f;
-                    this.showDisplay(`speed ${this.piece.speed}`);
-                    break;
-
                 case 'f':
                     Intercom.toggleFullscreen();
                     this.showDisplay('toggle fullscreen');
@@ -398,27 +351,6 @@ export class Intercom {
                     this.showDisplay('info ' + (info ? 'on' : 'off'));
                     break;
 
-                case 'g':
-                    let cycleSpeed = [null, 1, 3, 10, 30];
-                    let nextCycleSpeed = cycleSpeed.indexOf(
-                        this.piece.cycleGradient.speed
-                    );
-                    nextCycleSpeed =
-                        nextCycleSpeed < 0 ||
-                        nextCycleSpeed + 1 >= cycleSpeed.length
-                            ? 0
-                            : nextCycleSpeed + 1;
-                    this.piece.cycleGradient.setSpeed(
-                        cycleSpeed[nextCycleSpeed]
-                    );
-                    this.showDisplay(
-                        'cycle gradient ' +
-                            (this.piece.cycleGradient.speed
-                                ? `${this.piece.cycleGradient.speed}`
-                                : 'off')
-                    );
-                    break;
-
                 case 'a':
                     if (!this.piece.announcement) {
                         return;
@@ -432,9 +364,16 @@ export class Intercom {
                     break;
 
                 case 'd':
-                    this.piece.debug = !this.piece.debug;
+                    this.piece.debugLevel =
+                        this.piece.debugLevel == 2
+                            ? 0
+                            : this.piece.debugLevel + 1;
+
                     this.showDisplay(
-                        'debug ' + this.piece.debug ? 'on' : 'off'
+                        'debug ' +
+                            (this.piece.debugLevel
+                                ? this.piece.debugLevel
+                                : 'off')
                     );
                     break;
 
@@ -444,7 +383,7 @@ export class Intercom {
                     break;
 
                 case 'k':
-                    let speedSecs = [null, 1, 3, 10, 30, 100, 300];
+                    let speedSecs = [null, 3, 10, 30, 100, 300];
                     let next = speedSecs.indexOf(this.piece.kiosk.speedSec);
                     next =
                         next < 0 || next + 1 >= speedSecs.length ? 0 : next + 1;
@@ -458,6 +397,11 @@ export class Intercom {
                     break;
 
                 case ' ':
+                    this.piece.touch();
+                    this.showDisplay('touched');
+                    break;
+
+                case 'p':
                     this.piece.paused = !this.piece.paused;
                     this.showDisplay(
                         'pausing ' + (this.piece.paused ? 'on' : 'off')
@@ -542,16 +486,16 @@ export class Help {
         this.element.classList.add('loading');
         this.element.innerHTML = `
           <p><em>i</em> info</p>
-          <p><em>space</em> toggle pausing</p>
+          <p><em>space</em> touch</p>
+          <p><em>p</em> toggle pausing</p>
           <p><em>f</em> toggle fullscreen</p>
           <p><em>c</em> capture image</p>
-          <p><em>g</em> toggle cycle gradient</p>
           <p><em>k</em> change kiosk mode</p>
           <p><em>a</em> toggle announce</p>
           <p><em>r</em> randomize</p>
           <p><em>- / +</em> change pixel ratio</p>
-          <p><em>o / p</em> change speed</p>
-          <p><em>0 - 3</em> debug buffer</p>
+          <p><em>0 - 1</em> debug buffer</p>
+          <p><em>d</em> toggle debug level</p>
           <p><em>h</em> show help</p>
         `;
         container.prepend(this.element);

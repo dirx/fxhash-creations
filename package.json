@@ -1,7 +1,7 @@
 {
-  "name": "dirx-driften",
+  "name": "dirx-fischbach",
   "version": "1.0.0",
-  "description": "Driften. Real-time deterministic webgl2 animation, variable size, 2022.",
+  "description": "Fischbach. Real-time deterministic webgl2 animation, variable size, 2022.",
   "main": "index.js",
   "author": "dirx",
   "scripts": {
@@ -12,7 +12,6 @@
   "dependencies": {
     "@fontsource/vt323": "^4.5.6",
     "@thi.ng/color": "^5.1.4",
-    "@thi.ng/geom-isec": "^2.1.14",
     "@thi.ng/math": "^5.3.3",
     "@thi.ng/random": "^3.3.2",
     "@thi.ng/random-fxhash": "^0.2.2",

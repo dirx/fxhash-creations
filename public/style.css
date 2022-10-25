@@ -134,7 +134,7 @@ body {
     font-style: normal;
 }
 
-#error {
+#error, #remembering {
     position: absolute;
     bottom: 0;
     right: 0;
