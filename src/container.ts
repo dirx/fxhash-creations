@@ -34,21 +34,16 @@ export class Container {
             window.innerWidth,
             window.innerHeight,
             combination,
-            this.getAutopauseParam(),
-            this.getPixelRatioParam(),
+            this.getPixelRatio(),
             this.getShowAnnouncement(),
-            this.getKioskSpeed()
+            this.getKioskSpeed(),
+            this.getSize()
         );
 
         window.$fxhashFeatures = this.piece.features.getFxhashFeatures();
     }
 
-    private getAutopauseParam(): boolean {
-        let search = new URLSearchParams(window.location.search);
-        return search.has('autopause');
-    }
-
-    private getPixelRatioParam(): number {
+    private getPixelRatio(): number {
         let search = new URLSearchParams(window.location.search);
         let value: string | null = search.get('pixelratio');
         return value === null
@@ -72,6 +67,14 @@ export class Container {
         let search = new URLSearchParams(window.location.search);
         let value: string | null = search.get('showinfo');
         return value !== null;
+    }
+
+    private getSize(): number {
+        let search = new URLSearchParams(window.location.search);
+        let value: string | null = search.get('size');
+        return value === null
+            ? Piece.defaultSize
+            : Math.abs(Math.max(1, parseFloat(value)));
     }
 
     private initResizeHandler() {
@@ -146,7 +149,7 @@ export class Container {
                                     () =>
                                         (window.location.search =
                                             search.toString()),
-                                    1000
+                                    1000 * 3
                                 );
                             }
                         }
@@ -168,27 +171,21 @@ export class Container {
             }
             info.update({
                 combination: `${piece.features.combination} [${Features.combinations}]`,
-                topColor: `<span style="color:${piece.features.topColorCSS}">${piece.features.topColorCSS}</span>`,
-                topPhoto: `${piece.features.variation.value.topPhoto.index} (${piece.features.variation.value.topPhoto.label})`,
-                topPhotoOffset: `${piece.features.topPhotoOffset}`,
-                bottomColor: `<span style="color:${piece.features.bottomColorCSS}">${piece.features.bottomColorCSS}</span>`,
-                bottomPhoto: `${piece.features.variation.value.bottomPhoto.index} (${piece.features.variation.value.bottomPhoto.label})`,
-                bottomPhotoOffset: `${piece.features.bottomPhotoOffset}`,
-                horizon: `${piece.features.horizon} (${piece.features.variation.value.horizon.label})`,
-                horizontalFold: `${piece.features.horizontalFold}`,
-                verticalFold: `${piece.features.verticalFold}`,
-                folds: `${piece.features.minStripes} / ${piece.features.currentStripes} / ${piece.features.maxStripes}`,
-                hectic: `${piece.features.hectic} (${piece.features.variation.value.hectic.label})`,
+                palette: `${piece.features.variation.value.palette.value.map(
+                    (v: string) =>
+                        '<span style="color:' + v + '">' + v + '</span>'
+                )} (${piece.features.variation.value.palette.label}) [${
+                    piece.features.variation.value.palette.numberOfVariations
+                }]`,
+                colorSortDirection: `${piece.features.variation.value.colorSortDirection.value} (${piece.features.variation.value.colorSortDirection.label}) [${piece.features.variation.value.colorSortDirection.numberOfVariations}]`,
+                colorSortReference: `${piece.features.variation.value.colorSortReference.value} [${piece.features.variation.value.colorSortReference.numberOfVariations}]`,
+                shapes: `${piece.features.variation.value.shapes.value} (${piece.features.variation.value.shapes.label}) [${piece.features.variation.value.shapes.numberOfVariations}]`,
                 size: `${piece.canvas.width} / ${piece.canvas.height}`,
                 pixelRatio: `${piece.pixelRatio}`,
-                previewPhase: piece.inPreviewPhase,
-                previewPhaseEndsAfter: piece.previewPhaseEndsAfter,
-                nextTouch: `${piece.nextTouch}`,
-                collageMode: `${
-                    piece.features.collageMode ? 'replace' : 'add'
-                }`,
+                pauseAfter: piece.pauseAfter,
                 currentFps: `${Math.floor(this.loop.currentFps())}`,
-                totalFrames: `${piece.stripes.totalFrames}`,
+                totalFrames: `${piece.frames.total}`,
+                inPreviewPhase: `${piece.inPreviewPhase}`,
                 announcement: `${piece.announcement?.active ? 'on' : 'off'}`,
                 debug: `${piece.debugLevel ? piece.debugLevel : 'off'}`,
                 kioskspeed: `${
@@ -201,15 +198,14 @@ export class Container {
 }
 
 export class Intercom {
-    private piece: Piece;
-    private info: Info;
-    private help: Help;
+    public clickTimoutMs = 200;
+    public touchTimoutMs = 300;
     private display: Display;
 
     public constructor(
-        piece: Piece,
-        info: Info,
-        help: Help,
+        private piece: Piece,
+        private info: Info,
+        private help: Help,
         container: HTMLDivElement
     ) {
         this.piece = piece;
@@ -222,9 +218,28 @@ export class Intercom {
     }
 
     private initMouseHandler() {
-        window.addEventListener('mouseup', (_ev: MouseEvent) => {
-            this.piece.touch();
-            this.showDisplay('touched');
+        let timeout: NodeJS.Timeout;
+        let clicks: number = 0;
+        window.addEventListener('click', (_ev: MouseEvent) => {
+            clearTimeout(timeout);
+            clicks++;
+            if (clicks === 1) {
+                timeout = setTimeout(() => {
+                    clicks = 0;
+                    this.piece.touch();
+                    this.showDisplay('touched');
+                }, this.clickTimoutMs);
+            } else if (clicks === 2) {
+                timeout = setTimeout(() => {
+                    clicks = 0;
+                    this.piece.kiosk.change(true);
+                    this.showDisplay('randomize objects');
+                }, this.clickTimoutMs);
+            } else if (clicks === 3) {
+                clicks = 0;
+                this.piece.kiosk.change();
+                this.showDisplay('randomize features');
+            }
         });
     }
 
@@ -232,6 +247,8 @@ export class Intercom {
         let lastIdentifier: null | number = null;
         let lastPageX: number = 0;
         let lastPageY: number = 0;
+        let touchTimeout: NodeJS.Timeout;
+        let touches: number = 0;
         let endListener = (ev: TouchEvent) => {
             let pageX = ev.changedTouches.item(0)?.pageX || 0;
             let pageY = ev.changedTouches.item(0)?.pageY || 0;
@@ -241,8 +258,25 @@ export class Intercom {
                 Math.abs(pageX - lastPageX) < 20 &&
                 Math.abs(pageY - lastPageY) < 20
             ) {
-                this.piece.touch();
-                this.showDisplay('touched');
+                clearTimeout(touchTimeout);
+                touches++;
+                if (touches === 1) {
+                    touchTimeout = setTimeout(() => {
+                        touches = 0;
+                        this.piece.touch();
+                        this.showDisplay('touched');
+                    }, this.touchTimoutMs);
+                } else if (touches === 2) {
+                    touchTimeout = setTimeout(() => {
+                        touches = 0;
+                        this.piece.kiosk.change(true);
+                        this.showDisplay('randomize objects');
+                    }, this.touchTimoutMs);
+                } else if (touches === 3) {
+                    touches = 0;
+                    this.piece.kiosk.change();
+                    this.showDisplay('randomize feature');
+                }
             }
 
             lastIdentifier = null;
@@ -281,6 +315,7 @@ export class Intercom {
             switch (ev.key) {
                 case '0':
                 case '1':
+                case '2':
                     if (!this.piece.outputs) {
                         return;
                     }
@@ -379,11 +414,16 @@ export class Intercom {
 
                 case 'r':
                     this.piece.kiosk.change();
-                    this.showDisplay('randomize');
+                    this.showDisplay('randomize features');
+                    break;
+
+                case 'o':
+                    this.piece.kiosk.change(true);
+                    this.showDisplay('randomize objects');
                     break;
 
                 case 'k':
-                    let speedSecs = [null, 3, 10, 30, 100, 300];
+                    let speedSecs = [null, 3, 5, 10];
                     let next = speedSecs.indexOf(this.piece.kiosk.speedSec);
                     next =
                         next < 0 || next + 1 >= speedSecs.length ? 0 : next + 1;
@@ -399,13 +439,6 @@ export class Intercom {
                 case ' ':
                     this.piece.touch();
                     this.showDisplay('touched');
-                    break;
-
-                case 'p':
-                    this.piece.paused = !this.piece.paused;
-                    this.showDisplay(
-                        'pausing ' + (this.piece.paused ? 'on' : 'off')
-                    );
                     break;
             }
         });
@@ -423,11 +456,7 @@ export class Intercom {
 }
 
 export class Display {
-    private readonly container: HTMLDivElement;
-
-    public constructor(container: HTMLDivElement) {
-        this.container = container;
-    }
+    public constructor(private container: HTMLDivElement) {}
 
     public show(msg: string) {
         let text = document.createElement('div');
@@ -487,14 +516,13 @@ export class Help {
         this.element.innerHTML = `
           <p><em>i</em> info</p>
           <p><em>space</em> touch</p>
-          <p><em>p</em> toggle pausing</p>
           <p><em>f</em> toggle fullscreen</p>
           <p><em>c</em> capture image</p>
           <p><em>k</em> change kiosk mode</p>
           <p><em>a</em> toggle announce</p>
-          <p><em>r</em> randomize</p>
-          <p><em>- / +</em> change pixel ratio</p>
-          <p><em>0 - 1</em> debug buffer</p>
+          <p><em>r</em> randomize features</p>
+          <p><em>o</em> randomize objects</p>
+          <p><em>0 - 2</em> debug buffer</p>
           <p><em>d</em> toggle debug level</p>
           <p><em>h</em> show help</p>
         `;

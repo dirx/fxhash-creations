@@ -1,15 +1,20 @@
 {
-  "name": "dirx-fischbach",
+  "name": "dirx-alea",
   "version": "1.0.0",
-  "description": "Fischbach. Real-time deterministic webgl2 animation, variable size, 2022.",
+  "description": "Alea. Real-time deterministic webgl2 animation, fixed size, 2022.",
+  "homepage": "https://github.com/dirx/fxhash-creations#alea",
   "main": "index.js",
-  "author": "dirx",
+  "author": {
+    "name": "Dirk Adler",
+    "url": "https://dirx.dev"
+  },
   "scripts": {
     "build": "webpack --config ./config/webpack.config.prod.js",
     "start": "webpack serve --config ./config/webpack.config.dev.js",
     "test": "node tests"
   },
   "dependencies": {
+    "@fontsource/outfit": "^4.5.10",
     "@fontsource/vt323": "^4.5.6",
     "@thi.ng/color": "^5.1.4",
     "@thi.ng/math": "^5.3.3",

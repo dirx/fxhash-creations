@@ -1,11 +1,16 @@
-// todo: cleanup & credits & readme & selection
-import { rand, randBoolean, randInit, randInt, randOptions, RND } from './rand';
+import { rand, randInit, randInt, randOptions, randSkip } from './rand';
+import { colors2 } from './colors';
 import * as twgl from 'twgl.js';
+import { AttachmentOptions, m4 } from 'twgl.js';
 import {
-    ColorRange,
-    colorsFromRange,
     css,
+    distHsvLuma,
+    distHsvSat,
+    lch,
     LCH,
+    mix,
+    proximity,
+    sort,
     srgb,
     TypedColor,
 } from '@thi.ng/color';
@@ -17,30 +22,20 @@ import {
     featureSet,
     variation,
 } from './combinations';
-import { clamp, mod } from '@thi.ng/math';
+import { clamp01 } from '@thi.ng/math';
 
 export type FxhashFeatures = {
-    'top color': string;
-    'bottom color': string;
-    'top image': string;
-    'bottom photo': string;
-    horizon: string;
-    hectic: string;
-    'horizontal fold': number;
-    'vertical fold': number;
-    'min stripes': number;
+    palette: string;
+    colorSortDirection: string;
+    colorSortReference: string;
+    shapes: string;
 };
 
 type FeaturesType = {
-    topColor: variation<number>;
-    bottomColor: variation<number>;
-    horizon: variation<string>;
-    horizontalFold: variation<number>;
-    verticalFold: variation<number>;
-    hectic: variation<number>;
-    topPhoto: variation<string>;
-    bottomPhoto: variation<string>;
-    minStripes: variation<number>;
+    palette: variation<Array<string>>;
+    colorSortDirection: variation<boolean>;
+    colorSortReference: variation<number>;
+    shapes: variation<Array<number>>;
 };
 
 export const logColor = (c: TypedColor<any>, msg: string = '') =>
@@ -48,63 +43,34 @@ export const logColor = (c: TypedColor<any>, msg: string = '') =>
         `%c${msg}       ${css(c)}`,
         `background-color: ${css(c)}; color:#ffffff; padding: 2px;`
     );
-export const getColor = (range: ColorRange): LCH => {
-    return colorsFromRange(range, {
-        variance: 0.0,
-        rnd: RND,
-    }).next().value as LCH;
-};
 
 export class Features {
     public variation: variation<FeaturesType>;
     public static variations: combinationFn<FeaturesType> = features('piece', [
-        featureNumber('topColor', 12),
-        featureNumber('bottomColor', 6),
-        featureSet<number>(
-            'horizon',
-            [0.618, 0.5, 0.382],
-            ['down', 'center', 'up']
+        featureSet<boolean>(
+            'colorSortDirection',
+            [false, true],
+            ['up', 'down']
         ),
-        featureSet<number>('horizontalFold', [113, 365, 997, 2153, 3987]),
-        featureSet<number>('verticalFold', [7, 37, 127, 571, 1501, 3147]),
-        featureSet<number>('hectic', [3, 5, 11], ['calm', 'slightly', 'very']),
-        featureSet<string>('topPhoto', [
-            'zingst',
-            'birds',
-            'xmas',
-            'zustand',
-            'zebra',
-            'moving-blocks-mono',
-            'fischbach',
-            'santanyi',
-            'goldblume',
-            '♠4',
-            'driften',
-            'brand-pyramide',
-            'zäpfle',
-            'bc',
-            'tisa',
-            'lieblingspulli',
-        ]),
-        featureSet<string>('bottomPhoto', [
-            'zingst',
-            'birds',
-            'xmas',
-            'zustand',
-            'zebra',
-            'moving-blocks-mono',
-            'fischbach',
-            'santanyi',
-            'goldblume',
-            '♠4',
-            'driften',
-            'brand-pyramide',
-            'zäpfle',
-            'bc',
-            'tisa',
-            'lieblingspulli',
-        ]),
-        featureSet<number>('minStripes', [1, 3, 5]),
+        featureNumber('colorSortReference', 3),
+        featureSet<Array<string>>(
+            'palette',
+            Object.values(colors2),
+            Object.keys(colors2)
+        ),
+        featureSet<Array<number>>(
+            'shapes',
+            [[0], [1], [2], [0, 1], [0, 2], [1, 2], [0, 1, 2]],
+            [
+                'toruses',
+                'cubes',
+                'planes',
+                'toruses & cubes',
+                'toruses & planes',
+                'cubes & planes',
+                'toruses, cubes & planes',
+            ]
+        ),
     ]);
 
     public static combinations: number =
@@ -112,85 +78,71 @@ export class Features {
 
     public combination: number = 0;
 
-    public maxStripes: number = 10;
-    public currentStripes: number = 9;
-    public minStripes: number = 1;
-    public hectic: number;
-    public collageMode: boolean = true;
-
     public topColor: LCH;
     public topColorCSS: string;
     public topColorRGB: number[];
     public bottomColor: LCH;
     public bottomColorCSS: string;
     public bottomColorRGB: number[];
-    public horizon: number;
-    public horizontalFold: number;
-    public verticalFold: number;
-    public topPhoto: string;
-    public bottomPhoto: string;
-    public topPhotoOffset: number = 0;
-    public bottomPhotoOffset: number = 0;
+    public backgroundColor: LCH;
+    public backgroundColorCSS: string;
+    public backgroundColorRGB: number[];
+    public oddColor: LCH;
+    public oddColorCSS: string;
+    public oddColorRGB: number[];
+    public evenColor: LCH;
+    public evenColorCSS: string;
+    public evenColorRGB: number[];
 
     public constructor(combination: number) {
         this.combination = combination % Features.combinations;
 
         this.variation = Features.variations(combination);
 
-        this.horizon = this.variation.value.horizon.value;
+        let colors: Array<string> = this.variation.value.palette.value;
+        let c: LCH[] = sort(
+            colors.map((c: string) => lch(srgb(c))),
+            proximity(lch('#ffffff'), distHsvSat),
+            this.variation.value.colorSortDirection.value
+        ) as LCH[];
+        let co: LCH[] = sort(
+            c,
+            proximity(
+                c[this.variation.value.colorSortReference.value],
+                distHsvLuma
+            ),
+            this.variation.value.colorSortDirection.value
+        ) as LCH[];
 
-        let topColor =
-            this.variation.value.topColor.value /
-            this.variation.value.topColor.variations;
-        this.topColor = getColor({
-            h: [
-                [
-                    topColor == 0.0 ? topColor : topColor - Number.EPSILON,
-                    topColor == 1.0 ? topColor : topColor + Number.EPSILON,
-                ],
-            ],
-            c: [[0.8, 1.0]],
-            l: [[0.8, 0.95]],
-        });
+        this.topColor = co[2];
         this.topColorCSS = css(this.topColor);
-        this.topColorRGB = srgb(this.topColor).buf.slice(0, 3) as number[];
+        this.topColorRGB = srgb(this.topColor)
+            .buf.slice(0, 4)
+            .map((v) => clamp01(v)) as number[];
 
-        let bottomColor =
-            this.variation.value.bottomColor.value /
-            this.variation.value.bottomColor.variations;
-        bottomColor = mod(topColor + bottomColor * 0.4 + 0.2, 1.0);
-        this.bottomColor = getColor({
-            h: [
-                [
-                    bottomColor == 0.0
-                        ? bottomColor
-                        : bottomColor - Number.EPSILON,
-                    bottomColor == 1.0
-                        ? bottomColor
-                        : bottomColor + Number.EPSILON,
-                ],
-            ],
-            c: [[0.5, 0.7]],
-            l: [[0.5, 0.7]],
-        });
+        this.bottomColor = co[1];
         this.bottomColorCSS = css(this.bottomColor);
-        this.bottomColorRGB = srgb(this.bottomColor).buf.slice(
-            0,
-            3
-        ) as number[];
+        this.bottomColorRGB = srgb(this.bottomColor)
+            .buf.slice(0, 4)
+            .map((v) => clamp01(v)) as number[];
 
-        this.horizontalFold = this.variation.value.horizontalFold.value;
-        this.verticalFold = this.variation.value.verticalFold.value;
+        this.backgroundColor = co[0];
+        this.backgroundColorCSS = css(this.backgroundColor);
+        this.backgroundColorRGB = srgb(this.backgroundColor)
+            .buf.slice(0, 4)
+            .map((v) => clamp01(v)) as number[];
 
-        this.topPhoto = this.variation.value.topPhoto.value;
-        this.bottomPhoto = this.variation.value.bottomPhoto.value;
+        this.evenColor = co[3];
+        this.evenColorCSS = css(this.evenColor);
+        this.evenColorRGB = srgb(this.evenColor)
+            .buf.slice(0, 4)
+            .map((v) => clamp01(v)) as number[];
 
-        this.minStripes = this.variation.value.minStripes.value;
-
-        this.hectic = this.variation.value.hectic.value;
-
-        this.topPhotoOffset = rand() * 2 - 1;
-        this.bottomPhotoOffset = rand() * 2 - 1;
+        this.oddColor = co[4];
+        this.oddColorCSS = css(this.oddColor);
+        this.oddColorRGB = srgb(this.oddColor)
+            .buf.slice(0, 4)
+            .map((v) => clamp01(v)) as number[];
 
         this.log();
     }
@@ -203,8 +155,6 @@ export class Features {
                     v.label,
                 ])
             ),
-            'top color': this.topColorCSS,
-            'bottom color': this.bottomColorCSS,
         } as FxhashFeatures;
     }
 
@@ -228,8 +178,11 @@ export class Features {
         Object.entries(this.getFxhashFeatures()).forEach((entry) =>
             console.info(`${entry[0]}: ${entry[1]}`)
         );
+        logColor(this.backgroundColor, 'background');
         logColor(this.topColor, 'top');
         logColor(this.bottomColor, 'bottom');
+        logColor(this.oddColor, 'odd');
+        logColor(this.evenColor, 'even');
     }
 }
 
@@ -240,23 +193,14 @@ export class Outputs {
         this.buffers = [];
     }
 
-    public add(
-        width: number,
-        height: number,
-        filter: GLenum
+    public create(
+        width?: number,
+        height?: number,
+        attachments?: Array<AttachmentOptions>
     ): twgl.FramebufferInfo {
         let buffer = twgl.createFramebufferInfo(
             this.context,
-            [
-                {
-                    attachmentPoint: WebGL2RenderingContext.COLOR_ATTACHMENT0,
-                    format: WebGL2RenderingContext.RGBA,
-                    type: WebGL2RenderingContext.UNSIGNED_BYTE,
-                    min: filter,
-                    mag: filter,
-                    wrap: WebGL2RenderingContext.CLAMP_TO_EDGE,
-                },
-            ],
+            attachments,
             width,
             height
         );
@@ -264,50 +208,364 @@ export class Outputs {
 
         return buffer;
     }
+
+    public add(
+        width: number,
+        height: number,
+        filter: GLenum
+    ): twgl.FramebufferInfo {
+        return this.create(width, height, [
+            {
+                attachmentPoint: WebGL2RenderingContext.COLOR_ATTACHMENT0,
+                format: WebGL2RenderingContext.RGBA,
+                type: WebGL2RenderingContext.UNSIGNED_BYTE,
+                min: filter,
+                mag: filter,
+                wrap: WebGL2RenderingContext.CLAMP_TO_EDGE,
+            },
+        ]);
+    }
 }
 
-export class Memories {
-    private textures!: {
+export class BlobTextures {
+    public textures: {
         [key: string]: WebGLTexture;
     };
-    public loaded: boolean = false;
-    public div!: HTMLDivElement;
 
     public constructor(
         private context: WebGL2RenderingContext,
         private piece: Piece
-    ) {}
-
-    public init() {
-        if (!this.div) {
-            this.div = document.createElement('div');
-        }
-        this.div.id = 'remembering';
-        this.div.innerText = 'Remembering...';
-        document.body.prepend(this.div);
-        this.loaded = false;
-        let options =
-            this.piece.features.variation.value.topPhoto.variations.reduce(
-                (pi: { [key: string]: { src: string } }, ci: string) => {
-                    pi[ci] = {
-                        src: `./memories/${ci}.jpg`,
-                    };
-                    return pi;
-                },
-                {}
-            );
-        this.textures = twgl.createTextures(this.context, options, () => {
-            this.loaded = true;
-            this.div.remove();
+    ) {
+        this.textures = twgl.createTextures(this.context, {
+            0: {
+                internalFormat: WebGL2RenderingContext.RGBA,
+                format: WebGL2RenderingContext.RGBA,
+                type: WebGL2RenderingContext.UNSIGNED_BYTE,
+                src: [
+                    ...this.piece.features.topColorRGB
+                        .slice(0, 3)
+                        .map((v) => Math.floor(v * 255)),
+                    0.5,
+                    ...this.piece.features.bottomColorRGB.map((v) =>
+                        Math.floor(v * 255)
+                    ),
+                ],
+            },
+            1: {
+                internalFormat: WebGL2RenderingContext.RGBA,
+                format: WebGL2RenderingContext.RGBA,
+                type: WebGL2RenderingContext.UNSIGNED_BYTE,
+                src: [
+                    ...this.piece.features.backgroundColorRGB
+                        .slice(0, 3)
+                        .map((v) => Math.floor(v * 255)),
+                    123,
+                ],
+            },
+            2: {
+                internalFormat: WebGL2RenderingContext.RGBA,
+                format: WebGL2RenderingContext.RGBA,
+                type: WebGL2RenderingContext.UNSIGNED_BYTE,
+                src: [
+                    ...this.piece.features.backgroundColorRGB
+                        .slice(0, 3)
+                        .map((v) => Math.floor(v * 255)),
+                    0.5 * 255,
+                    ...this.piece.features.topColorRGB.map((v) =>
+                        Math.floor(v * 255)
+                    ),
+                ],
+            },
+            3: {
+                internalFormat: WebGL2RenderingContext.RGBA,
+                format: WebGL2RenderingContext.RGBA,
+                type: WebGL2RenderingContext.UNSIGNED_BYTE,
+                src: this.piece.features.bottomColorRGB.map((v) =>
+                    Math.floor(v * 255)
+                ),
+            },
+            4: {
+                internalFormat: WebGL2RenderingContext.RGBA,
+                format: WebGL2RenderingContext.RGBA,
+                type: WebGL2RenderingContext.UNSIGNED_BYTE,
+                src: this.piece.features.topColorRGB.map((v) =>
+                    Math.floor(v * 255)
+                ),
+            },
+            5: {
+                internalFormat: WebGL2RenderingContext.RGBA,
+                format: WebGL2RenderingContext.RGBA,
+                type: WebGL2RenderingContext.UNSIGNED_BYTE,
+                minMag: WebGL2RenderingContext.NEAREST,
+                src: Array(32)
+                    .fill(1)
+                    .map((_v, i) =>
+                        i % 2 == 0
+                            ? [
+                                  ...this.piece.features.topColorRGB.slice(
+                                      0,
+                                      3
+                                  ),
+                                  0.5,
+                              ]
+                            : this.piece.features.backgroundColorRGB
+                    )
+                    .flat()
+                    .map((v) => Math.floor(v * 255)),
+            },
+            6: {
+                internalFormat: WebGL2RenderingContext.RGBA,
+                format: WebGL2RenderingContext.RGBA,
+                type: WebGL2RenderingContext.UNSIGNED_BYTE,
+                minMag: WebGL2RenderingContext.NEAREST,
+                src: Array(128)
+                    .fill(1)
+                    .map((_v, i) =>
+                        i % 2 == 0
+                            ? [
+                                  ...this.piece.features.oddColorRGB.slice(
+                                      0,
+                                      3
+                                  ),
+                                  0.8,
+                              ]
+                            : this.piece.features.evenColorRGB
+                    )
+                    .flat()
+                    .map((v) => Math.floor(v * 255)),
+            },
+            7: {
+                internalFormat: WebGL2RenderingContext.RGBA,
+                format: WebGL2RenderingContext.RGBA,
+                type: WebGL2RenderingContext.UNSIGNED_BYTE,
+                src: [
+                    ...this.piece.features.oddColorRGB.map((v) =>
+                        Math.floor(v * 255)
+                    ),
+                    ...this.piece.features.topColorRGB.map((v) =>
+                        Math.floor(v * 255)
+                    ),
+                ],
+            },
         });
     }
 
-    public get topPhoto(): WebGLTexture {
-        return this.textures[this.piece.features.topPhoto];
+    public delete() {
+        Object.values(this.textures).forEach((t) =>
+            this.context.deleteTexture(t)
+        );
+    }
+}
+
+export class Blob {
+    public static maxObjects: number = 64;
+    private program: twgl.ProgramInfo;
+    public output: twgl.FramebufferInfo;
+    private shapes!: Array<twgl.BufferInfo>;
+    private objects: any[] = [];
+    private objectsVars: any[] = [];
+    private radius: number = 40;
+    private eyeOffset: number;
+
+    public constructor(
+        private context: WebGL2RenderingContext,
+        private piece: Piece
+    ) {
+        // language=glsl
+        const vertexShader = `
+            #version 300 es
+            ${precisionAndDefaults}
+
+            uniform mat4 worldViewProjection;
+
+            in vec4 position;
+            in vec2 texcoord;
+
+            out vec4 v_position;
+            out vec2 v_texcoord;
+
+            void main() {
+                v_texcoord = texcoord;
+                gl_Position = worldViewProjection * position;
+            }`;
+
+        // language=glsl
+        const fragmentShader = `
+            #version 300 es
+            ${precisionAndDefaults}
+
+            in vec4 v_position;
+            in vec2 v_texcoord;
+
+            uniform sampler2D diffuse;
+
+            out vec4 color;
+
+            void main() {
+                vec4 diffuseColor = texture(diffuse, v_texcoord);
+                if (diffuseColor.a < 0.1) {
+                    discard;
+                    return;
+                }
+                color = diffuseColor;
+                color.rbg *= color.a;
+            }`;
+
+        this.program = twgl.createProgramInfo(
+            this.context,
+            [vertexShader, fragmentShader],
+            ['texcoord', 'position']
+        );
+
+        this.output = this.piece.outputs.create(
+            this.piece.baseSize,
+            this.piece.baseSize,
+            [
+                { format: WebGL2RenderingContext.RGBA },
+                {
+                    attachmentPoint: WebGL2RenderingContext.DEPTH_ATTACHMENT,
+                    attachment: twgl.createTexture(this.context, {
+                        format: WebGL2RenderingContext.DEPTH_COMPONENT,
+                        internalFormat:
+                            WebGL2RenderingContext.DEPTH_COMPONENT24,
+                        target: WebGL2RenderingContext.TEXTURE_2D,
+                        width: this.piece.baseSize,
+                        height: this.piece.baseSize,
+                        type: WebGL2RenderingContext.UNSIGNED_INT,
+                        minMag: WebGL2RenderingContext.NEAREST,
+                    }),
+                },
+            ]
+        );
+
+        this.context.useProgram(this.program.program);
+        twgl.bindFramebufferInfo(this.context, this.output);
+        this.context.clearColor(
+            this.piece.features.backgroundColorRGB[0],
+            this.piece.features.backgroundColorRGB[1],
+            this.piece.features.backgroundColorRGB[2],
+            this.piece.features.backgroundColorRGB[3]
+        );
+
+        this.shapes = [
+            twgl.primitives.createTorusBufferInfo(
+                this.context,
+                0.4,
+                0.4,
+                64,
+                64
+            ),
+            twgl.primitives.createCubeBufferInfo(this.context, 1),
+            twgl.primitives.createPlaneBufferInfo(this.context, 1.35, 1.35),
+        ];
+
+        this.objects = [];
+        this.objectsVars = [];
+
+        for (let i = 0; i < Blob.maxObjects; ++i) {
+            this.addObject(this.piece.blobTextures);
+        }
+
+        // fix offset for left/right intro movement and also stable for kiosk mode
+        this.eyeOffset = ((randInt(6) * 60) / 180) * Math.PI;
     }
 
-    public get bottomPhoto(): WebGLTexture {
-        return this.textures[this.piece.features.bottomPhoto];
+    public addObject(textures: BlobTextures) {
+        const t = randInt(8);
+        const rf = (base: number = 0.25, max: number = 1) => {
+            let r = rand() - 0.5;
+            r *= max - base * 2;
+            return r < 0 ? r - base : r + base;
+        };
+
+        const uniforms = {
+            diffuse: textures.textures[t],
+            viewInverse: m4.identity(),
+            world: m4.identity(),
+            worldInverseTranspose: m4.identity(),
+            worldViewProjection: m4.identity(),
+        };
+        const shape = randOptions(
+            this.piece.features.variation.value.shapes.value
+        );
+        this.objects.push({
+            programInfo: this.program,
+            bufferInfo: this.shapes[shape],
+            uniforms: uniforms,
+            type: WebGL2RenderingContext.TRIANGLES,
+        });
+
+        const objectVars = {
+            translation: [rf(rand() * 0.2), rf(rand() * 0.2), rf(rand() * 0.2)],
+            ySpeed: rf(rand() * 0.8, 4.0),
+            xSpeed: rf(rand() * 0.8, 4.0),
+            zSpeed: rf(rand() * 0.8, 4.0),
+            uniforms: uniforms,
+        };
+        this.objectsVars.push(objectVars);
+    }
+
+    public replaceObject(textures: BlobTextures) {
+        this.objects.shift();
+        this.objectsVars.shift();
+        this.addObject(textures);
+    }
+
+    public tick(_timeMs: number) {
+        this.context.useProgram(this.program.program);
+        this.context.depthMask(true);
+        this.context.enable(WebGL2RenderingContext.DEPTH_TEST);
+        this.context.enable(WebGL2RenderingContext.BLEND);
+        this.context.blendFunc(
+            WebGL2RenderingContext.SRC_ALPHA,
+            WebGL2RenderingContext.ONE_MINUS_SRC_ALPHA
+        );
+        const speed = this.piece.frames.total / this.piece.fps;
+        const camera = m4.identity();
+        const view = m4.identity();
+        const viewProjection = m4.identity();
+        const projection = m4.perspective((5 * Math.PI) / 180, 1.0, 0.5, 100);
+
+        m4.lookAt(
+            [
+                Math.cos(speed + this.eyeOffset) * this.radius,
+                5,
+                Math.sin(speed + this.eyeOffset) * this.radius,
+            ],
+            [0, 0, 0],
+            [1, 1, 1],
+            camera
+        );
+        m4.inverse(camera, view);
+        m4.multiply(projection, view, viewProjection);
+
+        this.objectsVars.forEach((v) => {
+            const u = v.uniforms;
+            m4.identity(u.world);
+            m4.rotateY(u.world, speed * v.ySpeed, u.world);
+            m4.rotateZ(u.world, speed * v.zSpeed, u.world);
+            m4.translate(u.world, v.translation, u.world);
+            m4.rotateX(u.world, speed * v.xSpeed, u.world);
+            m4.transpose(
+                m4.inverse(u.world, u.worldInverseTranspose),
+                u.worldInverseTranspose
+            );
+            m4.multiply(viewProjection, u.world, u.worldViewProjection);
+        });
+
+        twgl.bindFramebufferInfo(this.context, this.output);
+        this.context.clear(
+            WebGL2RenderingContext.COLOR_BUFFER_BIT |
+                WebGL2RenderingContext.DEPTH_BUFFER_BIT
+        );
+        this.context.clearColor(
+            this.piece.features.backgroundColorRGB[0],
+            this.piece.features.backgroundColorRGB[1],
+            this.piece.features.backgroundColorRGB[2],
+            this.piece.features.backgroundColorRGB[3]
+        );
+
+        twgl.drawObjectList(this.context, this.objects);
     }
 }
 
@@ -342,214 +600,44 @@ export class Pixels {
             ${precisionAndDefaults}
 
             in vec2 pos;
-
-            uniform float totalFrames;
-            uniform float combination;
-            uniform vec3 topColor;
-            uniform vec3 bottomColor;
-            uniform float horizonalAlignment;
-            uniform float horizontalFold;
-            uniform float verticalFold;
-            uniform bool announcementActive;
-            uniform sampler2D announcement;
+            
+            uniform vec3 backgroundColor;
             uniform sampler2D pixels;
-            uniform sampler2D topPhoto;
-            uniform sampler2D bottomPhoto;
-            uniform vec4[${this.piece.features.maxStripes}] stripes;
+            uniform sampler2D blob;
+            uniform sampler2D blobDepth;
             uniform float pixelSize;
-            uniform float topPhotoOffset;
-            uniform float bottomPhotoOffset;
-            uniform int maxStripes;
-            uniform int minStripes;
-            uniform int currentStripes;
-            uniform bool blackout;
-            uniform float hectic;
             uniform int debugLevel;
+            uniform bool colorChanging;
 
             out vec4 color;
 
             void main() {
-                
-                float t = combination + totalFrames * 0.00166;
-                
-                float dx = sin(pos.y * verticalFold + t) + sin(pos.x * horizontalFold + t) * 0.1 + fract(pos.x * t) * 0.1;
-                float dy = sin(pos.y * verticalFold + t) * 0.1 + sin(pos.x * horizontalFold + t) + fract(pos.y * t) * 0.1;
-                
-                float dc =  pixelSize * dx;
-                float ds =  pixelSize * dy;
-                
-                vec4 downPixel = texture(bottomPhoto, (pos * 0.5 + 0.5) * vec2(1.0, -1.0) + vec2(dc, ds) + vec2(bottomPhotoOffset, 1.0 - topPhotoOffset));
-                vec4 upPixel = texture(topPhoto, (pos * 0.5 + 0.5) * vec2(1.0, -1.0) + vec2(ds, dc) + vec2(1.0 - bottomPhotoOffset, topPhotoOffset));
+                vec4 b = texture(blob, pos * (1.0 + pixelSize) * 0.5 + 0.5);
+                vec4 p = texture(pixels, (pos * (1.0 - pixelSize) * 0.5 + 0.5));
 
-                // up / down photo avg color
-                vec2 di = vec2(
-                    (downPixel.r + downPixel.g + downPixel.b),
-                    (upPixel.r + upPixel.g + upPixel.b)
-                ) / 3.0;
+                float d = texture(blobDepth, pos * 0.5 + 0.5).x;
+                d = pow(d, 100.0);
 
-                if (debugLevel > 0) {
-                    int si = int((pos.x * 0.5 + 0.5) * float(currentStripes));
-                    int se = currentStripes + 1;
-                    color = vec4(0.0);
-                    for (int i = si; i < se; i++) {
-                        vec4 stripe = stripes[i];
-
-                        if (debugLevel > 1) {
-                            float diffX = abs(pos.x - stripe.x);
-                            float diffY = abs(pos.y - stripe.y);
-                            if (diffX > pixelSize * stripe.z + di.x || diffY > pixelSize * stripe.w + di.y) {
-                                continue;
-                            }
-                        }
-
-                        if (dy < 0.0) {
-                            if (stripe.z == 0.0) {
-                                continue;
-                            }
-                            color = vec4(mix(
-                            vec3(0.0),
-                            bottomColor,
-                            clamp(abs(pos.x - stripe.x / stripe.z), 0.0, 1.0)
-                            ), 1.0);
-                            return;
-                        } else {
-                            if (stripe.w == 0.0) {
-                                continue;
-                            }
-                            color = vec4(mix(
-                            vec3(0.0),
-                            topColor,
-                            clamp(abs(pos.y - stripe.y / stripe.w), 0.0, 1.0)
-                            ), 1.0);
-                            return;
-                        }
-                    }
+                if (debugLevel == 1) {
+                    color = vec4(d, d, d, 1.0);
                     return;
                 }
 
-                // rare moving variants depend on this ... somehow its magic
-                color = texture(pixels, (pos * 0.5 + 0.5 - vec2(dc, ds)));
-                
-                // cut horizon up/down areas
-                // todo: check values < -1 and > 1 with textures
-                if (pos.y - di.y - ds > horizonalAlignment || pos.y + di.x + dc < horizonalAlignment) {
-                    if (blackout) {
-                        color = mix(vec4(0.0, 0.0, 0.0, 1.0), color, 1.0 - 1.0 / hectic);
-                    } else {
-                        discard;
-                    }
-                    return;
+                if (p.a < 1.0) {
+                    color = vec4(backgroundColor, 1.0);
                 }
-
-                vec4 downRef = mix(
-                    downPixel,
-                    color,
-                    di.x
-                );
-
-                vec4 upRef = mix(
-                    upPixel,
-                    color,
-                    di.y
-                );
-
-                int currentx = 0;
-                int currenty = 0;
-                
-                // check all stripes
-                int si = int(floor((pos.x * 0.5 + 0.5)) * float(currentStripes));
-                int se = currentStripes + 1;
-                for (int i = si; i < se; i++) {
-                    vec4 stripe = stripes[i];
-                    
-                    // find x boarders
-                    if (stripe.x - stripe.z > dx || stripe.x + stripe.z < dx) {
-                        currentx++;
-                        if (currentx > minStripes) {
-                            if (blackout) {
-                                color = mix(vec4(0.0, 0.0, 0.0, 1.0), color, 1.0 - 0.1 / hectic);
-                            } else {
-                                discard;
-                            }
-                            return;
-                        }
-                        continue;
-                    }
-
-                    // find y boarders
-                    if (stripe.y - stripe.w > dy || stripe.y + stripe.w < dy) {
-                        currenty++;
-                        if (currenty > minStripes) {
-                            if (blackout) {
-                                color = mix(vec4(0.0, 0.0, 0.0, 1.0), color, 1.0 - 0.1 / hectic);
-                            } else {
-                                discard;
-                            }
-                            return;
-                        }
-                        continue;
-                    }
-
-                    float diffX = abs(pos.x - stripe.x);
-                    float diffY = abs(pos.y - stripe.y);
-                    if (diffX > pixelSize * stripe.z + di.x || diffY > pixelSize * stripe.w + di.y) {
-                        continue;
-                    }
-                    
-                     // stripe, fold & paint
-                     if (dy < 0.0) {
-                         if (stripe.z == 0.0) {
-                             continue;
-                         }
-                        vec4 shift = texture(topPhoto, pos * 0.5 + 0.5 + pixelSize * vec2(stripe.z, stripe.w));
-                        vec2 s = vec2(
-                        distance(shift, upRef) * stripe.z,
-                        distance(shift, downRef) * stripe.w
-                        );
-                        vec4 ref = texture(pixels, pos * 0.5 + 0.5 + pixelSize * s);
-                        color = mix(
-                            ref, 
-                            vec4(
-                                mix(
-                                    ref.rgb, 
-                                    bottomColor * 0.5 - downRef.rgb * 0.618, 
-                                    clamp(abs(pos.x - stripe.x / stripe.z), -1.0, 2.0)
-                                ), 
-                                1.0
-                            ), 
-                            clamp(-dy, 0.0, 1.0)
-                        );
-                    } else {
-                         if (stripe.w == 0.0) {
-                             continue;
-                         }
-                        vec4 shift = texture(bottomPhoto, pos * 0.5 + 0.5 - pixelSize * vec2(stripe.z, stripe.w));
-                        vec2 s = vec2(
-                        distance(shift, downRef) * stripe.w,
-                        distance(shift, upRef) * stripe.z
-                        );
-                        vec4 ref = texture(pixels, pos * 0.5 + 0.5 - pixelSize * s);
-                        color = mix(
-                            ref,
-                            vec4(
-                                mix(
-                                    ref.rgb,
-                                    topColor * 0.618 + upRef.rgb * 0.5,
-                                    clamp(abs(pos.y- stripe.y / stripe.w), -1.0, 2.0)
-                                ), 
-                                1.0
-                            ),
-                            clamp(dy, 0.0, 1.0)
-                        );
-                    }
-                    break;
+                else if (d == 1.0 && (colorChanging || distance(p.rgb, backgroundColor) < 0.05)) {
+                    color = vec4(backgroundColor, 1.0);
                 }
-                
-                if (announcementActive) {
-                    vec4 a = texture(announcement, vec2(1.05, -1.05) * (pos.xy * 0.5 + 0.5));
-                    if (a.a > 0.0) { 
-                        color = mix(color, vec4(0.0, 0.0, 0.0, 1.0), 0.618);
+                else {
+                    float dp = distance(pos, vec2(0));
+                    float dd = clamp(min(d, dp), 0.0, 1.0);
+                    if (debugLevel == 2) {
+                        color = color = vec4(dd, dd, dd, 1.0);
+                        return;
                     }
+                    color = mix(b, p, dd * 0.9);
+                    color = vec4(color.rgb, 1.0);
                 }
             }`;
 
@@ -566,13 +654,13 @@ export class Pixels {
 
         this.outputs = [
             this.piece.outputs.add(
-                this.piece.baseHeightWidth,
-                this.piece.baseHeightWidth,
+                this.piece.baseSize,
+                this.piece.baseSize,
                 WebGL2RenderingContext.NEAREST
             ),
             this.piece.outputs.add(
-                this.piece.baseHeightWidth,
-                this.piece.baseHeightWidth,
+                this.piece.baseSize,
+                this.piece.baseSize,
                 WebGL2RenderingContext.NEAREST
             ),
         ];
@@ -580,37 +668,16 @@ export class Pixels {
     }
 
     public tick(_timeMs: number) {
-        if (!this.piece.memories.loaded) {
-            return;
-        }
         this.context.useProgram(this.program.program);
         twgl.setBuffersAndAttributes(this.context, this.program, this.buffer);
         twgl.setUniforms(this.program, {
-            totalFrames: Number(this.piece.stripes.totalFrames),
-            combination: this.piece.combination * 0.00000001, // based on max glsl float size
-            announcementActive: this.piece.announcement.active,
-            announcement: this.piece.announcement
-                ? this.piece.announcement.texture
-                : 0,
-            topColor: this.piece.features.topColorRGB,
-            bottomColor: this.piece.features.bottomColorRGB,
-            horizon: this.piece.features.horizon * 2.0 - 1.0,
-            stripes: this.piece.stripes.data, // vec4
-            foldsTotal: this.piece.stripes.total,
-            pixelSize: 1.0 / this.piece.baseHeightWidth,
+            backgroundColor: this.piece.features.backgroundColorRGB.slice(0, 3),
+            pixelSize: 1.0 / this.piece.baseSize,
             pixels: this.outputs[this.outputIndex].attachments[0],
-            horizontalFold: this.piece.features.horizontalFold,
-            verticalFold: this.piece.features.verticalFold,
-            topPhoto: this.piece.memories.topPhoto,
-            topPhotoOffset: this.piece.features.topPhotoOffset,
-            bottomPhoto: this.piece.memories.bottomPhoto,
-            bottomPhotoOffset: this.piece.features.bottomPhotoOffset,
-            maxStripes: this.piece.features.maxStripes,
-            minStripes: this.piece.features.minStripes,
-            currentStripes: this.piece.features.currentStripes,
-            blackout: this.piece.features.collageMode,
-            hectic: this.piece.features.hectic,
+            blob: this.piece.blob.output.attachments[0],
+            blobDepth: this.piece.blob.output.attachments[1],
             debugLevel: this.piece.debugLevel,
+            colorChanging: this.piece.kiosk.colorChanging,
         });
         twgl.bindFramebufferInfo(
             this.context,
@@ -634,35 +701,48 @@ export class Announcement {
     ) {
         this.canvas = document.createElement('canvas');
         this.canvas.id = 'announcement-canvas';
-        this.canvas.width = this.piece.baseHeightWidth;
-        this.canvas.height = this.piece.baseHeightWidth;
+        this.canvas.width = this.piece.baseSize;
+        this.canvas.height = this.piece.baseSize;
         document.body.append(this.canvas);
     }
 
     public async init() {
-        let fontFace = new FontFace('VT323', 'url(5cce7f88a9df85a5b977.woff)');
+        let fontFace = new FontFace('Outfit', 'url(e73e1a1110a1f162e027.woff)');
         await fontFace.load();
         document.fonts.add(fontFace);
 
-        this.updateSize(this.piece.baseHeightWidth, this.piece.baseHeightWidth);
+        this.updateSize(this.piece.baseSize, this.piece.baseSize);
     }
 
     public updateSize(width: number, height: number) {
         this.canvas.width = width;
         this.canvas.height = height;
-        this.canvas.style.letterSpacing = '-3px';
+
+        this.canvas.style.letterSpacing = `${-0.0005 * this.piece.baseSize}px`;
 
         let context = this.canvas.getContext('2d') as CanvasRenderingContext2D;
 
         context.fillStyle = '#ffffff';
         context.translate(this.canvas.width / 2, this.canvas.height / 2);
-        // context.rotate((-7 / 180) * Math.PI);
-        context.textAlign = 'center';
-        context.font = '350px sans-serif';
-        context.fillText('Fischbach', 20, 100);
-        context.font = '80px sans-serif';
-        context.fillText('THU 17th November 2022, 19:00 UTC', 100, 170);
-        context.fillText('on fxhash.xyz #fxhashturnsone', -100, 240);
+        context.textAlign = 'left';
+        context.font = `${0.12 * this.piece.baseSize}px 'Outfit'`;
+        context.fillText(
+            'Alea',
+            -0.47 * this.piece.baseSize,
+            0.47 * this.piece.baseSize
+        );
+        context.textAlign = 'right';
+        context.font = `${0.03 * this.piece.baseSize}px 'Outfit'`;
+        context.fillText(
+            'THU, December 1, 2022, 19:00 UTC',
+            0.47 * this.piece.baseSize,
+            0.47 * this.piece.baseSize
+        );
+        context.fillText(
+            'on fxhash.xyz',
+            0.47 * this.piece.baseSize,
+            0.43 * this.piece.baseSize
+        );
 
         this.texture = twgl.createTexture(this.context, {
             src: this.canvas,
@@ -702,7 +782,7 @@ export class Screen {
             uniform sampler2D pixels;
             uniform sampler2D announcement;
             uniform bool announcementActive;
-            uniform vec3 topColor;
+            uniform vec3 evenColor;
             uniform bool debug;
 
             void main() {
@@ -712,9 +792,9 @@ export class Screen {
                     color = texture(pixels, pos);
                     color = vec4(color.rgb, 1.0);
                     if (announcementActive) {
-                        vec4 a = texture(announcement, pos * vec2(1.05, -1.05));
+                        vec4 a = texture(announcement, pos * vec2(1.0, -1.0));
                         if (a.a > 0.0) {
-                            color = vec4(mix(color.rgb, topColor, a.a), 1.0);
+                            color = vec4(mix(color.rgb, evenColor, a.a), 1.0);
                         }
                     }
                 }
@@ -745,7 +825,7 @@ export class Screen {
                 announcement: this.piece.announcement
                     ? this.piece.announcement.texture
                     : 0,
-                topColor: this.piece.features.topColorRGB,
+                evenColor: this.piece.features.evenColorRGB.slice(0, 3),
             });
         } else {
             twgl.setUniforms(this.program, {
@@ -754,7 +834,7 @@ export class Screen {
                 debug: true,
                 announcementActive: false,
                 announcement: 0,
-                topColor: this.piece.features.topColorRGB,
+                evenColor: this.piece.features.evenColorRGB.slice(0, 3),
             });
         }
         twgl.bindFramebufferInfo(this.context, null);
@@ -765,35 +845,32 @@ export class Screen {
 export class Piece {
     public features!: Features;
 
-    public static title: string = 'Fischbach';
-    public static defaultPixelRatio: number = window.devicePixelRatio;
-    public static defaultNextTouch: number = 200;
+    public static title: string = 'Alea';
+    public static defaultPixelRatio: number = 1;
+    public static defaultSize: number = 3000;
 
     public width: number = 0;
     public height: number = 0;
-    public baseHeightWidth: number = 1980;
     public fps: number = 60;
 
     public canvas: HTMLCanvasElement;
     public context!: WebGL2RenderingContext;
 
-    public stripes!: Stripes;
+    public frames!: Frames;
 
     public combination: number;
 
-    public inPreviewPhase!: boolean;
-    public previewPhaseEndsAfterBase: number = 300;
-    public previewPhaseEndsAfter!: number;
-
-    public nextTouchBase: number = 50;
-    public nextTouch: number = Piece.defaultNextTouch;
+    public pauseAfterBase: number = Blob.maxObjects / 2;
+    public pauseAfter: number;
+    public inPreviewPhase: boolean;
 
     public paused: boolean = false;
 
     public outputs!: Outputs;
     public outputIndex: number | null = null;
 
-    public memories!: Memories;
+    public blobTextures!: BlobTextures;
+    public blob!: Blob;
     public pixels!: Pixels;
     public screen!: Screen;
 
@@ -810,10 +887,10 @@ export class Piece {
         width: number,
         height: number,
         combination: number,
-        public autoPause: boolean = true,
         public pixelRatio: number = Piece.defaultPixelRatio,
         announcementActive: boolean = false,
-        public kioskSpeed: number | null = null
+        public kioskSpeed: number | null = null,
+        public baseSize: number = Piece.defaultSize
     ) {
         this.canvas = canvas;
         this.combination = combination;
@@ -821,11 +898,11 @@ export class Piece {
         randInit(window.fxhash);
 
         this.features = new Features(this.combination);
-        this.inPreviewPhase = true;
         this.paused = false;
+        this.pauseAfter = this.pauseAfterBase;
+        this.inPreviewPhase = true;
 
-        this.stripes = new Stripes(this);
-        this.stripes.init();
+        this.frames = new Frames(this);
 
         this.kiosk = new Kiosk(this);
         this.kiosk.setSpeed(kioskSpeed);
@@ -846,6 +923,7 @@ export class Piece {
             depth: false,
             preserveDrawingBuffer: true,
             premultipliedAlpha: true,
+            antialias: false,
         }) as WebGL2RenderingContext;
 
         if (!twgl.isWebGL2(this.context)) {
@@ -877,8 +955,8 @@ export class Piece {
 
         this.outputs = new Outputs(this.context);
 
-        this.memories = new Memories(this.context, this);
-        this.memories.init();
+        this.blobTextures = new BlobTextures(this.context, this);
+        this.blob = new Blob(this.context, this);
         this.pixels = new Pixels(this.context, this);
         this.screen = new Screen(this.context, this);
 
@@ -894,9 +972,24 @@ export class Piece {
             pixelRatio = this.pixelRatio;
         }
         this.pixelRatio = pixelRatio;
-        this.previewPhaseEndsAfter = this.previewPhaseEndsAfterBase;
-        this.width = width * this.pixelRatio;
-        this.height = height * this.pixelRatio;
+        this.width = this.baseSize * this.pixelRatio;
+        this.height = this.baseSize * this.pixelRatio;
+
+        let f = Math.min(width, height) / this.baseSize;
+        this.canvas.style.width = `${
+            (((this.width * f) / width) * 100) / this.pixelRatio
+        }%`;
+        this.canvas.style.height = `${
+            (((this.height * f) / height) * 100) / this.pixelRatio
+        }%`;
+        if (this.context.canvas instanceof HTMLCanvasElement) {
+            this.context.canvas.style.width = `${
+                (((this.width * f) / width) * 100) / this.pixelRatio
+            }%`;
+            this.context.canvas.style.height = `${
+                (((this.height * f) / height) * 100) / this.pixelRatio
+            }%`;
+        }
 
         this.canvas.dispatchEvent(new Event('piece.updateSize'));
 
@@ -904,11 +997,11 @@ export class Piece {
         this.context.canvas.height = this.height;
         this.context.viewport(0, 0, this.width, this.height);
 
-        this.initBackground();
+        this.setBackgroundColor();
     }
 
-    public initBackground() {
-        document.body.style.backgroundColor = '#000000';
+    public setBackgroundColor() {
+        document.body.style.backgroundColor = this.features.backgroundColorCSS;
     }
 
     public tick(timeMs: number) {
@@ -918,69 +1011,24 @@ export class Piece {
 
         this.tickCaptureImage();
 
-        if (!this.memories.loaded) {
-            return;
-        }
+        this.frames.tick(timeMs);
 
-        if (this.nextTouch-- < 0) {
-            this.nextTouch = 0;
-            this.touch();
-        }
-
-        this.stripes.tick(timeMs);
+        this.kiosk.tick(timeMs);
 
         if (!this.paused) {
+            this.blob.tick(timeMs);
             this.pixels.tick(timeMs);
         }
 
-        this.kiosk.tick(timeMs);
         this.screen.tick(timeMs);
 
-        if (
-            this.inPreviewPhase &&
-            this.stripes.totalFrames >= this.previewPhaseEndsAfter
-        ) {
-            this.inPreviewPhase = false;
-            this.paused = this.autoPause;
+        if (this.pauseAfter > 0) {
+            this.pauseAfter--;
+            if (this.pauseAfter == 0) {
+                this.paused = true;
+                this.inPreviewPhase = false;
+            }
         }
-    }
-
-    public touch() {
-        if (this.paused) {
-            return;
-        }
-
-        this.features.horizontalFold =
-            randOptions(
-                this.features.variation.value.horizontalFold.variations
-            ) * randOptions([-1, 1]);
-        this.features.verticalFold =
-            randOptions(this.features.variation.value.verticalFold.variations) *
-            randOptions([-1, 1]);
-        this.features.topPhotoOffset = rand() * 2 - 1;
-        this.features.bottomPhotoOffset = rand() * 2 - 1;
-        this.features.minStripes = randOptions(
-            this.features.variation.value.minStripes.variations
-        );
-        this.features.currentStripes =
-            randInt(this.features.maxStripes - this.features.minStripes - 1) +
-            1 +
-            this.features.minStripes;
-        this.features.collageMode = randInt(7) == 0;
-
-        console.debug(
-            this.features.horizon,
-            this.features.horizontalFold,
-            this.features.verticalFold,
-            this.features.topPhotoOffset,
-            this.features.bottomPhotoOffset,
-            this.features.minStripes,
-            this.features.currentStripes,
-            this.features.collageMode
-        );
-
-        this.nextTouch =
-            randInt(this.previewPhaseEndsAfterBase) + this.nextTouchBase;
     }
 
     private captureImageName: string | null = null;
@@ -997,7 +1045,7 @@ export class Piece {
         let name = this.captureImageName;
         this.captureImageName = null;
 
-        this.context.canvas.toBlob((blob) => {
+        this.canvas.toBlob((blob) => {
             if (blob === null) {
                 return;
             }
@@ -1006,6 +1054,7 @@ export class Piece {
             a.style.display = 'none';
             a.href = window.URL.createObjectURL(blob);
             a.download = name;
+            a.onclick = (ev: MouseEvent) => ev.stopPropagation();
             a.click();
         });
     }
@@ -1034,40 +1083,156 @@ export class Piece {
 
         return previewCanvas;
     }
+
+    public touch() {
+        this.pauseAfter = this.pauseAfterBase;
+        this.paused = false;
+    }
 }
 
 export class Kiosk {
-    private intervalId!: NodeJS.Timer;
+    private changeInterval!: NodeJS.Timer;
+    public colorChanging: boolean = false;
     public changing: boolean = false;
     private _speedSec: number | null = null;
+
+    private oldBackgroundColor!: LCH;
+    private newBackgroundColor!: LCH;
+
+    private oldTopColor!: LCH;
+    private newTopColor!: LCH;
+
+    private oldEvenColor!: LCH;
+    private newEvenColor!: LCH;
+
+    private oldBlobTextures!: BlobTextures;
+    private newBlobTextures!: BlobTextures;
+    private replacedBlobObjects: number = 0;
 
     public constructor(public piece: Piece) {}
 
     public setSpeed(speedSec: number | null) {
         this._speedSec = speedSec;
-        if (this.intervalId) {
-            clearInterval(this.intervalId);
+        if (this.changeInterval) {
+            clearInterval(this.changeInterval);
         }
         if (speedSec) {
-            this.intervalId = setInterval(() => {
+            this.changeInterval = setInterval(() => {
                 if (this.piece.paused) {
-                    return;
+                    this.change();
                 }
-                this.change();
             }, 1000 * speedSec);
         }
     }
 
     public tick(_timeMs: number) {
-        if (this.changing && !this.piece.paused) {
-            this.changing = false;
+        if (!this.changing) {
+            return;
+        }
+        this.onChanging();
+
+        if (this.piece.paused) {
+            this.onChangeDone();
         }
     }
 
-    public change() {
+    private onChanging() {
+        this.colorChanging = this.piece.pauseAfter > this.piece.pauseAfterBase;
+        if (this.colorChanging) {
+            this.piece.features.backgroundColor = lch(
+                mix(
+                    [],
+                    this.newBackgroundColor,
+                    this.oldBackgroundColor,
+                    (this.piece.pauseAfter - this.piece.pauseAfterBase) /
+                        this.piece.pauseAfterBase
+                )
+            );
+            this.piece.features.backgroundColorCSS = css(
+                this.piece.features.backgroundColor
+            );
+            this.piece.features.backgroundColorRGB = srgb(
+                this.piece.features.backgroundColor
+            )
+                .buf.slice(0, 4)
+                .map((v) => clamp01(v)) as number[];
+            this.piece.setBackgroundColor();
+
+            this.piece.features.topColor = lch(
+                mix(
+                    [],
+                    this.newTopColor,
+                    this.oldTopColor,
+                    (this.piece.pauseAfter - this.piece.pauseAfterBase) /
+                        this.piece.pauseAfterBase
+                )
+            );
+            this.piece.features.topColorCSS = css(this.piece.features.topColor);
+            this.piece.features.topColorRGB = srgb(this.piece.features.topColor)
+                .buf.slice(0, 4)
+                .map((v) => clamp01(v)) as number[];
+
+            this.piece.features.evenColor = lch(
+                mix(
+                    [],
+                    this.newEvenColor,
+                    this.oldEvenColor,
+                    (this.piece.pauseAfter - this.piece.pauseAfterBase) /
+                        this.piece.pauseAfterBase
+                )
+            );
+            this.piece.features.evenColorCSS = css(
+                this.piece.features.evenColor
+            );
+            this.piece.features.evenColorRGB = srgb(
+                this.piece.features.evenColor
+            )
+                .buf.slice(0, 4)
+                .map((v) => clamp01(v)) as number[];
+        }
+
+        // replace objects
+        if (this.replacedBlobObjects > 0) {
+            this.piece.blob.replaceObject(this.newBlobTextures);
+            this.replacedBlobObjects--;
+            this.piece.blob.replaceObject(this.newBlobTextures);
+            this.replacedBlobObjects--;
+        }
+    }
+
+    private onChangeDone() {
+        this.changing = false;
+        this.piece.blobTextures = this.newBlobTextures;
+        this.oldBlobTextures.delete();
+    }
+
+    public change(onlyObjects: boolean = false) {
+        randSkip(7);
+        this.replacedBlobObjects = Blob.maxObjects;
         this.changing = true;
-        this.piece.features = new Features(randInt(Features.combinations));
-        this.piece.nextTouch = Piece.defaultNextTouch;
+        this.colorChanging = true;
+        this.oldBackgroundColor = this.piece.features.backgroundColor;
+        this.oldTopColor = this.piece.features.topColor;
+        this.oldEvenColor = this.piece.features.evenColor;
+        this.piece.paused = false;
+        this.piece.pauseAfter = this.piece.pauseAfterBase * 2; // replace objects then spin for motion blur
+
+        if (onlyObjects) {
+            this.newBackgroundColor = this.oldBackgroundColor;
+            this.newTopColor = this.oldTopColor;
+            this.newEvenColor = this.oldEvenColor;
+        } else {
+            this.piece.features = new Features(randInt(Features.combinations));
+
+            this.newBackgroundColor = this.piece.features.backgroundColor;
+            this.newTopColor = this.piece.features.topColor;
+            this.newEvenColor = this.piece.features.evenColor;
+        }
+
+        this.newBlobTextures = new BlobTextures(this.piece.context, this.piece);
+        this.oldBlobTextures = this.piece.blobTextures;
+
+        this.piece.setBackgroundColor();
     }
 
     public get active(): boolean {
@@ -1079,124 +1244,15 @@ export class Kiosk {
     }
 }
 
-export class Stripes {
-    public totalFrames: bigint = BigInt(0);
-    public items: Array<Stripe> = [];
-    public count: number = 0;
-    public total: bigint = BigInt(0);
-    private piece: Piece;
-    public data!: Float32Array;
+export class Frames {
+    public total: number = 0;
 
-    public constructor(piece: Piece) {
-        this.piece = piece;
-        this.init();
-    }
+    public constructor(private piece: Piece) {}
 
     public tick(_timeMs: number) {
         if (this.piece.paused) {
             return;
         }
-        this.totalFrames++;
-
-        this.count = this.items.reduce(
-            (c, item) => (item.tick() ? c + 1 : c),
-            0
-        );
-
-        this.total += BigInt(this.piece.features.maxStripes - this.count);
-    }
-
-    private add(): void {
-        this.items.push(new Stripe(this.items.length, this.data, this.piece));
         this.total++;
-    }
-
-    public init(): void {
-        this.items = [];
-        this.count = 0;
-        this.total = BigInt(0);
-        this.data = new Float32Array(
-            this.piece.features.maxStripes * Stripe.dataPoints
-        );
-
-        do {
-            this.add();
-        } while (this.items.length < this.piece.features.maxStripes);
-    }
-}
-
-export class Stripe {
-    public static dataPoints: number = 4;
-    private static distance: number = 10;
-    private dataIndex: number;
-    public x: number = 0.0;
-    public y: number = 0.0;
-    public distanceX: number = 0.0;
-    public distanceY: number = 0.0;
-    public active: boolean = false;
-    public update: boolean = false;
-
-    public constructor(
-        public index: number,
-        public data: Float32Array,
-        public readonly piece: Piece
-    ) {
-        this.piece = piece;
-        this.dataIndex = index * Stripe.dataPoints;
-    }
-
-    public activate() {
-        this.x = rand();
-        this.y = this.piece.features.horizon;
-        this.distanceX = rand() * Stripe.distance;
-        this.distanceY = rand() * Stripe.distance;
-        this.active = true;
-        this.update = randBoolean();
-
-        this.updateData();
-    }
-
-    private updateData() {
-        this.data[this.dataIndex] = this.x * 2.0 - 1.0;
-        this.data[this.dataIndex + 1] = 2.0 - this.y * 2.0 - 1.0;
-        this.data[this.dataIndex + 2] = this.distanceY;
-        this.data[this.dataIndex + 3] = this.distanceX;
-    }
-
-    public deactivate() {
-        this.data[this.dataIndex] = 0.0;
-        this.data[this.dataIndex + 1] = 0.0;
-        this.data[this.dataIndex + 2] = 0.0;
-        this.data[this.dataIndex + 3] = 0.0;
-
-        this.active = false;
-    }
-
-    public tick(): boolean {
-        if (!this.active) {
-            this.activate();
-        }
-
-        if (!this.update) {
-            this.update = randBoolean();
-            return true;
-        }
-
-        this.x += (rand() * 0.01 - 0.005) * this.piece.features.hectic;
-        this.y += (rand() * 0.01 - 0.005) * this.piece.features.hectic;
-
-        this.x = clamp(this.x, 0, 1);
-        this.y = clamp(this.y, 0, 1);
-
-        this.update = randBoolean();
-
-        this.distanceY += (rand() * 0.01 - 0.005) * this.piece.features.hectic;
-        this.distanceX += (rand() * 0.01 - 0.005) * this.piece.features.hectic;
-
-        this.distanceY = clamp(this.distanceY, 0, Stripe.distance);
-        this.distanceX = clamp(this.distanceX, 0, Stripe.distance);
-
-        this.updateData();
-        return true;
     }
 }

@@ -6,7 +6,7 @@ html, body {
 }
 
 body {
-    background-color: #000000;
+    background-color: #c5c0b6;
 }
 
 #container {
@@ -30,7 +30,6 @@ body {
     bottom: 0;
     margin: auto;
     display: block;
-    image-rendering: pixelated;
 }
 
 #main-canvas {
