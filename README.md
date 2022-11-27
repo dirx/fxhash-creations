@@ -39,7 +39,7 @@ The preview images are taken after 32 frames.
 
 Shortcuts & interactions:
 
-- spacebar to trigger a spinning animation (or single click / tap)
+- spacebar to trigger a rotation animation (or single click / tap)
 - `o` to trigger random object change animation followed by a rotation animation (or double click / tap)
 - `r` to trigger a random feature change followed by a random object change and rotation animation (or triple click / tap)
 - `k` to toggle this kiosk mode (off, 3, 5 or 10 secs)
