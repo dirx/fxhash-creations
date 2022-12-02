@@ -1,4 +1,4 @@
-import { Features, Piece } from './piece';
+import { Features, KioskMode, Piece } from './piece';
 import { createLoop, Loop } from './loop';
 
 export class Container {
@@ -37,6 +37,7 @@ export class Container {
             this.getPixelRatio(),
             this.getShowAnnouncement(),
             this.getKioskSpeed(),
+            this.getKioskMode(),
             this.getSize()
         );
 
@@ -61,6 +62,24 @@ export class Container {
         let search = new URLSearchParams(window.location.search);
         let value: string | null = search.get('kioskspeed');
         return value === null ? null : Math.abs(parseFloat(value));
+    }
+
+    private getKioskMode(): KioskMode | null {
+        let search = new URLSearchParams(window.location.search);
+        let value: string | null = search.get('kioskmode');
+        switch (value) {
+            case 'a':
+            case 'animate':
+                return KioskMode.ANIMATE;
+            case 'o':
+            case 'objects':
+                return KioskMode.OBJECTS;
+            case 'f':
+            case 'features':
+                return KioskMode.FEATURES;
+            default:
+                return null;
+        }
     }
 
     private getShowInfo(): boolean {
@@ -191,6 +210,9 @@ export class Container {
                 kioskspeed: `${
                     piece.kiosk.active ? `${piece.kiosk.speedSec}s` : 'off'
                 }`,
+                kioskmode: `${
+                    piece.kiosk.active ? `${piece.kiosk.mode}` : 'off'
+                }`,
                 pausing: `${piece.paused ? 'on' : 'off'}`,
             });
         }, 250);
@@ -226,18 +248,18 @@ export class Intercom {
             if (clicks === 1) {
                 timeout = setTimeout(() => {
                     clicks = 0;
-                    this.piece.touch();
+                    this.piece.kiosk.change(KioskMode.ANIMATE);
                     this.showDisplay('touched');
                 }, this.clickTimoutMs);
             } else if (clicks === 2) {
                 timeout = setTimeout(() => {
                     clicks = 0;
-                    this.piece.kiosk.change(true);
+                    this.piece.kiosk.change(KioskMode.OBJECTS);
                     this.showDisplay('randomize objects');
                 }, this.clickTimoutMs);
             } else if (clicks === 3) {
                 clicks = 0;
-                this.piece.kiosk.change();
+                this.piece.kiosk.change(KioskMode.FEATURES);
                 this.showDisplay('randomize features');
             }
         });
@@ -263,18 +285,18 @@ export class Intercom {
                 if (touches === 1) {
                     touchTimeout = setTimeout(() => {
                         touches = 0;
-                        this.piece.touch();
+                        this.piece.kiosk.change(KioskMode.ANIMATE);
                         this.showDisplay('touched');
                     }, this.touchTimoutMs);
                 } else if (touches === 2) {
                     touchTimeout = setTimeout(() => {
                         touches = 0;
-                        this.piece.kiosk.change(true);
+                        this.piece.kiosk.change(KioskMode.OBJECTS);
                         this.showDisplay('randomize objects');
                     }, this.touchTimoutMs);
                 } else if (touches === 3) {
                     touches = 0;
-                    this.piece.kiosk.change();
+                    this.piece.kiosk.change(KioskMode.FEATURES);
                     this.showDisplay('randomize feature');
                 }
             }
@@ -413,12 +435,12 @@ export class Intercom {
                     break;
 
                 case 'r':
-                    this.piece.kiosk.change();
+                    this.piece.kiosk.change(KioskMode.FEATURES);
                     this.showDisplay('randomize features');
                     break;
 
                 case 'o':
-                    this.piece.kiosk.change(true);
+                    this.piece.kiosk.change(KioskMode.OBJECTS);
                     this.showDisplay('randomize objects');
                     break;
 
@@ -427,7 +449,10 @@ export class Intercom {
                     let next = speedSecs.indexOf(this.piece.kiosk.speedSec);
                     next =
                         next < 0 || next + 1 >= speedSecs.length ? 0 : next + 1;
-                    this.piece.kiosk.setSpeed(speedSecs[next]);
+                    this.piece.kiosk.setSpeedAndMode(
+                        speedSecs[next],
+                        this.piece.kiosk.mode
+                    );
                     this.showDisplay(
                         'kiosk ' +
                             (this.piece.kiosk.speedSec
@@ -436,8 +461,31 @@ export class Intercom {
                     );
                     break;
 
+                case 'm':
+                    let modes = [
+                        KioskMode.ANIMATE,
+                        KioskMode.OBJECTS,
+                        KioskMode.FEATURES,
+                    ];
+                    let nextMode = modes.indexOf(this.piece.kiosk.mode);
+                    nextMode =
+                        nextMode < 0 || nextMode + 1 >= modes.length
+                            ? 0
+                            : nextMode + 1;
+                    this.piece.kiosk.setSpeedAndMode(
+                        this.piece.kiosk.speedSec,
+                        modes[nextMode]
+                    );
+                    this.showDisplay(
+                        'kiosk ' +
+                            (this.piece.kiosk.speedSec
+                                ? `${this.piece.kiosk.mode}`
+                                : 'off')
+                    );
+                    break;
+
                 case ' ':
-                    this.piece.touch();
+                    this.piece.kiosk.change(KioskMode.ANIMATE);
                     this.showDisplay('touched');
                     break;
             }

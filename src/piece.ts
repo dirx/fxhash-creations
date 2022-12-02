@@ -1,5 +1,5 @@
 import { rand, randInit, randInt, randOptions, randSkip } from './rand';
-import { colors2 } from './colors';
+import { colors } from './colors';
 import * as twgl from 'twgl.js';
 import { AttachmentOptions, m4 } from 'twgl.js';
 import {
@@ -14,7 +14,7 @@ import {
     srgb,
     TypedColor,
 } from '@thi.ng/color';
-import { precisionAndDefaults } from './glsl';
+import { pnoise, precisionAndDefaults } from './glsl';
 import {
     combinationFn,
     featureNumber,
@@ -55,21 +55,17 @@ export class Features {
         featureNumber('colorSortReference', 3),
         featureSet<Array<string>>(
             'palette',
-            Object.values(colors2),
-            Object.keys(colors2)
+            Object.values(colors),
+            Object.keys(colors)
         ),
         featureSet<Array<number>>(
             'shapes',
-            [[0], [1], [2], [0, 1], [0, 2], [1, 2], [0, 1, 2]],
             [
-                'toruses',
-                'cubes',
-                'planes',
-                'toruses & cubes',
-                'toruses & planes',
-                'cubes & planes',
-                'toruses, cubes & planes',
-            ]
+                [0, 0, 0, 1, 2],
+                [0, 1, 1, 1, 2],
+                [0, 1, 2, 2, 2],
+            ],
+            ['more s', 'more m', 'more l']
         ),
     ]);
 
@@ -242,10 +238,13 @@ export class BlobTextures {
                 format: WebGL2RenderingContext.RGBA,
                 type: WebGL2RenderingContext.UNSIGNED_BYTE,
                 src: [
+                    ...this.piece.features.bottomColorRGB.map((v) =>
+                        Math.floor(v * 255)
+                    ),
                     ...this.piece.features.topColorRGB
                         .slice(0, 3)
                         .map((v) => Math.floor(v * 255)),
-                    0.5,
+                    (rand() * 0.2 + 0.5) * 255,
                     ...this.piece.features.bottomColorRGB.map((v) =>
                         Math.floor(v * 255)
                     ),
@@ -274,6 +273,10 @@ export class BlobTextures {
                     ...this.piece.features.topColorRGB.map((v) =>
                         Math.floor(v * 255)
                     ),
+                    ...this.piece.features.backgroundColorRGB
+                        .slice(0, 3)
+                        .map((v) => Math.floor(v * 255)),
+                    0.5 * 255,
                 ],
             },
             3: {
@@ -297,18 +300,24 @@ export class BlobTextures {
                 format: WebGL2RenderingContext.RGBA,
                 type: WebGL2RenderingContext.UNSIGNED_BYTE,
                 minMag: WebGL2RenderingContext.NEAREST,
-                src: Array(32)
+                src: Array(500)
                     .fill(1)
                     .map((_v, i) =>
-                        i % 2 == 0
+                        i % 3 != 0
                             ? [
                                   ...this.piece.features.topColorRGB.slice(
                                       0,
                                       3
                                   ),
-                                  0.5,
+                                  rand() * 0.6 + 0.2,
                               ]
-                            : this.piece.features.backgroundColorRGB
+                            : [
+                                  ...this.piece.features.bottomColorRGB.slice(
+                                      0,
+                                      3
+                                  ),
+                                  0.9,
+                              ]
                     )
                     .flat()
                     .map((v) => Math.floor(v * 255)),
@@ -318,18 +327,24 @@ export class BlobTextures {
                 format: WebGL2RenderingContext.RGBA,
                 type: WebGL2RenderingContext.UNSIGNED_BYTE,
                 minMag: WebGL2RenderingContext.NEAREST,
-                src: Array(128)
+                src: Array(1000)
                     .fill(1)
                     .map((_v, i) =>
-                        i % 2 == 0
+                        i % 2 != 0
                             ? [
                                   ...this.piece.features.oddColorRGB.slice(
                                       0,
                                       3
                                   ),
-                                  0.8,
+                                  rand() * 0.6 + 0.2,
                               ]
-                            : this.piece.features.evenColorRGB
+                            : [
+                                  ...this.piece.features.evenColorRGB.slice(
+                                      0,
+                                      3
+                                  ),
+                                  0.9,
+                              ]
                     )
                     .flat()
                     .map((v) => Math.floor(v * 255)),
@@ -339,13 +354,45 @@ export class BlobTextures {
                 format: WebGL2RenderingContext.RGBA,
                 type: WebGL2RenderingContext.UNSIGNED_BYTE,
                 src: [
-                    ...this.piece.features.oddColorRGB.map((v) =>
-                        Math.floor(v * 255)
-                    ),
+                    ...this.piece.features.oddColorRGB
+                        .slice(0, 3)
+                        .map((v) => Math.floor(v * 255)),
+                    (rand() * 0.6 + 0.2) * 255,
                     ...this.piece.features.topColorRGB.map((v) =>
                         Math.floor(v * 255)
                     ),
+                    ...this.piece.features.oddColorRGB
+                        .slice(0, 3)
+                        .map((v) => Math.floor(v * 255)),
+                    (rand() * 0.6 + 0.2) * 255,
                 ],
+            },
+            8: {
+                internalFormat: WebGL2RenderingContext.RGBA,
+                format: WebGL2RenderingContext.RGBA,
+                type: WebGL2RenderingContext.UNSIGNED_BYTE,
+                minMag: WebGL2RenderingContext.NEAREST,
+                src: Array(1000)
+                    .fill(1)
+                    .map((_v, i) =>
+                        i % 7 != 0
+                            ? [
+                                  ...this.piece.features.topColorRGB.slice(
+                                      0,
+                                      3
+                                  ),
+                                  rand() * 0.6 + 0.2,
+                              ]
+                            : [
+                                  ...this.piece.features.bottomColorRGB.slice(
+                                      0,
+                                      3
+                                  ),
+                                  0.95,
+                              ]
+                    )
+                    .flat()
+                    .map((v) => Math.floor(v * 255)),
             },
         });
     }
@@ -354,6 +401,10 @@ export class BlobTextures {
         Object.values(this.textures).forEach((t) =>
             this.context.deleteTexture(t)
         );
+    }
+
+    public get length(): number {
+        return Object.keys(this.textures).length;
     }
 }
 
@@ -375,8 +426,10 @@ export class Blob {
         const vertexShader = `
             #version 300 es
             ${precisionAndDefaults}
+            ${pnoise}
 
             uniform mat4 worldViewProjection;
+            uniform float frames;
 
             in vec4 position;
             in vec2 texcoord;
@@ -385,8 +438,14 @@ export class Blob {
             out vec2 v_texcoord;
 
             void main() {
-                v_texcoord = texcoord;
-                gl_Position = worldViewProjection * position;
+                float distortion = pnoise(
+                position.xyz + frames * 0.0016,
+                vec3(20.0)
+                );
+
+                v_texcoord = texcoord + distortion * 0.11;
+                v_position = worldViewProjection * position + distortion * 1.0;
+                gl_Position = v_position;
             }`;
 
         // language=glsl
@@ -398,6 +457,7 @@ export class Blob {
             in vec2 v_texcoord;
 
             uniform sampler2D diffuse;
+            uniform float frames;
 
             out vec4 color;
 
@@ -448,6 +508,9 @@ export class Blob {
         );
 
         this.shapes = [
+            twgl.primitives.createSphereBufferInfo(this.context, 0.8, 150, 50),
+            twgl.primitives.createSphereBufferInfo(this.context, 0.6, 100, 50),
+            twgl.primitives.createSphereBufferInfo(this.context, 0.4, 50, 50),
             twgl.primitives.createTorusBufferInfo(
                 this.context,
                 0.4,
@@ -471,7 +534,8 @@ export class Blob {
     }
 
     public addObject(textures: BlobTextures) {
-        const t = randInt(8);
+        const t = randInt(textures.length);
+        // const t = randOptions([5, 6]);
         const rf = (base: number = 0.25, max: number = 1) => {
             let r = rand() - 0.5;
             r *= max - base * 2;
@@ -484,6 +548,7 @@ export class Blob {
             world: m4.identity(),
             worldInverseTranspose: m4.identity(),
             worldViewProjection: m4.identity(),
+            frames: 0,
         };
         const shape = randOptions(
             this.piece.features.variation.value.shapes.value
@@ -496,7 +561,11 @@ export class Blob {
         });
 
         const objectVars = {
-            translation: [rf(rand() * 0.2), rf(rand() * 0.2), rf(rand() * 0.2)],
+            translation: [
+                rf(rand() * 0.2 * (shape * 0.5 + 1)),
+                rf(rand() * 0.2 * (shape * 0.5 + 1)),
+                rf(rand() * 0.2 * (shape * 0.5 + 1)),
+            ],
             ySpeed: rf(rand() * 0.8, 4.0),
             xSpeed: rf(rand() * 0.8, 4.0),
             zSpeed: rf(rand() * 0.8, 4.0),
@@ -551,6 +620,7 @@ export class Blob {
                 u.worldInverseTranspose
             );
             m4.multiply(viewProjection, u.world, u.worldViewProjection);
+            u.frames = this.piece.frames.total; // + this.piece.combination;
         });
 
         twgl.bindFramebufferInfo(this.context, this.output);
@@ -600,7 +670,7 @@ export class Pixels {
             ${precisionAndDefaults}
 
             in vec2 pos;
-            
+
             uniform vec3 backgroundColor;
             uniform sampler2D pixels;
             uniform sampler2D blob;
@@ -727,14 +797,14 @@ export class Announcement {
         context.textAlign = 'left';
         context.font = `${0.12 * this.piece.baseSize}px 'Outfit'`;
         context.fillText(
-            'Alea',
+            'Iacta',
             -0.47 * this.piece.baseSize,
             0.47 * this.piece.baseSize
         );
         context.textAlign = 'right';
         context.font = `${0.03 * this.piece.baseSize}px 'Outfit'`;
         context.fillText(
-            'THU, December 1, 2022, 19:00 UTC',
+            'FRI, December 9, 2022, 19:00 UTC',
             0.47 * this.piece.baseSize,
             0.47 * this.piece.baseSize
         );
@@ -889,7 +959,8 @@ export class Piece {
         combination: number,
         public pixelRatio: number = Piece.defaultPixelRatio,
         announcementActive: boolean = false,
-        public kioskSpeed: number | null = null,
+        kioskSpeed: number | null = null,
+        kioskMode: KioskMode | null = null,
         public baseSize: number = Piece.defaultSize
     ) {
         this.canvas = canvas;
@@ -905,7 +976,7 @@ export class Piece {
         this.frames = new Frames(this);
 
         this.kiosk = new Kiosk(this);
-        this.kiosk.setSpeed(kioskSpeed);
+        this.kiosk.setSpeedAndMode(kioskSpeed, kioskMode ?? KioskMode.FEATURES);
 
         this.init(announcementActive);
 
@@ -1090,11 +1161,18 @@ export class Piece {
     }
 }
 
+export enum KioskMode {
+    ANIMATE = 'animate',
+    OBJECTS = 'objects',
+    FEATURES = 'features',
+}
+
 export class Kiosk {
     private changeInterval!: NodeJS.Timer;
     public colorChanging: boolean = false;
     public changing: boolean = false;
     private _speedSec: number | null = null;
+    private _mode: KioskMode = KioskMode.FEATURES;
 
     private oldBackgroundColor!: LCH;
     private newBackgroundColor!: LCH;
@@ -1111,15 +1189,16 @@ export class Kiosk {
 
     public constructor(public piece: Piece) {}
 
-    public setSpeed(speedSec: number | null) {
+    public setSpeedAndMode(speedSec: number | null, mode: KioskMode) {
         this._speedSec = speedSec;
+        this._mode = mode;
         if (this.changeInterval) {
             clearInterval(this.changeInterval);
         }
         if (speedSec) {
             this.changeInterval = setInterval(() => {
                 if (this.piece.paused) {
-                    this.change();
+                    this.change(mode);
                 }
             }, 1000 * speedSec);
         }
@@ -1206,33 +1285,41 @@ export class Kiosk {
         this.oldBlobTextures.delete();
     }
 
-    public change(onlyObjects: boolean = false) {
-        randSkip(7);
-        this.replacedBlobObjects = Blob.maxObjects;
-        this.changing = true;
-        this.colorChanging = true;
-        this.oldBackgroundColor = this.piece.features.backgroundColor;
-        this.oldTopColor = this.piece.features.topColor;
-        this.oldEvenColor = this.piece.features.evenColor;
-        this.piece.paused = false;
-        this.piece.pauseAfter = this.piece.pauseAfterBase * 2; // replace objects then spin for motion blur
+    public change(mode: KioskMode) {
+        if (mode !== KioskMode.ANIMATE) {
+            randSkip(7);
+            this.replacedBlobObjects = Blob.maxObjects;
+            this.changing = true;
+            this.colorChanging = true;
+            this.oldBackgroundColor = this.piece.features.backgroundColor;
+            this.oldTopColor = this.piece.features.topColor;
+            this.oldEvenColor = this.piece.features.evenColor;
 
-        if (onlyObjects) {
-            this.newBackgroundColor = this.oldBackgroundColor;
-            this.newTopColor = this.oldTopColor;
-            this.newEvenColor = this.oldEvenColor;
-        } else {
-            this.piece.features = new Features(randInt(Features.combinations));
+            if (mode === KioskMode.OBJECTS) {
+                this.newBackgroundColor = this.oldBackgroundColor;
+                this.newTopColor = this.oldTopColor;
+                this.newEvenColor = this.oldEvenColor;
+            } else {
+                this.piece.features = new Features(
+                    randInt(Features.combinations)
+                );
 
-            this.newBackgroundColor = this.piece.features.backgroundColor;
-            this.newTopColor = this.piece.features.topColor;
-            this.newEvenColor = this.piece.features.evenColor;
+                this.newBackgroundColor = this.piece.features.backgroundColor;
+                this.newTopColor = this.piece.features.topColor;
+                this.newEvenColor = this.piece.features.evenColor;
+            }
+
+            this.newBlobTextures = new BlobTextures(
+                this.piece.context,
+                this.piece
+            );
+            this.oldBlobTextures = this.piece.blobTextures;
+
+            this.piece.setBackgroundColor();
         }
 
-        this.newBlobTextures = new BlobTextures(this.piece.context, this.piece);
-        this.oldBlobTextures = this.piece.blobTextures;
-
-        this.piece.setBackgroundColor();
+        this.piece.paused = false;
+        this.piece.pauseAfter = this.piece.pauseAfterBase * 2; // replace objects then spin for motion blur
     }
 
     public get active(): boolean {
@@ -1241,6 +1328,10 @@ export class Kiosk {
 
     public get speedSec(): number | null {
         return this._speedSec;
+    }
+
+    public get mode(): KioskMode {
+        return this._mode;
     }
 }
 

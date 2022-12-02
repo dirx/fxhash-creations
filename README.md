@@ -2,33 +2,34 @@
 
 __#generativeart__ __#nft__ __#fxhash__ __#tezos__ __#creativecoding__
 
-## Alea
+## Iacta
 
 Real-time deterministic animation based webgl2, fixed size, 2022
 
-Grab it @ https://www.fxhash.xyz/generative/slug/alea
+Grab it @ https://www.fxhash.xyz/generative/slug/iacta
 
 ### About
 
 <img src="./public/preview.jpg" align="right" width="50%" style="margin: 0 20px 20px 20px" />
 
-Roll the dice with shapes and capture the moment! 
-Alea, by the way, is Latin and means dice / gambling.
+Roll the dice with shapes and capture the moment!
+Iacta follows Alea. Iacta, by the way, is Latin and means throw / roll.
 
 How does it work?
 
-Each Alea consists of 64 objects randomly arranged around a center and randomly differing in shape, texture, and movement. A curated 5
+Each Iacta consists of 64 objects randomly arranged around a center and randomly differing in shape size, texture, and movement. A curated 5
 colors palette is picked and used for the textures. The colors are first sorted by saturation to select a reference color. With this, the
 colors are then sorted again by luminance.
 
 The animation itself is 32 frames long and stops abruptly. It consists of 3 layers. The first layer moves the objects around the center
-and draws the animated objects. The second uses the first layer and a double buffer to capture the motion blur based on a depth mask. The
-third is mainly for screen rendering, debugging and behind-the-scene looks.
+and draws the animated objects displacing vertex positions and textures coordinates withy perlin noise. The second uses the first layer and
+a double buffer to capture the motion blur based on a depth mask. The third is mainly for screen rendering, debugging and behind-the-scene
+looks.
 
 Features:
 
-- shapes [7] (toruses, cubes, planes, toruses & cubes, toruses & planes, cubes & planes, toruses, cubes & planes)
-- palette [58] (based on German Max Magazine covers 1991 - 1995)
+- shapes [3] (more s, more m, more l)
+- palette [30] (based on Ray Gun Magazine covers by David Carson, first 30 issues 1992 - 1995)
 - color sort direction [2] (up, down) - sort by saturation
 - color sort reference [3] (0, 1, 2) - used for sorting by luminance / background color
 

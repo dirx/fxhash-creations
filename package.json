@@ -1,8 +1,8 @@
 {
-  "name": "dirx-alea",
+  "name": "dirx-iacta",
   "version": "1.0.0",
-  "description": "Alea. Real-time deterministic webgl2 animation, fixed size, 2022.",
-  "homepage": "https://github.com/dirx/fxhash-creations#alea",
+  "description": "Iacta. Real-time deterministic webgl2 animation, fixed size, 2022.",
+  "homepage": "https://github.com/dirx/fxhash-creations#iacta",
   "main": "index.js",
   "author": {
     "name": "Dirk Adler",
@@ -27,6 +27,8 @@
     "adm-zip": "^0.5.9",
     "copy-webpack-plugin": "^11.0.0",
     "css-loader": "^6.4.0",
+    "graphql": "^16.6.0",
+    "graphql-request": "^5.0.0",
     "html-webpack-plugin": "^5.4.0",
     "license-webpack-plugin": "^4.0.2",
     "prettier": "^2.5.1",

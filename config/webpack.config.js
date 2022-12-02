@@ -234,7 +234,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
             },
         }),
         new webpack.BannerPlugin({
-            banner: `Alea
+            banner: `Iacta
 
 Real-time deterministic webgl2 animation, fixed size, 2022
 Be inspired. If you need help please press 'h'.
