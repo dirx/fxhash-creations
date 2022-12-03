@@ -192,3 +192,116 @@ export const pnoise: string = `
         return 2.2 * n_xyz;
     }
 `;
+
+// language=glsl
+export const luma: string = `
+    // https://github.com/hughsk/glsl-luma todo license or use glslify during build process
+    float luma(vec3 color) {
+        return dot(color, vec3(0.299, 0.587, 0.114));
+    }
+
+    float luma(vec4 color) {
+        return dot(color.rgb, vec3(0.299, 0.587, 0.114));
+    }
+`;
+
+// language=glsl
+export const fbm: string = `
+    // https://github.com/yiwenl/glsl-fbm todo license or use glslify during build process
+    #define NUM_OCTAVES 5
+
+    float mod289(float x){ return x - floor(x * (1.0 / 289.0)) * 289.0; }
+    vec4 mod289(vec4 x){ return x - floor(x * (1.0 / 289.0)) * 289.0; }
+    vec4 perm(vec4 x){ return mod289(((x * 34.0) + 1.0) * x); }
+
+    float noise(vec3 p){
+        vec3 a = floor(p);
+        vec3 d = p - a;
+        d = d * d * (3.0 - 2.0 * d);
+
+        vec4 b = a.xxyy + vec4(0.0, 1.0, 0.0, 1.0);
+        vec4 k1 = perm(b.xyxy);
+        vec4 k2 = perm(k1.xyxy + b.zzww);
+
+        vec4 c = k2 + a.zzzz;
+        vec4 k3 = perm(c);
+        vec4 k4 = perm(c + 1.0);
+
+        vec4 o1 = fract(k3 * (1.0 / 41.0));
+        vec4 o2 = fract(k4 * (1.0 / 41.0));
+
+        vec4 o3 = o2 * d.z + o1 * (1.0 - d.z);
+        vec2 o4 = o3.yw * d.x + o3.xz * (1.0 - d.x);
+
+        return o4.y * d.y + o4.x * (1.0 - d.y);
+    }
+
+
+    float fbm(vec3 x) {
+        float v = 0.0;
+        float a = 0.5;
+        vec3 shift = vec3(100);
+        for (int i = 0; i < NUM_OCTAVES; ++i) {
+            v += a * noise(x);
+            x = x * 2.0 + shift;
+            a *= 0.5;
+        }
+        return v;
+    }
+`;
+
+// language=glsl
+export const bayerDither: string = `
+    const int bayerMatrix4[4] = int[4](0, 2, 3, 1);
+        const int bayerMatrix16[16] = int[16](
+        0, 8, 2, 10,
+        12, 4, 14, 6,
+        3, 11, 1, 9,
+        15, 7, 13, 5
+        );
+    
+    const int bayerMatrix36[36] = int[36](
+    16, 25, 12, 23, 1, 32,
+    19, 0, 18, 15, 21, 2,
+    17, 33, 7, 20, 5, 36,
+    27, 3, 24, 8, 22, 10,
+    9, 29, 11, 35, 13, 28,
+    31, 4, 34, 6, 26, 14
+    );
+
+    const int bayerMatrix64[64] = int[64](
+    0, 32, 8, 40, 2, 34, 10, 42,
+    48, 16, 56, 24, 50, 18, 58, 26,
+    12, 44, 4, 36, 14, 46, 6, 38,
+    60, 28, 52, 20, 62, 30, 54, 22,
+    3, 35, 11, 43, 1, 33, 9, 41,
+    51, 19, 59, 27, 49, 17, 57, 25,
+    15, 47, 7, 39, 13, 45, 5, 37,
+    63, 31, 55, 23, 61, 29, 53, 21
+    );
+
+    float bayerDither2x2(float grayscale, ivec2 pixelCoord)
+    {
+        int index = (pixelCoord.x % 2) + (pixelCoord.y % 2) * 2;
+        return grayscale > (float(bayerMatrix4[index]) + 0.5) / 4.0 ? 1.0 : 0.0;
+    }
+
+    float bayerDither4x4(float grayscale, ivec2 pixelCoord)
+    {
+        int index = (pixelCoord.x % 4) + (pixelCoord.y % 4) * 4;
+        return grayscale > (float(bayerMatrix16[index]) + 0.5) / 16.0 ? 1.0 : 0.0;
+    }
+
+    // based on random 6x6 matrix - just for alea iacta est
+    float bayerDither6x6(float grayscale, ivec2 pixelCoord)
+    {
+        int index = (pixelCoord.x % 6) + (pixelCoord.y % 6) * 6;
+        return grayscale > (float(bayerMatrix36[index]) + 0.5) / 36.0 ? 1.0 : 0.0;
+    }
+
+    float bayerDither8x8(float grayscale, ivec2 pixelCoord)
+    {
+        int index = (pixelCoord.x % 8) + (pixelCoord.y % 8) * 8;
+        return grayscale > (float(bayerMatrix64[index]) + 0.5) / 64.0 ? 1.0 : 0.0;
+    }
+`;

@@ -664,13 +664,13 @@ console.log(wsc);
 export const colorsWebSafeRaw: { [key: string]: string[] } = {
     websafe0: ['#FFFFFF', '#CCCCCC', '#999999', '#666666', '#333333'],
     websafe1: ['#000000', '#FFCC00', '#FF9900', '#FF6600', '#FF3300'],
-    websafe2: ['#99CC00', '#CC9900', '#FFCC33', '#FFCC66', '#FF9966'],
+    // websafe2: ['#99CC00', '#CC9900', '#FFCC33', '#FFCC66', '#FF9966'],
     websafe3: ['#FF6633', '#CC3300', '#CC0033', '#CCFF00', '#CCFF33'],
     // websafe4: ['#333300', '#666600', '#999900', '#CCCC00', '#FFFF00'],
     // websafe5: ['#CC9933', '#CC6633', '#330000', '#660000', '#990000'],
     websafe6: ['#CC0000', '#FF0000', '#FF3366', '#FF0033', '#99FF00'],
     // websafe7: ['#CCFF66', '#99CC33', '#666633', '#999933', '#CCCC33'],
-    websafe8: ['#FFFF33', '#996600', '#993300', '#663333', '#993333'],
+    // websafe8: ['#FFFF33', '#996600', '#993300', '#663333', '#993333'],
     websafe9: ['#CC3333', '#FF3333', '#CC3366', '#FF6699', '#FF0066'],
     websafe10: ['#66FF00', '#99FF66', '#66CC33', '#669900', '#999966'],
     // websafe11: ['#CCCC66', '#FFFF66', '#996633', '#663300', '#996666'],
@@ -697,8 +697,8 @@ export const colorsWebSafeRaw: { [key: string]: string[] } = {
     websafe32: ['#66FFFF', '#66CCCC', '#669999', '#003366', '#336699'],
     websafe33: ['#6666FF', '#6666CC', '#666699', '#330099', '#9933CC'],
     websafe34: ['#CC66FF', '#9900FF', '#00FF99', '#66FFCC', '#33CC99'],
-    websafe35: ['#33FFFF', '#33CCCC', '#339999', '#336666', '#006699'],
-    websafe36: ['#003399', '#3333FF', '#3333CC', '#333399', '#333366'],
+    // websafe35: ['#33FFFF', '#33CCCC', '#339999', '#336666', '#006699'],
+    // websafe36: ['#003399', '#3333FF', '#3333CC', '#333399', '#333366'],
     websafe37: ['#6633CC', '#9966FF', '#6600FF', '#00FFCC', '#33FFCC'],
     // websafe38: ['#00FFFF', '#00CCCC', '#009999', '#006666', '#003333'],
     websafe39: ['#3399CC', '#3366CC', '#0000FF', '#0000CC', '#000099'],
@@ -707,44 +707,40 @@ export const colorsWebSafeRaw: { [key: string]: string[] } = {
     websafe42: ['#0033CC', '#3300CC', '#00CCFF', '#0099FF', '#0066FF'],
 };
 
-// colorsWebSafeRaw 2 iterations of sat 0.93, contrast 1.1
+// colorsWebSafeRaw 4 iterations of sat 0.93, contrast 1.1
 export const colorsWebSafe: { [key: string]: string[] } = {
-    websafe0: ['#ffffff', '#dcdcdc', '#9f9f9f', '#606060', '#232323'],
-    websafe1: ['#000000', '#fcdb11', '#f99f0c', '#f66409', '#f22906'],
-    websafe2: ['#a3d80f', '#d49f0b', '#fcdb3b', '#fddc71', '#f9a16c'],
-    websafe3: ['#f6642f', '#c82805', '#c40324', '#defd15', '#defd3e'],
-    websafe6: ['#c40303', '#ee0404', '#f32a60', '#ef0425', '#a7fc13'],
-    websafe8: ['#fefe3f', '#976207', '#912604', '#5a2525', '#912626'],
-    websafe9: ['#c82828', '#f32a2a', '#c9295e', '#f7669b', '#ef045c'],
-    websafe10: ['#70fb11', '#a8fd72', '#6cd737', '#669b09', '#9d9d68'],
-    websafe12: ['#ce6464', '#f66666', '#8d0223', '#ca2994', '#f766d2'],
-    websafe13: ['#f00591', '#39fb0f', '#70fc3b', '#2f9908', '#6cd60d'],
-    websafe15: ['#d6a0a0', '#faa1a1', '#f42b95', '#c4045a', '#8d0358'],
-    websafe16: ['#f42bcc', '#f105c8', '#0bd30b', '#35d40b', '#295e05'],
-    websafe18: ['#f9a035', '#fddddd', '#faa2d7', '#d0649b', '#92275c'],
-    websafe19: ['#560221', '#c60490', '#1f011f', '#35d535', '#6cd76c'],
-    websafe20: ['#0efa0e', '#39fb39', '#70fc70', '#a9fda9', '#e0fee0'],
-    websafe21: ['#d6a1d6', '#996399', '#932893', '#8f038f', '#5b255b'],
-    websafe22: ['#560256', '#045604', '#295e29', '#089708', '#2f992f'],
-    websafe23: ['#669c66', '#a4daa4', '#fddefd', '#faa3fa', '#f768f7'],
-    websafe24: ['#f42cf4', '#f105f1', '#d066d0', '#ca2aca', '#022102'],
-    websafe25: ['#0bd433', '#055d28', '#2f9b64', '#6dd8a3', '#a9fdde'],
-    websafe26: ['#e0ffff', '#319bf7', '#a5dbfc', '#ddddfd', '#d6a1fa'],
-    websafe27: ['#9964ce', '#5b2691', '#1f0155', '#8f03c4', '#c604c6'],
-    websafe28: ['#0efa37', '#39fb6f', '#08992d', '#0bd46a', '#3bfba5'],
-    websafe29: ['#a9fefe', '#a5dada', '#065fca', '#689dd2', '#9f9ff9'],
-    websafe30: ['#9f9fd4', '#9329f2', '#5802c2', '#57028d', '#ca2bf4'],
-    websafe31: ['#c604f0', '#0ffa6e', '#72fca7', '#35d66b', '#089964'],
-    websafe32: ['#72fdfd', '#6ed9d9', '#689d9d', '#022258', '#2a6095'],
-    websafe33: ['#6262f5', '#6262cc', '#626297', '#20018b', '#9328c8'],
-    websafe34: ['#d066f7', '#8f04ee', '#10fba3', '#72fddc', '#36d6a1'],
-    websafe35: ['#3bfcfc', '#37d7d7', '#319b9b', '#295f5f', '#065e93'],
-    websafe36: ['#02238e', '#2525ee', '#2525c5', '#24248f', '#242459'],
-    websafe37: ['#5c26c7', '#9964f6', '#5803ec', '#10fbda', '#3bfcdb'],
-    websafe39: ['#319bd0', '#2b60cb', '#0101e9', '#0101c0', '#010189'],
-    websafe40: ['#000054', '#00001e', '#5c27f0', '#2102ea', '#0cd59f'],
-    websafe41: ['#099bd0', '#37d7fa', '#6ed9fb', '#689df8', '#2b60f4'],
-    websafe42: ['#0324c4', '#2102c1', '#0dd6f9', '#099bf6', '#0660f3'],
+    websafe0: ['#ffffff', '#efefef', '#a5a5a5', '#5a5a5a', '#101010'],
+    websafe1: ['#000000', '#fdec19', '#f9a70d', '#f66209', '#f01d05'],
+    websafe3: ['#f6622b', '#c21b04', '#bc0314', '#f2fe1f', '#f2fe4a'],
+    websafe6: ['#bc0303', '#e80404', '#f22058', '#ea0417', '#b6fd1b'],
+    websafe9: ['#c31b1b', '#f11f1f', '#c51d54', '#f7669d', '#eb0450'],
+    websafe10: ['#7afc17', '#b8fd80', '#74e43c', '#669d09', '#a3a36b'],
+    websafe12: ['#d06262', '#f66666', '#800211', '#c61e8e', '#f766d8'],
+    websafe13: ['#ec0489', '#3ffb13', '#7bfc43', '#2b9908', '#73e210'],
+    websafe15: ['#e1a9a9', '#faabab', '#f32191', '#bc034d', '#810249'],
+    websafe16: ['#f422ca', '#ed05c3', '#0bdb0b', '#37de0c', '#1d5405'],
+    websafe18: ['#faa839', '#fef2f2', '#fbade4', '#d4629d', '#891950'],
+    websafe19: ['#44010d', '#be0486', '#090009', '#38df38', '#74e474'],
+    websafe20: ['#10fa10', '#3ffb3f', '#7cfc7c', '#bafeba', '#f6fff6'],
+    websafe21: ['#e2abe2', '#985f98', '#8b1b8b', '#830383', '#4d144d'],
+    websafe22: ['#450145', '#044a04', '#1d541d', '#089508', '#2b992b'],
+    websafe23: ['#67a067', '#b2ebb2', '#fef3fe', '#fbaefb', '#f76af7'],
+    websafe24: ['#f424f4', '#ef05ef', '#d466d4', '#c720c7', '#010c01'],
+    websafe25: ['#0bdd35', '#04521b', '#2b9d62', '#76e6af', '#bbfef2'],
+    websafe26: ['#f6ffff', '#2f9ff7', '#b4ecfd', '#f0f0fe', '#e2abfa'],
+    websafe27: ['#9962d0', '#4e1786', '#0a0142', '#8403bc', '#c004c0'],
+    websafe28: ['#12fa3c', '#41fb79', '#089927', '#0cde6e', '#43fcb2'],
+    websafe29: ['#bbfefe', '#b4ebeb', '#0557c6', '#6aa2da', '#a7a7f9'],
+    websafe30: ['#a6a6de', '#8c1def', '#4802b8', '#47027f', '#c821f3'],
+    websafe31: ['#c004ec', '#13fb76', '#7efdb6', '#39e171', '#089962'],
+    websafe32: ['#7ffdfd', '#78e8e8', '#6aa1a1', '#010f47', '#20588f'],
+    websafe33: ['#5e5ef4', '#5d5dcc', '#5c5c94', '#0b017b', '#8b1bc3'],
+    websafe34: ['#d466f7', '#8503e8', '#14fbaf', '#7ffdee', '#3ae2ab'],
+    websafe37: ['#4f17c0', '#9962f6', '#4902e4', '#15fbe8', '#43fceb'],
+    websafe39: ['#2f9dd6', '#2159c9', '#0101df', '#0101b3', '#010179'],
+    websafe40: ['#000040', '#000008', '#5018eb', '#0d01e0', '#0ddfa7'],
+    websafe41: ['#099dd4', '#3de4fb', '#78e8fc', '#6ba3f8', '#2259f3'],
+    websafe42: ['#0212b9', '#0d01b5', '#0fe2fa', '#099df6', '#0658f2'],
 };
 
 let r: { [key: string]: string[] } = {};
@@ -761,9 +757,9 @@ let t = (co: Array<Array<string>>) =>
             )
         )
     );
-co = t(t(co));
+co = t(t(t(t(co))));
 
 Object.keys(colorsWebSafeRaw).forEach((k, i) => (r[k] = co[i]));
 console.log(r);
 
-export const colors = colorsRayGun;
+export const colors = colorsWebSafe;

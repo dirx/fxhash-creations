@@ -14,7 +14,7 @@ import {
     srgb,
     TypedColor,
 } from '@thi.ng/color';
-import { pnoise, precisionAndDefaults } from './glsl';
+import { bayerDither, precisionAndDefaults } from './glsl';
 import {
     combinationFn,
     featureNumber,
@@ -237,6 +237,7 @@ export class BlobTextures {
                 internalFormat: WebGL2RenderingContext.RGBA,
                 format: WebGL2RenderingContext.RGBA,
                 type: WebGL2RenderingContext.UNSIGNED_BYTE,
+                minMag: WebGL2RenderingContext.NEAREST,
                 src: [
                     ...this.piece.features.bottomColorRGB.map((v) =>
                         Math.floor(v * 255)
@@ -254,17 +255,19 @@ export class BlobTextures {
                 internalFormat: WebGL2RenderingContext.RGBA,
                 format: WebGL2RenderingContext.RGBA,
                 type: WebGL2RenderingContext.UNSIGNED_BYTE,
+                minMag: WebGL2RenderingContext.NEAREST,
                 src: [
                     ...this.piece.features.backgroundColorRGB
                         .slice(0, 3)
                         .map((v) => Math.floor(v * 255)),
-                    123,
+                    255,
                 ],
             },
             2: {
                 internalFormat: WebGL2RenderingContext.RGBA,
                 format: WebGL2RenderingContext.RGBA,
                 type: WebGL2RenderingContext.UNSIGNED_BYTE,
+                minMag: WebGL2RenderingContext.NEAREST,
                 src: [
                     ...this.piece.features.backgroundColorRGB
                         .slice(0, 3)
@@ -283,24 +286,32 @@ export class BlobTextures {
                 internalFormat: WebGL2RenderingContext.RGBA,
                 format: WebGL2RenderingContext.RGBA,
                 type: WebGL2RenderingContext.UNSIGNED_BYTE,
-                src: this.piece.features.bottomColorRGB.map((v) =>
-                    Math.floor(v * 255)
-                ),
+                src: [
+                    ...this.piece.features.bottomColorRGB
+                        .slice(0, 3)
+                        .map((v) => Math.floor(v * 255)),
+                    1 * 255,
+                ],
             },
             4: {
                 internalFormat: WebGL2RenderingContext.RGBA,
                 format: WebGL2RenderingContext.RGBA,
                 type: WebGL2RenderingContext.UNSIGNED_BYTE,
-                src: this.piece.features.topColorRGB.map((v) =>
-                    Math.floor(v * 255)
-                ),
+                src: [
+                    ...this.piece.features.topColorRGB
+                        .slice(0, 3)
+                        .map((v) => Math.floor(v * 255)),
+                    1 * 255,
+                ],
             },
             5: {
                 internalFormat: WebGL2RenderingContext.RGBA,
                 format: WebGL2RenderingContext.RGBA,
                 type: WebGL2RenderingContext.UNSIGNED_BYTE,
                 minMag: WebGL2RenderingContext.NEAREST,
-                src: Array(500)
+                width: 100,
+                height: 100,
+                src: Array(100 * 100)
                     .fill(1)
                     .map((_v, i) =>
                         i % 3 != 0
@@ -327,10 +338,12 @@ export class BlobTextures {
                 format: WebGL2RenderingContext.RGBA,
                 type: WebGL2RenderingContext.UNSIGNED_BYTE,
                 minMag: WebGL2RenderingContext.NEAREST,
-                src: Array(1000)
+                width: 200,
+                height: 200,
+                src: Array(200 * 200)
                     .fill(1)
                     .map((_v, i) =>
-                        i % 2 != 0
+                        i % 3 != 0
                             ? [
                                   ...this.piece.features.oddColorRGB.slice(
                                       0,
@@ -353,6 +366,7 @@ export class BlobTextures {
                 internalFormat: WebGL2RenderingContext.RGBA,
                 format: WebGL2RenderingContext.RGBA,
                 type: WebGL2RenderingContext.UNSIGNED_BYTE,
+                minMag: WebGL2RenderingContext.NEAREST,
                 src: [
                     ...this.piece.features.oddColorRGB
                         .slice(0, 3)
@@ -372,10 +386,12 @@ export class BlobTextures {
                 format: WebGL2RenderingContext.RGBA,
                 type: WebGL2RenderingContext.UNSIGNED_BYTE,
                 minMag: WebGL2RenderingContext.NEAREST,
-                src: Array(1000)
+                width: 300,
+                height: 300,
+                src: Array(300 * 300)
                     .fill(1)
                     .map((_v, i) =>
-                        i % 7 != 0
+                        i % 3 != 0
                             ? [
                                   ...this.piece.features.topColorRGB.slice(
                                       0,
@@ -393,6 +409,18 @@ export class BlobTextures {
                     )
                     .flat()
                     .map((v) => Math.floor(v * 255)),
+            },
+            9: {
+                internalFormat: WebGL2RenderingContext.RGBA,
+                format: WebGL2RenderingContext.RGBA,
+                type: WebGL2RenderingContext.UNSIGNED_BYTE,
+                minMag: WebGL2RenderingContext.NEAREST,
+                src: [
+                    ...this.piece.features.backgroundColorRGB
+                        .slice(0, 3)
+                        .map((v) => Math.floor(v * 255)),
+                    255,
+                ],
             },
         });
     }
@@ -426,10 +454,10 @@ export class Blob {
         const vertexShader = `
             #version 300 es
             ${precisionAndDefaults}
-            ${pnoise}
 
             uniform mat4 worldViewProjection;
             uniform float frames;
+            uniform sampler2D pixels;
 
             in vec4 position;
             in vec2 texcoord;
@@ -437,14 +465,23 @@ export class Blob {
             out vec4 v_position;
             out vec2 v_texcoord;
 
-            void main() {
-                float distortion = pnoise(
-                position.xyz + frames * 0.0016,
-                vec3(20.0)
-                );
+            float modulate(float x, int octaves, float lacunarity, float gain, float amplitude, float frequency) {
+                float y = 0.0;
+                for (int i = 0; i < octaves; i++) {
+                    y += amplitude * sin(x);
+                    frequency *= lacunarity;
+                    amplitude *= gain;
+                }
+                return y;
+            }
 
-                v_texcoord = texcoord + distortion * 0.11;
-                v_position = worldViewProjection * position + distortion * 1.0;
+
+            void main() {
+                float i = float(gl_VertexID)/64.0;
+                float r = modulate(i * frames * 0.017 * position.x, 5, 2.0 + i, 0.5, 0.5, 1.0);
+                vec4 p = texture(pixels, position.xy / 4.0 + r) * 0.1 - 0.05;
+                v_texcoord = texcoord + r + p.xy;
+                v_position = worldViewProjection * position + r;
                 gl_Position = v_position;
             }`;
 
@@ -452,12 +489,14 @@ export class Blob {
         const fragmentShader = `
             #version 300 es
             ${precisionAndDefaults}
+            ${bayerDither}
 
             in vec4 v_position;
             in vec2 v_texcoord;
 
             uniform sampler2D diffuse;
             uniform float frames;
+            uniform vec3 backgroundColor;
 
             out vec4 color;
 
@@ -468,13 +507,24 @@ export class Blob {
                     return;
                 }
                 color = diffuseColor;
+
+            if (all(lessThan(abs(backgroundColor.rgb - color.rgb), vec3(0.004))) == false) {
+                ivec2 p = ivec2(v_texcoord * 3000.0);
+                color = vec4(
+                bayerDither6x6(color.r, p),
+                bayerDither6x6(color.g, p),
+                bayerDither6x6(color.b, p),
+                1.0
+                );
+            }
+                
                 color.rbg *= color.a;
             }`;
 
         this.program = twgl.createProgramInfo(
             this.context,
             [vertexShader, fragmentShader],
-            ['texcoord', 'position']
+            ['texcoord', 'position', 'normal']
         );
 
         this.output = this.piece.outputs.create(
@@ -508,18 +558,21 @@ export class Blob {
         );
 
         this.shapes = [
-            twgl.primitives.createSphereBufferInfo(this.context, 0.8, 150, 50),
-            twgl.primitives.createSphereBufferInfo(this.context, 0.6, 100, 50),
-            twgl.primitives.createSphereBufferInfo(this.context, 0.4, 50, 50),
-            twgl.primitives.createTorusBufferInfo(
-                this.context,
-                0.4,
-                0.4,
-                64,
-                64
-            ),
-            twgl.primitives.createCubeBufferInfo(this.context, 1),
-            twgl.primitives.createPlaneBufferInfo(this.context, 1.35, 1.35),
+            // twgl.primitives.createCubeBufferInfo(this.context, 1.0),
+            // twgl.primitives.createCubeBufferInfo(this.context, 0.62),
+            // twgl.primitives.createCubeBufferInfo(this.context, 0.36),
+            twgl.primitives.createSphereBufferInfo(this.context, 0.8, 3, 3),
+            twgl.primitives.createSphereBufferInfo(this.context, 0.6, 3, 3),
+            twgl.primitives.createSphereBufferInfo(this.context, 0.4, 3, 3),
+            // twgl.primitives.createTorusBufferInfo(
+            //     this.context,
+            //     0.4,
+            //     0.4,
+            //     64,
+            //     64
+            // ),
+            // twgl.primitives.createCubeBufferInfo(this.context, 1),
+            // twgl.primitives.createPlaneBufferInfo(this.context, 1.35, 1.35),
         ];
 
         this.objects = [];
@@ -549,6 +602,8 @@ export class Blob {
             worldInverseTranspose: m4.identity(),
             worldViewProjection: m4.identity(),
             frames: 0,
+            pixels: 0,
+            backgroundColor: 0,
         };
         const shape = randOptions(
             this.piece.features.variation.value.shapes.value
@@ -562,9 +617,9 @@ export class Blob {
 
         const objectVars = {
             translation: [
-                rf(rand() * 0.2 * (shape * 0.5 + 1)),
-                rf(rand() * 0.2 * (shape * 0.5 + 1)),
-                rf(rand() * 0.2 * (shape * 0.5 + 1)),
+                rf(rand() * 0.3 * (shape * 0.7 + 1)),
+                rf(rand() * 0.3 * (shape * 0.7 + 1)),
+                rf(rand() * 0.3 * (shape * 0.7 + 1)),
             ],
             ySpeed: rf(rand() * 0.8, 4.0),
             xSpeed: rf(rand() * 0.8, 4.0),
@@ -587,6 +642,7 @@ export class Blob {
         this.context.enable(WebGL2RenderingContext.BLEND);
         this.context.blendFunc(
             WebGL2RenderingContext.SRC_ALPHA,
+            // WebGL2RenderingContext.ONE_MINUS_DST_ALPHA
             WebGL2RenderingContext.ONE_MINUS_SRC_ALPHA
         );
         const speed = this.piece.frames.total / this.piece.fps;
@@ -620,7 +676,12 @@ export class Blob {
                 u.worldInverseTranspose
             );
             m4.multiply(viewProjection, u.world, u.worldViewProjection);
-            u.frames = this.piece.frames.total; // + this.piece.combination;
+            u.frames = this.piece.frames.total;
+            u.pixels = this.piece.pixels.output.attachments[0];
+            u.backgroundColor = this.piece.features.backgroundColorRGB.slice(
+                0,
+                3
+            );
         });
 
         twgl.bindFramebufferInfo(this.context, this.output);
@@ -703,10 +764,10 @@ export class Pixels {
                     float dp = distance(pos, vec2(0));
                     float dd = clamp(min(d, dp), 0.0, 1.0);
                     if (debugLevel == 2) {
-                        color = color = vec4(dd, dd, dd, 1.0);
+                        color = vec4(dd, dd, dd, 1.0);
                         return;
                     }
-                    color = mix(b, p, dd * 0.9);
+                    color = mix(b, p, dd * 0.7);
                     color = vec4(color.rgb, 1.0);
                 }
             }`;
@@ -797,14 +858,14 @@ export class Announcement {
         context.textAlign = 'left';
         context.font = `${0.12 * this.piece.baseSize}px 'Outfit'`;
         context.fillText(
-            'Iacta',
+            'Est',
             -0.47 * this.piece.baseSize,
             0.47 * this.piece.baseSize
         );
         context.textAlign = 'right';
         context.font = `${0.03 * this.piece.baseSize}px 'Outfit'`;
         context.fillText(
-            'FRI, December 9, 2022, 19:00 UTC',
+            'FRI, December 16, 2022, 19:00 UTC',
             0.47 * this.piece.baseSize,
             0.47 * this.piece.baseSize
         );
@@ -845,14 +906,18 @@ export class Screen {
         const fragmentShader = `
             #version 300 es
             ${precisionAndDefaults}
+            ${bayerDither}
 
             in vec2 pos;
             out vec4 color;
 
             uniform sampler2D pixels;
+            uniform float baseSize;
+            uniform float frames;
             uniform sampler2D announcement;
             uniform bool announcementActive;
             uniform vec3 evenColor;
+            uniform vec3 backgroundColor;
             uniform bool debug;
 
             void main() {
@@ -861,12 +926,31 @@ export class Screen {
                 } else {
                     color = texture(pixels, pos);
                     color = vec4(color.rgb, 1.0);
+
                     if (announcementActive) {
                         vec4 a = texture(announcement, pos * vec2(1.0, -1.0));
                         if (a.a > 0.0) {
                             color = vec4(mix(color.rgb, evenColor, a.a), 1.0);
+                            ivec2 p = ivec2(pos * baseSize * 1.0);
+                            color = vec4(
+                            bayerDither6x6(color.r, p),
+                            bayerDither6x6(color.g, p),
+                            bayerDither6x6(color.b, p),
+                            1.0
+                            );
                         }
                     }
+
+//                    if (all(lessThan(abs(backgroundColor.rgb - color.rgb), vec3(0.02))) == false) {
+//                        ivec2 p = ivec2(pos * baseSize * 1.0);
+//                        color = vec4(
+//                        bayerDither6x6(color.r, p),
+//                        bayerDither6x6(color.g, p),
+//                        bayerDither6x6(color.b, p),
+//                        1.0
+//                        );
+//                    }
+
                 }
             }`;
         this.program = twgl.createProgramInfo(this.context, [
@@ -890,21 +974,34 @@ export class Screen {
         if (this.piece.outputIndex === null) {
             twgl.setUniforms(this.program, {
                 pixels: this.piece.pixels.output.attachments[0],
+                baseSize: this.piece.baseSize,
+                frames: this.piece.frames.total,
                 debug: false,
                 announcementActive: this.piece.announcement.active,
                 announcement: this.piece.announcement
                     ? this.piece.announcement.texture
                     : 0,
                 evenColor: this.piece.features.evenColorRGB.slice(0, 3),
+                backgroundColor: this.piece.features.backgroundColorRGB.slice(
+                    0,
+                    3
+                ),
             });
         } else {
+            // todo: debug pixels bind texture
             twgl.setUniforms(this.program, {
                 pixels: this.piece.outputs.buffers[this.piece.outputIndex]
                     .attachments[0],
+                baseSize: this.piece.baseSize,
+                frames: this.piece.frames.total,
                 debug: true,
                 announcementActive: false,
                 announcement: 0,
                 evenColor: this.piece.features.evenColorRGB.slice(0, 3),
+                backgroundColor: this.piece.features.backgroundColorRGB.slice(
+                    0,
+                    3
+                ),
             });
         }
         twgl.bindFramebufferInfo(this.context, null);
