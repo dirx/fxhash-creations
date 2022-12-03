@@ -245,6 +245,10 @@ export class BlobTextures {
                         .slice(0, 3)
                         .map((v) => Math.floor(v * 255)),
                     (rand() * 0.2 + 0.5) * 255,
+                    ...this.piece.features.topColorRGB
+                        .slice(0, 3)
+                        .map((v) => Math.floor(v * 255)),
+                    (rand() * 0.2 + 0.5) * 255,
                     ...this.piece.features.bottomColorRGB.map((v) =>
                         Math.floor(v * 255)
                     ),
@@ -270,6 +274,9 @@ export class BlobTextures {
                         .slice(0, 3)
                         .map((v) => Math.floor(v * 255)),
                     0.5 * 255,
+                    ...this.piece.features.topColorRGB.map((v) =>
+                        Math.floor(v * 255)
+                    ),
                     ...this.piece.features.topColorRGB.map((v) =>
                         Math.floor(v * 255)
                     ),
@@ -330,7 +337,7 @@ export class BlobTextures {
                 src: Array(1000)
                     .fill(1)
                     .map((_v, i) =>
-                        i % 2 != 0
+                        i % 4 != 0
                             ? [
                                   ...this.piece.features.oddColorRGB.slice(
                                       0,
@@ -361,6 +368,10 @@ export class BlobTextures {
                     ...this.piece.features.topColorRGB.map((v) =>
                         Math.floor(v * 255)
                     ),
+                    ...this.piece.features.topColorRGB
+                        .slice(0, 3)
+                        .map((v) => Math.floor(v * 255)),
+                    0.9 * 255,
                     ...this.piece.features.oddColorRGB
                         .slice(0, 3)
                         .map((v) => Math.floor(v * 255)),
@@ -508,18 +519,9 @@ export class Blob {
         );
 
         this.shapes = [
-            twgl.primitives.createSphereBufferInfo(this.context, 0.8, 150, 50),
-            twgl.primitives.createSphereBufferInfo(this.context, 0.6, 100, 50),
+            twgl.primitives.createSphereBufferInfo(this.context, 0.8, 150, 100),
+            twgl.primitives.createSphereBufferInfo(this.context, 0.6, 100, 75),
             twgl.primitives.createSphereBufferInfo(this.context, 0.4, 50, 50),
-            twgl.primitives.createTorusBufferInfo(
-                this.context,
-                0.4,
-                0.4,
-                64,
-                64
-            ),
-            twgl.primitives.createCubeBufferInfo(this.context, 1),
-            twgl.primitives.createPlaneBufferInfo(this.context, 1.35, 1.35),
         ];
 
         this.objects = [];
