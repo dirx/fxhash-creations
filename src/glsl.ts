@@ -253,13 +253,13 @@ export const fbm: string = `
 // language=glsl
 export const bayerDither: string = `
     const int bayerMatrix4[4] = int[4](0, 2, 3, 1);
-        const int bayerMatrix16[16] = int[16](
-        0, 8, 2, 10,
-        12, 4, 14, 6,
-        3, 11, 1, 9,
-        15, 7, 13, 5
-        );
-    
+    const int bayerMatrix16[16] = int[16](
+    0, 8, 2, 10,
+    12, 4, 14, 6,
+    3, 11, 1, 9,
+    15, 7, 13, 5
+    );
+
     const int bayerMatrix36[36] = int[36](
     16, 25, 12, 23, 1, 32,
     19, 0, 18, 15, 21, 2,
@@ -286,10 +286,32 @@ export const bayerDither: string = `
         return grayscale > (float(bayerMatrix4[index]) + 0.5) / 4.0 ? 1.0 : 0.0;
     }
 
+    vec3 bayerDither2x2(vec3 color, ivec2 pixelCoord)
+    {
+        int index = (pixelCoord.x % 2) + (pixelCoord.y % 2) * 2;
+        float d = (float(bayerMatrix4[index]) + 0.5) / 4.0;
+        return vec3(
+        color.r > d ? 1.0 : 0.0,
+        color.g > d ? 1.0 : 0.0,
+        color.b > d ? 1.0 : 0.0
+        );
+    }
+
     float bayerDither4x4(float grayscale, ivec2 pixelCoord)
     {
         int index = (pixelCoord.x % 4) + (pixelCoord.y % 4) * 4;
         return grayscale > (float(bayerMatrix16[index]) + 0.5) / 16.0 ? 1.0 : 0.0;
+    }
+
+    vec3 bayerDither4x4(vec3 color, ivec2 pixelCoord)
+    {
+        int index = (pixelCoord.x % 4) + (pixelCoord.y % 4) * 4;
+        float d = (float(bayerMatrix16[index]) + 0.5) / 16.0;
+        return vec3(
+        color.r > d ? 1.0 : 0.0,
+        color.g > d ? 1.0 : 0.0,
+        color.b > d ? 1.0 : 0.0
+        );
     }
 
     // based on random 6x6 matrix - just for alea iacta est
@@ -299,9 +321,42 @@ export const bayerDither: string = `
         return grayscale > (float(bayerMatrix36[index]) + 0.5) / 36.0 ? 1.0 : 0.0;
     }
 
+    vec3 bayerDither6x6(vec3 color, ivec2 pixelCoord)
+    {
+        int index = (pixelCoord.x % 6) + (pixelCoord.y % 6) * 6;
+        float d = (float(bayerMatrix36[index]) + 0.5) / 36.0;
+        return vec3(
+        color.r > d ? 1.0 : 0.0,
+        color.g > d ? 1.0 : 0.0,
+        color.b > d ? 1.0 : 0.0
+        );
+    }
+
+    vec3 bayerDither6x6(vec3 color, ivec2 pixelCoord, int[36] matrix)
+    {
+        int index = (pixelCoord.x % 6) + (pixelCoord.y % 6) * 6;
+        float d = (float(matrix[index]) + 0.5) / 36.0;
+        return vec3(
+        color.r > d ? 1.0 : 0.0,
+        color.g > d ? 1.0 : 0.0,
+        color.b > d ? 1.0 : 0.0
+        );
+    }
+
     float bayerDither8x8(float grayscale, ivec2 pixelCoord)
     {
         int index = (pixelCoord.x % 8) + (pixelCoord.y % 8) * 8;
         return grayscale > (float(bayerMatrix64[index]) + 0.5) / 64.0 ? 1.0 : 0.0;
+    }
+
+    vec3 bayerDither8x8(vec3 color, ivec2 pixelCoord)
+    {
+        int index = (pixelCoord.x % 8) + (pixelCoord.y % 8) * 8;
+        float d = (float(bayerMatrix64[index]) + 0.5) / 64.0;
+        return vec3(
+        color.r > d ? 1.0 : 0.0,
+        color.g > d ? 1.0 : 0.0,
+        color.b > d ? 1.0 : 0.0
+        );
     }
 `;
