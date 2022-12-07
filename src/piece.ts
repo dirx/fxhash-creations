@@ -921,7 +921,7 @@ export class Screen {
                 announcementActive: this.piece.announcement.active,
                 announcement: this.piece.announcement
                     ? this.piece.announcement.texture
-                    : 0,
+                    : null,
                 evenColor: this.piece.features.evenColorRGB.slice(0, 3),
             });
         } else {
@@ -930,7 +930,7 @@ export class Screen {
                     .attachments[0],
                 debug: true,
                 announcementActive: false,
-                announcement: 0,
+                announcement: null,
                 evenColor: this.piece.features.evenColorRGB.slice(0, 3),
             });
         }

@@ -20,7 +20,7 @@
     "@thi.ng/math": "^5.3.3",
     "@thi.ng/random": "^3.3.2",
     "@thi.ng/random-fxhash": "^0.2.2",
-    "twgl.js": "^5.0.1"
+    "twgl.js": "^5.3.0"
   },
   "devDependencies": {
     "@types/timsort": "^0.3.0",
