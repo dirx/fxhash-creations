@@ -13,7 +13,7 @@ Grab it @ https://www.fxhash.xyz/generative/slug/iacta
 <img src="./public/preview.jpg" align="right" width="50%" style="margin: 0 20px 20px 20px" />
 
 Roll the dice with shapes and capture the moment!
-Iacta follows Alea. Iacta, by the way, is Latin and means throw / roll.
+Iacta follows Alea. Iacta, by the way, is Latin and means throw / hurl / cast / fling.
 
 How does it work?
 
@@ -43,7 +43,8 @@ Shortcuts & interactions:
 - spacebar to trigger a rotation animation (or single click / tap)
 - `o` to trigger random object change animation followed by a rotation animation (or double click / tap)
 - `r` to trigger a random feature change followed by a random object change and rotation animation (or triple click / tap)
-- `k` to toggle this kiosk mode (off, 3, 5 or 10 secs)
+- `k` to activate the kiosk mode and set the speed (off, 3, 5 or 10 secs)
+- `m` to change the kiosk mode (animate, objects or features, default: features)
 - `c` to capture an image
 - `f` for full screen mode
 - `h` to see all options
@@ -51,9 +52,10 @@ Shortcuts & interactions:
 Available query string parameters:
 
 - size=8000 - sets the base size for width/height to 8000px (default 3000, useful if you want to capture bigger pngs)
-- subdivisions=255 - sets shapesubdivisions to 255 (default 100, set to max 255 for highest resolution)
+- subdivisions=255 - sets shape subdivisions to 255 (default 100, set to max 255 for highest resolution)
 - showannouncement - activates the announcement
 - kioskspeed=5 - activates the kiosk mode and sets the speed in seconds
+- kioskmode=a - set the kiosk mode (default: f, a = animate, o = objects or f = features)
 - showinfo - activates the info box
 
 ### Third Party Licenses
