@@ -32,7 +32,7 @@ export const colorsRayGunRaw: { [key: string]: string[] } = {
     raygun27: ['#D9D5A7', '#F29863', '#BF3F34', '#F2F2F2', '#0D0D0D'],
     raygun28: ['#E9F0F2', '#0C5959', '#D98943', '#D97941', '#F27052'],
     raygun29: ['#D8D9D0', '#BFBC8E', '#8C5B49', '#A65353', '#BFAAAA'],
-    raygun30: ['#F0F0F2', '#36A6BF', '#4A8C67', '#9EA68F', '#A67360'],
+    raygun30: ['#D2D6D9', '#36A6BF', '#628C61', '#27483F', '#A67563'],
 };
 
 // colorsRayGunRaw 2 iterations of sat 0.93, contrast 1.1
@@ -66,7 +66,7 @@ export const colorsRayGun: { [key: string]: string[] } = {
     raygun27: ['#eae6b6', '#f9a068', '#bc362a', '#ffffff', '#000000'],
     raygun28: ['#ffffff', '#044e4e', '#e18d43', '#df7b3f', '#f77052'],
     raygun29: ['#ebece3', '#ccc898', '#885542', '#a44d4d', '#cab4b4'],
-    raygun30: ['#ffffff', '#36aac5', '#468c65', '#a5ae95', '#a8715e'],
+    raygun30: ['#e4e9ec', '#36aac5', '#608c5f', '#183b32', '#a87561'],
 };
 
 export const colors = colorsRayGun;
