@@ -576,8 +576,9 @@ export class Help {
           <p><em>space</em> touch</p>
           <p><em>f</em> toggle fullscreen</p>
           <p><em>c</em> capture image</p>
-          <p><em>k</em> change kiosk mode</p>
-          <p><em>a</em> toggle announce</p>
+          <p><em>k</em> set kiosk speed</p>
+          <p><em>m</em> set kiosk mode</p>
+          <p><em>a</em> toggle announcement</p>
           <p><em>r</em> randomize features</p>
           <p><em>o</em> randomize objects</p>
           <p><em>0 - 2</em> debug buffer</p>
