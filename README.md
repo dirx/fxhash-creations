@@ -63,6 +63,7 @@ Available query string parameters:
 - based on [fxhash-boilerplate-webpack](https://github.com/fxhash/fxhash-webpack-boilerplate)
 - [@fontsource/vt323](https://www.npmjs.com/package/@fontsource/vt323) ([font source](https://github.com/phoikoi/VT323))
 - [@fontsource/outfit](https://www.npmjs.com/package/@fontsource/outfit) ([font source](https://github.com/Outfitio/Outfit-Fonts/))
+- [stegu/webgl-noise](https://github.com/stegu/webgl-noise)
 - [@thi.ng/color](https://www.npmjs.com/package/@thi.ng/color)
 - [@thi.ng/math](https://www.npmjs.com/package/@thi.ng/math)
 - [@thi.ng/random](https://www.npmjs.com/package/@thi.ng/random)
