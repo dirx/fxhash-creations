@@ -22,7 +22,7 @@ colors palette is picked and used for the textures. The colors are first sorted 
 colors are then sorted again by luminance.
 
 The animation itself is 32 frames long and stops abruptly. It consists of 3 layers. The first layer moves the objects around the center
-and draws the animated objects displacing vertex positions and textures coordinates withy perlin noise. The second uses the first layer and
+and draws the animated objects displacing vertex positions and textures coordinates with perlin noise. The second uses the first layer and
 a double buffer to capture the motion blur based on a depth mask. The third is mainly for screen rendering, debugging and behind-the-scene
 looks.
 
@@ -51,6 +51,7 @@ Shortcuts & interactions:
 Available query string parameters:
 
 - size=8000 - sets the base size for width/height to 8000px (default 3000, useful if you want to capture bigger pngs)
+- subdivisions=255 - sets shapesubdivisions to 255 (default 100, set to max 255 for highest resolution)
 - showannouncement - activates the announcement
 - kioskspeed=5 - activates the kiosk mode and sets the speed in seconds
 - showinfo - activates the info box
