@@ -942,7 +942,7 @@ export class Screen {
 export class Piece {
     public features!: Features;
 
-    public static title: string = 'Alea';
+    public static title: string = 'Iacta';
     public static defaultPixelRatio: number = 1;
     public static defaultSize: number = 3000;
 
