@@ -469,6 +469,9 @@ export class Blob {
 
             uniform sampler2D diffuse;
             uniform float frames;
+            uniform bool cutEnds;
+            uniform float cutTop;
+            uniform float cutBottom;
 
             out vec4 color;
 
@@ -478,6 +481,11 @@ export class Blob {
                     discard;
                     return;
                 }
+                if (cutEnds && (v_texcoord.y > cutTop || v_texcoord.y < cutBottom)) {
+                    discard;
+                    return;
+                }
+                
                 color = diffuseColor;
                 color.rbg *= color.a;
             }`;
@@ -519,9 +527,24 @@ export class Blob {
         );
 
         this.shapes = [
-            twgl.primitives.createSphereBufferInfo(this.context, 0.8, 150, 100),
-            twgl.primitives.createSphereBufferInfo(this.context, 0.6, 100, 75),
-            twgl.primitives.createSphereBufferInfo(this.context, 0.4, 50, 50),
+            twgl.primitives.createSphereBufferInfo(
+                this.context,
+                0.8,
+                Math.ceil(this.piece.shapeSubdivisions),
+                Math.ceil(this.piece.shapeSubdivisions)
+            ),
+            twgl.primitives.createSphereBufferInfo(
+                this.context,
+                0.6,
+                Math.ceil(0.75 * this.piece.shapeSubdivisions),
+                Math.ceil(0.75 * this.piece.shapeSubdivisions)
+            ),
+            twgl.primitives.createSphereBufferInfo(
+                this.context,
+                0.4,
+                Math.ceil(0.5 * this.piece.shapeSubdivisions),
+                Math.ceil(0.5 * this.piece.shapeSubdivisions)
+            ),
         ];
 
         this.objects = [];
@@ -537,7 +560,6 @@ export class Blob {
 
     public addObject(textures: BlobTextures) {
         const t = randInt(textures.length);
-        // const t = randOptions([5, 6]);
         const rf = (base: number = 0.25, max: number = 1) => {
             let r = rand() - 0.5;
             r *= max - base * 2;
@@ -551,6 +573,9 @@ export class Blob {
             worldInverseTranspose: m4.identity(),
             worldViewProjection: m4.identity(),
             frames: 0,
+            cutEnds: [5, 6, 8].includes(t),
+            cutTop: rand() * 0.2 + 0.65,
+            cutBottom: rand() * 0.2 + 0.15,
         };
         const shape = randOptions(
             this.piece.features.variation.value.shapes.value
@@ -622,7 +647,7 @@ export class Blob {
                 u.worldInverseTranspose
             );
             m4.multiply(viewProjection, u.world, u.worldViewProjection);
-            u.frames = this.piece.frames.total; // + this.piece.combination;
+            u.frames = this.piece.frames.total;
         });
 
         twgl.bindFramebufferInfo(this.context, this.output);
@@ -921,6 +946,8 @@ export class Piece {
     public static defaultPixelRatio: number = 1;
     public static defaultSize: number = 3000;
 
+    public static defaultShapeSubdivisions: number = 100;
+
     public width: number = 0;
     public height: number = 0;
     public fps: number = 60;
@@ -963,7 +990,8 @@ export class Piece {
         announcementActive: boolean = false,
         kioskSpeed: number | null = null,
         kioskMode: KioskMode | null = null,
-        public baseSize: number = Piece.defaultSize
+        public baseSize: number = Piece.defaultSize,
+        public shapeSubdivisions: number = Piece.defaultShapeSubdivisions
     ) {
         this.canvas = canvas;
         this.combination = combination;

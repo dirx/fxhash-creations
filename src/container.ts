@@ -38,7 +38,8 @@ export class Container {
             this.getShowAnnouncement(),
             this.getKioskSpeed(),
             this.getKioskMode(),
-            this.getSize()
+            this.getSize(),
+            this.getSubdivisions()
         );
 
         window.$fxhashFeatures = this.piece.features.getFxhashFeatures();
@@ -94,6 +95,14 @@ export class Container {
         return value === null
             ? Piece.defaultSize
             : Math.abs(Math.max(1, parseFloat(value)));
+    }
+
+    private getSubdivisions(): number {
+        let search = new URLSearchParams(window.location.search);
+        let value: string | null = search.get('subdivisions');
+        return value === null
+            ? Piece.defaultShapeSubdivisions
+            : Math.abs(Math.min(Math.max(10, parseInt(value)), 255));
     }
 
     private initResizeHandler() {
@@ -199,6 +208,7 @@ export class Container {
                 colorSortDirection: `${piece.features.variation.value.colorSortDirection.value} (${piece.features.variation.value.colorSortDirection.label}) [${piece.features.variation.value.colorSortDirection.numberOfVariations}]`,
                 colorSortReference: `${piece.features.variation.value.colorSortReference.value} [${piece.features.variation.value.colorSortReference.numberOfVariations}]`,
                 shapes: `${piece.features.variation.value.shapes.value} (${piece.features.variation.value.shapes.label}) [${piece.features.variation.value.shapes.numberOfVariations}]`,
+                shapeSubdivisions: `${piece.shapeSubdivisions}`,
                 size: `${piece.canvas.width} / ${piece.canvas.height}`,
                 pixelRatio: `${piece.pixelRatio}`,
                 pauseAfter: piece.pauseAfter,
