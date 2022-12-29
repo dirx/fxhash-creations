@@ -17,6 +17,9 @@ export const featureNumber = (
     variations: number,
     labels: labelFn<number> | string[] = []
 ): combinationFn<number> => {
+    if (variations <= 0) {
+        throw new Error(`variations must be > 0`);
+    }
     return (combination: number): variation<number> => {
         let value = combination % variations;
         let label =

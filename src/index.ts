@@ -15,7 +15,7 @@ if (combinationParam !== '') {
 }
 
 console.info(Piece.title);
-console.info('Real-time deterministic webgl2 animation, fixed size, 2022');
+console.info('Real-time deterministic webgl2 animation, fixed size, 2023');
 console.info("Be inspired. If you need help please press 'h'.");
 console.info('Dirk Adler, https://dirx.dev');
 console.info(`FXHASH: ${window.fxhash}`);

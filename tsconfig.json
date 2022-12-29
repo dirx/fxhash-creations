@@ -15,7 +15,7 @@
     "traceResolution": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "allowSyntheticDefaultImports": true
+    "declaration": false
   },
   "include": [
     "./src/*"

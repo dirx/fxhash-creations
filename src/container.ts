@@ -1,5 +1,14 @@
-import { Features, KioskMode, Piece } from './piece';
+import {
+    Features,
+    KioskMode,
+    KioskModeValues,
+    Piece,
+    ScreenMode,
+    ScreenModeValues,
+} from './piece';
 import { createLoop, Loop } from './loop';
+import { capture } from './capture';
+import { getEnumKeyByValue, getEnumValueByAny } from './enum';
 
 export class Container {
     public piece!: Piece;
@@ -38,7 +47,8 @@ export class Container {
             this.getShowAnnouncement(),
             this.getKioskSpeed(),
             this.getKioskMode(),
-            this.getSize()
+            this.getSize(),
+            this.getScreenMode()
         );
 
         window.$fxhashFeatures = this.piece.features.getFxhashFeatures();
@@ -67,19 +77,10 @@ export class Container {
     private getKioskMode(): KioskMode | null {
         let search = new URLSearchParams(window.location.search);
         let value: string | null = search.get('kioskmode');
-        switch (value) {
-            case 'a':
-            case 'animate':
-                return KioskMode.ANIMATE;
-            case 'o':
-            case 'objects':
-                return KioskMode.OBJECTS;
-            case 'f':
-            case 'features':
-                return KioskMode.FEATURES;
-            default:
-                return null;
+        if (value == null) {
+            return null;
         }
+        return getEnumValueByAny(KioskMode, value) as KioskMode;
     }
 
     private getShowInfo(): boolean {
@@ -94,6 +95,15 @@ export class Container {
         return value === null
             ? Piece.defaultSize
             : Math.abs(Math.max(1, parseFloat(value)));
+    }
+
+    private getScreenMode(): ScreenMode | null {
+        let search = new URLSearchParams(window.location.search);
+        let value: string | null = search.get('screenmode');
+        if (value == null) {
+            return null;
+        }
+        return getEnumValueByAny(ScreenMode, value) as ScreenMode;
     }
 
     private initResizeHandler() {
@@ -211,8 +221,14 @@ export class Container {
                     piece.kiosk.active ? `${piece.kiosk.speedSec}s` : 'off'
                 }`,
                 kioskmode: `${
-                    piece.kiosk.active ? `${piece.kiosk.mode}` : 'off'
+                    piece.kiosk.active
+                        ? getEnumKeyByValue(KioskMode, piece.kiosk.mode)
+                        : 'off'
                 }`,
+                screenMode: `${getEnumKeyByValue(
+                    ScreenMode,
+                    piece.screen.mode
+                )}`,
                 pausing: `${piece.paused ? 'on' : 'off'}`,
             });
         }, 250);
@@ -333,7 +349,7 @@ export class Intercom {
 
     private initKeyHandler() {
         window.addEventListener('keyup', (ev: KeyboardEvent) => {
-            let f;
+            let f, next;
             switch (ev.key) {
                 case '0':
                 case '1':
@@ -422,7 +438,7 @@ export class Intercom {
 
                 case 'd':
                     this.piece.debugLevel =
-                        this.piece.debugLevel == 2
+                        this.piece.debugLevel == Piece.maxDebugLevel
                             ? 0
                             : this.piece.debugLevel + 1;
 
@@ -446,7 +462,7 @@ export class Intercom {
 
                 case 'k':
                     let speedSecs = [null, 3, 5, 10];
-                    let next = speedSecs.indexOf(this.piece.kiosk.speedSec);
+                    next = speedSecs.indexOf(this.piece.kiosk.speedSec);
                     next =
                         next < 0 || next + 1 >= speedSecs.length ? 0 : next + 1;
                     this.piece.kiosk.setSpeedAndMode(
@@ -461,20 +477,34 @@ export class Intercom {
                     );
                     break;
 
+                case 's':
+                    next = ScreenModeValues.indexOf(this.piece.screen.mode);
+                    next =
+                        next < 0 || next + 1 >= ScreenModeValues.length
+                            ? 0
+                            : next + 1;
+                    this.piece.screen.mode = ScreenModeValues[
+                        next
+                    ] as ScreenMode;
+                    this.showDisplay(
+                        'screen mode ' +
+                            (this.piece.screen.mode == ScreenMode.DEFAULT
+                                ? 'default'
+                                : `${this.piece.screen.mode}`)
+                    );
+                    break;
+
                 case 'm':
-                    let modes = [
-                        KioskMode.ANIMATE,
-                        KioskMode.OBJECTS,
-                        KioskMode.FEATURES,
-                    ];
-                    let nextMode = modes.indexOf(this.piece.kiosk.mode);
+                    let nextMode = KioskModeValues.indexOf(
+                        this.piece.kiosk.mode
+                    );
                     nextMode =
-                        nextMode < 0 || nextMode + 1 >= modes.length
+                        nextMode < 0 || nextMode + 1 >= KioskModeValues.length
                             ? 0
                             : nextMode + 1;
                     this.piece.kiosk.setSpeedAndMode(
                         this.piece.kiosk.speedSec,
-                        modes[nextMode]
+                        KioskModeValues[nextMode] as KioskMode
                     );
                     this.showDisplay(
                         'kiosk ' +
@@ -482,6 +512,36 @@ export class Intercom {
                                 ? `${this.piece.kiosk.mode}`
                                 : 'off')
                     );
+                    break;
+
+                case 'w':
+                    capture(
+                        this.piece.context,
+                        this.piece.width,
+                        this.piece.height
+                    ).then((blob) => {
+                        const saveData = (function () {
+                            const a = document.createElement('a');
+                            document.body.appendChild(a);
+                            a.style.display = 'none';
+                            return function saveData(
+                                blob: Blob,
+                                fileName: string
+                            ) {
+                                const url = window.URL.createObjectURL(blob);
+                                a.href = url;
+                                a.download = fileName;
+                                a.onclick = (ev: MouseEvent) =>
+                                    ev.stopPropagation();
+                                a.click();
+                            };
+                        })();
+
+                        saveData(
+                            blob,
+                            `test-${this.piece.width}x${this.piece.height}.png`
+                        );
+                    });
                     break;
 
                 case ' ':
@@ -566,8 +626,10 @@ export class Help {
           <p><em>space</em> touch</p>
           <p><em>f</em> toggle fullscreen</p>
           <p><em>c</em> capture image</p>
-          <p><em>k</em> change kiosk mode</p>
-          <p><em>a</em> toggle announce</p>
+          <p><em>k</em> set kiosk speed</p>
+          <p><em>m</em> set kiosk mode</p>
+          <p><em>s</em> set screen mode</p>
+          <p><em>a</em> toggle announcement</p>
           <p><em>r</em> randomize features</p>
           <p><em>o</em> randomize objects</p>
           <p><em>0 - 2</em> debug buffer</p>
