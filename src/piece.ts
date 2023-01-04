@@ -19,7 +19,7 @@ import {
     variation,
 } from './combinations';
 import { clamp01, mod } from '@thi.ng/math';
-import { getEnumValues } from './enum';
+import { getEnumKeyByValue, getEnumValues } from './enum';
 
 export type FxhashFeatures = {
     palette: string;
@@ -213,10 +213,7 @@ export class Features {
             console.info(`${entry[0]}: ${entry[1]}`)
         );
         this.colors.forEach((c, i) =>
-            logColor(
-                c,
-                ['background', 'top', 'bottom', 'odd', 'even', 'special'][i]
-            )
+            logColor(c, getEnumKeyByValue(ColorType, i) as string)
         );
     }
 }
@@ -667,12 +664,6 @@ export class Blob {
 
         this.context.useProgram(this.program.program);
         twgl.bindFramebufferInfo(this.context, this.output);
-        this.context.clearColor(
-            this.piece.features.colorsRGB[ColorType.BACKGROUND][0],
-            this.piece.features.colorsRGB[ColorType.BACKGROUND][1],
-            this.piece.features.colorsRGB[ColorType.BACKGROUND][2],
-            this.piece.features.colorsRGB[ColorType.BACKGROUND][3]
-        );
 
         this.shapes = [
             twgl.primitives.createSphereBufferInfo(
@@ -838,15 +829,15 @@ export class Blob {
         });
 
         twgl.bindFramebufferInfo(this.context, this.output);
-        this.context.clear(
-            WebGL2RenderingContext.COLOR_BUFFER_BIT |
-                WebGL2RenderingContext.DEPTH_BUFFER_BIT
-        );
         this.context.clearColor(
             this.piece.features.colorsRGB[ColorType.BACKGROUND][0],
             this.piece.features.colorsRGB[ColorType.BACKGROUND][1],
             this.piece.features.colorsRGB[ColorType.BACKGROUND][2],
             this.piece.features.colorsRGB[ColorType.BACKGROUND][3]
+        );
+        this.context.clear(
+            WebGL2RenderingContext.COLOR_BUFFER_BIT |
+                WebGL2RenderingContext.DEPTH_BUFFER_BIT
         );
 
         twgl.drawObjectList(this.context, this.objects);
