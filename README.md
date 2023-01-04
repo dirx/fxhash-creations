@@ -13,6 +13,7 @@ Grab it @ https://www.fxhash.xyz/generative/slug/est
 <img src="./public/preview.jpg" align="right" width="50%" style="margin: 0 20px 20px 20px" />
 
 Roll the dice with shapes and capture the moment!
+
 Est follows Iacta which follows Alea. So here we are now: alea iacta est.
 
 How does it work?
@@ -23,7 +24,7 @@ reference and direction variables.
 
 The animation itself is 32 frames long and stops abruptly. It consists of 3 layers. The first layer moves the objects around the center
 and draws the animated objects displacing vertex positions and textures coordinates based on modulated sinus waves. Textures are
-additionally dithered based on a randomized fake 6x6 bayer matrix.
+additionally dithered based on a randomized fake 6x6 bayer dither matrix.
 
 The second layer uses the first one and a double buffer to capture the motion blur based on a depth mask.
 
@@ -35,7 +36,7 @@ Features:
 - shapes [3] (more s, more m, more l)
 - palette [102] (based on YPS magazine covers (Germany), issues 700-750 / 800-850, published 1989 - 1992)
 - color sort direction [2] (up, down)
-- color sort reference [3] (0, 1, 2) - used for selecting the sorting mode ()
+- color sort reference [3] (0, 1, 2) - sorting mode selection
 
 Animation and feature selection are based on the deterministic prng Xoshiro128 seeded with the fxhash. This allows repeated playback in the
 same sequence. The animation is synchronized with frames and not with time.
@@ -49,7 +50,7 @@ Shortcuts & interactions:
 - `r` to trigger a random feature change followed by a random object change and rotation animation (or triple click / tap)
 - `k` to enable the kiosk mode and set the speed (off, 3, 5 or 10 secs)
 - `m` to set the kiosk mode (animate, objects, features (default), special)
-- `s` to toggle the postprocessing screen mode (default, raw, alternative, rasterized, facetes, lineblocks, all)
+- `s` to toggle the postprocessing screen mode (default, raw, alternative, rasterized, facetes, lineblocks, all) - experimental
 - `c` to capture an image
 - `f` for full screen mode
 - `h` to see all options
@@ -60,7 +61,7 @@ Available query string parameters:
 - showannouncement - activates the announcement
 - kioskspeed=5 - activates the kiosk mode and sets the speed in seconds
 - kioskmode=animate - set the kiosk mode (animate, objects, features (default), special)
-- screenmode=default - set the postprocessing screen mode (default, raw, alternative, rasterized, facetes, lineblocks, all)
+- screenmode=default - set the postprocessing screen mode (default, raw, alternative, rasterized, facetes, lineblocks, all) - experimental
 - showinfo - activates the info box
 
 ### Third Party Licenses
