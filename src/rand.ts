@@ -85,6 +85,22 @@ export const fakeFxhash = (
         a.split('').reverse().join('') +
         Array(12).fill('1').join('') +
         c.split('').reverse().join('') +
-        Array(13).fill('1').join('')
+        c.split('').join('') +
+        '1'
+    );
+};
+
+export const seed128 = (phrase: string): number[] => {
+    let m = phrase.match(
+        new RegExp('.{1,' + Math.ceil(phrase.length / 4) + '}', 'g')
+    );
+    if (!m) {
+        throw Error('failed to split phrase');
+    }
+    return m.map((c) =>
+        c
+            .split('')
+            .map((c) => c.charCodeAt(0))
+            .reduce((pv, cv) => pv * cv)
     );
 };
