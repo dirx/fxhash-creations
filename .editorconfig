@@ -1,0 +1,30 @@
+# Editor configuration, see https://editorconfig.org
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+indent_size = 4
+indent_style = space
+insert_final_newline = true
+trim_trailing_whitespace = true
+max_line_length = 160
+tab_width = 4
+
+[*.{ts,tsx}]
+indent_size = 2
+max_line_length = 140
+ij_typescript_use_double_quotes = false
+ij_typescript_force_quote_style = true
+ij_typescript_force_semicolon_style = true
+ij_typescript_use_semicolon_after_statement = false
+ij_typescript_enforce_trailing_comma = whenmultiline
+
+[*.md]
+indent_size = 2
+max_line_length = 120
+trim_trailing_whitespace = false
+ij_markdown_wrap_text_if_long = false
+
+[*.{yml,yaml}]
+indent_size = 2
