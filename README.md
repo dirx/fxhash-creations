@@ -1,6 +1,6 @@
 # Creations on fxhash.xyz
 
-__#generativeart__ __#nft__ __#fxhash__ __#tezos__ __#creativecoding__
+__#generativeart__ __#nft__ __#fxhash__ __#ethereum__ __#creativecoding__
 
 ## Still A
 
