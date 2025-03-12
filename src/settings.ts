@@ -1,6 +1,8 @@
 import { RND } from '@thi.ng/random-fxhash'
 import { colors } from './colors'
 
+export const DEBUG = process.env.NODE_ENV === 'development'
+
 const shapes = RND.minmaxInt(8, 16) * 4
 const rects = RND.minmaxInt(4, shapes)
 const circles = RND.minmaxInt(0, shapes - rects)
@@ -20,4 +22,4 @@ export const features = {
 }
 
 export const IMAGE_SIZE = 4096
-export const CAPTURE_SIZE = 1280
+export const CAPTURE_SIZE = DEBUG ? 1280 : 2048
