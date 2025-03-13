@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title><%= config.title %></title>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html;charset=UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="author" content="<%= author.name %>">
+    <meta name="description" content="<%= description %>">
+    <meta name="twitter:creator" content="@d_rx">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:site" content="@d_rx">
+    <meta name="twitter:title" content="<%= config.title %>">
+    <meta name="twitter:description" content="<%= description %>">
+    <meta name="twitter:image" content="./preview.png">
+    <meta property="og:title" content="<%= config.title %>">
+    <meta property="og:description" content="<%= description %>">
+    <meta property="og:image" content="./preview.png">
+    <meta property="og:type" content="website">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#ffffff">
+    <link rel="author" href="<%= author.url %>">
+    <link rel="author" href="https://x.com/d_rx">
+    <link rel="author" href="https://genart.social/@dirx">
+    <link rel="alternate" href="https://github.com/dirx/fxhash-creations#<%= config.id %>">
+    <link rel="icon" href="./favicon.ico" sizes="48x48" type="image/x-icon">
+    <link rel="icon" href="./favicon.svg" sizes="any" type="image/svg+xml">
+    <script type="module" crossorigin src="/fxhash.min.js"></script>
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            display: grid;
+            place-items: center;
+            background-color: #ffffff;
+            -moz-text-size-adjust: none;
+            -webkit-text-size-adjust: none;
+            text-size-adjust: none;
+        }
+
+        body > div {
+            display: grid;
+            place-items: center;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        svg, canvas {
+            max-width: 100%;
+            max-height: 100%;
+            width: auto;
+            height: auto;
+        }
+    </style>
+</head>
+<body>
+<div id="container"></div>
+<script type="module" crossorigin src="/src/index.ts"></script>
+</body>
+</html>
