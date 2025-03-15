@@ -1,8 +1,8 @@
 import { downloadWithMime } from '@thi.ng/dl-asset'
-import { CAPTURE_SIZE, features } from './settings'
+import { CAPTURE_SIZE, COLORS, features } from './settings'
 import { piece } from './piece'
 import packageJson from './../package.json'
-import { createImageFromSVG, setupCanvas } from './utils'
+import { createImageFromSVG, logColor, setupCanvas } from './utils'
 
 const init = async () => {
   document.getElementById('container')!.innerHTML = piece
@@ -50,7 +50,7 @@ window.onkeydown = async (e) => {
   }
 }
 
-window.$fx.features({ ...features, palettes: features.palettes.join(',')})
+window.$fx.features({ ...features, palettes: features.palettes.join(',') })
 
 window.$fx.isPreview || window.$fx.context === 'capture' ? initPreview() : init()
 
@@ -61,3 +61,5 @@ console.info(`${packageJson.author.name}, ${packageJson.author.url}`)
 console.info(`FXHASH: ${window.$fx.hash}`)
 console.info(`FXMINTER: ${window.$fx.minter}`)
 console.info(JSON.stringify(window.$fx.getFeatures(), null, 2))
+
+COLORS.forEach((c, i) => logColor(c))

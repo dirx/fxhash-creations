@@ -1,5 +1,7 @@
 // based on https://colorhunt.co/palettes/neon
 
+import { oklch } from '@thi.ng/color'
+
 export const colors =
   [
     [
@@ -962,4 +964,4 @@ export const colors =
       '#ffb100',
       '#661d83',
     ],
-  ]
+  ].filter((cs) => cs.some((c) => oklch(c).l <= 0.7) && cs.every((c) => oklch(c).l > 0.0))

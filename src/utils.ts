@@ -1,3 +1,5 @@
+import { css, type ReadonlyColor } from '@thi.ng/color'
+
 export const createImageFromSVG = (svgContent: string): Promise<HTMLImageElement> => {
   return new Promise((resolve) => {
     const img = new Image()
@@ -16,3 +18,9 @@ export const setupCanvas = (width: number, height: number): [HTMLCanvasElement, 
   ctx.imageSmoothingQuality = 'high'
   return [canvas, ctx]
 }
+
+export const logColor = (c: string | ReadonlyColor, msg: string = '') =>
+  console.info(
+    `%c${msg}       ${css(c)}`,
+    `background-color: ${css(c)}; color:#ffffff; padding: 2px;`,
+  )
