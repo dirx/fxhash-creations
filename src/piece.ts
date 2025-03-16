@@ -62,10 +62,10 @@ const contourOffsets = [
 
 let contours = [
   ...repeatedly((i) => group({
-      fill: RND.probability(0.382) ? `url(#pattern${RND.minmaxInt(0, 10)})` : (RND.probability(0.618) ? features.background : 'none'),
+      fill: RND.probability(0.382) ? `url(#pattern${RND.minmaxInt(0, 10)})` : (RND.probability(0.382) ? features.background : 'none'),
       id: `c${i}`,
       stroke: css(
-        mix([], srgb(RND.probability(0.146) ? (RND.probability(0.382) ? features.marker : '#ffffff') : '#000000'), srgb(features.background),
+        mix([], srgb(RND.probability(0.382) ? (RND.probability(0.382) ? features.accent : '#ffffff') : '#000000'), srgb(features.background),
           RND.minmax(0.0, 0.5))),
       'stroke-width': `${RND.minmax(0.001, 0.2)}%`,
       'stroke-dasharray': [...repeatedly(() => RND.minmaxInt(1, 64), RND.minmaxInt(0, 4))].join(' '),
@@ -100,22 +100,22 @@ const FONT_SIZE = 0.012 * imageBounds.size[1]
 export const piece = asSvg(
   svgDoc({ __margin: 0 },
     ...[
+      extra(`<!-- ${packageJson.config.title}, ${packageJson.description} -->`),
+      extra(`<!-- ${packageJson.author.name}, ${packageJson.author.url} -->`),
+      extra(`<!-- ${packageJson.config.releasedAt}, ${packageJson.config.releasedOn} -->`),
+      extra(`<!-- #${window.$fx.iteration}, ${window.$fx.hash}, ${window.$fx.minter} -->`),
       ...repeatedly((i) => {
         const height = RND.minmaxInt(8, 16)
         const dashArray = [...repeatedly(() => RND.minmaxInt(1, 4), RND.minmaxInt(2, 8))].join(' ')
         const rotate = RND.minmaxInt(0, 90)
         const stroke = css(
-          mix([], srgb(RND.probability(0.328) ? (RND.probability(0.382) ? features.marker : '#ffffff') : '#000000'), srgb(features.background),
+          mix([], srgb(RND.probability(0.328) ? (RND.probability(0.382) ? features.accent : '#ffffff') : '#000000'), srgb(features.background),
             RND.minmax(0.0, 0.5)))
         const strokeWidth = RND.minmax(0.001, 0.2)
         return extra(
           `<pattern id="pattern${i}" x="0" y="0" width="5000" height="${height}" patternUnits="userSpaceOnUse" stroke-dasharray="${dashArray}" stroke-width="${strokeWidth}%" patternTransform="rotate(${rotate})" ><path d="M0,0 L4980,0" stroke="${stroke}" fill="none" /></pattern>`,
         )
       }, 10),
-      extra(`<!-- ${packageJson.config.title}, ${packageJson.description} -->`),
-      extra(`<!-- ${packageJson.author.name}, ${packageJson.author.url} -->`),
-      extra(`<!-- ${packageJson.config.releasedAt}, ${packageJson.config.releasedOn} -->`),
-      extra(`<!-- #${window.$fx.iteration}, ${window.$fx.hash}, ${window.$fx.minter} -->`),
       ...scaledShapes,
       ...[
         [2, `${packageJson.config.title}`, 'bold'],

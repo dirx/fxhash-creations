@@ -1,9 +1,9 @@
 import { RND } from '@thi.ng/random-fxhash'
-import { colors } from './colors'
+import { css, oklch } from '@thi.ng/color'
 
 export const DEBUG = process.env.NODE_ENV === 'development'
 
-const shapes = RND.minmaxInt(8, 16) * 4
+const shapes = RND.minmaxInt(8, 17) * 4
 const rects = RND.minmaxInt(4, shapes)
 const circles = RND.minmaxInt(0, shapes - rects)
 const triangles = shapes - rects - circles
@@ -14,11 +14,11 @@ export const features = {
   circles: circles,
   triangles: triangles,
   gap: RND.minmaxInt(0, 5),
-  angle: RND.minmaxInt(-6, 6) * 15,
-  resX: 2 ** RND.minmaxInt(8, 10),
-  resY: 2 ** RND.minmaxInt(8, 10),
-  background: colors[RND.minmaxInt(0, colors.length - 1)],
-  marker: colors[RND.minmaxInt(0, colors.length - 1)],
+  angle: RND.minmaxInt(-6, 7) * 15,
+  resX: RND.minmaxInt(2, 6) * 100,
+  resY: RND.minmaxInt(2, 6) * 100,
+  background: css(oklch(RND.minmax(0.8, 0.9), RND.minmax(0.25, 0.3), RND.minmaxInt(0, 120) / 120)),
+  accent: css(oklch(RND.minmax(0.6, 0.7), RND.minmax(0.25, 0.3), RND.minmaxInt(0, 120) / 120)),
 }
 
 export const IMAGE_SIZE = 4096

@@ -12,7 +12,9 @@ Grab it @ https://www.fxhash.xyz/generative/slug/still-b
 
 <img src="./public/preview.png" align="right" width="50%" style="margin: 0 20px 20px 20px" />
 
-A rippled SDF composed of rotated shapes, duplicated into layered contours with black / white and marker colored and dashed strokes and pattern fills, and rendered as polygons in an SVG.
+I recently came across these fortification maps...
+
+An SDF composed of rotated shapes, vectorized and duplicated into layered contours, featuring black, white, and accent-colored dashed strokes with pattern fills, and rendered as polygons in an SVG.
 
 Features:
 
@@ -20,12 +22,12 @@ Features:
 - rects (4 - 64) - number of rectangles
 - circles (0 - (64 - rects)) - number of circles
 - triangles (remaining from 64) - number of triangles
-- gap (0 - 5) - extra shape gap
+- gap (0 - 4) - extra shape gap
 - angle (-90 - 90, step: 15) - shape rotation angle
-- resX (256 - 1024, step: power of 2) - horizontal resolution
-- resY (256 - 1024, step: power of 2) - vertical resolution
-- background (0 - 246) - background color
-- marker (0 - 246) - marker color
+- resX (200 - 500, step: 100) - horizontal resolution
+- resY (200 - 500, step: 100) - vertical resolution
+- background (l: 0.8 - 0.9 / c: 0.25 - 0.3 / h: 0 - 360, steps: 3) - background color
+- accent (l: 0.6 - 0.7 / c: 0.25 - 0.3 / h: 0 - 360, steps: 3) - accent color
 
 Shortcuts & interactions:
 
