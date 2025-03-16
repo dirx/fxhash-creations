@@ -8,7 +8,7 @@ __#generativeart__ __#nft__ __#fxhash__ __#tezos__ __#ethereum__ __#creativecodi
 
 Real-time deterministic svg image, flexible size, 2025
 
-Grab it @ https://www.fxhash.xyz/generative/slug/still-a
+Grab it @ https://www.fxhash.xyz/generative/slug/still-b
 
 ### About
 
