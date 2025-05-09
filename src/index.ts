@@ -68,7 +68,7 @@ window.$fx.features({
 
 document.body.style.backgroundColor = COLOR_BACKGROUND
 
-window.$fx.isPreview || window.$fx.context === 'capture' ? initPreview() : init()
+setTimeout(() => window.$fx.isPreview || window.$fx.context === 'capture' ? initPreview() : init(), 50)
 
 console.info(packageJson.config.title)
 console.info(packageJson.description)
