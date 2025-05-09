@@ -101,7 +101,7 @@ export function * distributeGeodesicSphere<T> (
     return [x / len, y / len, z / len]
   }
 
-  const project = ([x, y, z]: Vec3): Vec2 => [(x + 1) / 2, (y + 1) / 2]
+  const project = ([x, y, _z]: Vec3): Vec2 => [(x + 1) / 2, (y + 1) / 2]
 
   const t = (1 + Math.sqrt(5)) / 2
   const vertices: Vec3[] = [
@@ -117,38 +117,39 @@ export function * distributeGeodesicSphere<T> (
     [4, 9, 5], [2, 4, 11], [6, 2, 10], [8, 6, 7], [9, 8, 1],
   ]
 
-  const subdivide = (a: Vec3, b: Vec3, c: Vec3, n: number): Vec3[] => {
-    const points: Vec3[] = []
+  function * subdivide (a: Vec3, b: Vec3, c: Vec3, n: number): Generator<Vec3, void, unknown> {
     for (let i = 0; i <= n; i++) {
       for (let j = 0; j <= i; j++) {
         const u = i / n
         const v = j / n
         const w = 1 - u
-        const p: Vec3 = normalize([
+        yield normalize([
           a[0] * w + b[0] * (u - v) + c[0] * v,
           a[1] * w + b[1] * (u - v) + c[1] * v,
           a[2] * w + b[2] * (u - v) + c[2] * v,
         ])
-        points.push(p)
       }
     }
-    return points
   }
 
   const seen = new Set<string>()
   const subdivisions = Math.max(1, Math.floor(Math.sqrt(gridSizeX * gridSizeY / 9))) // 9 gives similar numbers of points
   const points2D: Vec2[] = []
 
-  for (const [i1, i2, i3] of faces) {
-    const tris = subdivide(vertices[i1], vertices[i2], vertices[i3], subdivisions)
-    for (const point of tris) {
-      const key = point.map(v => v.toFixed(4)).join(',')
-      if (seen.has(key)) {
-        continue
+  function * generateProjectedPoints (): Generator<Vec2, void, unknown> {
+    for (const [i1, i2, i3] of faces) {
+      for (const point of subdivide(vertices[i1], vertices[i2], vertices[i3], subdivisions)) {
+        const key = point.map(v => v.toFixed(4)).join(',')
+        if (!seen.has(key)) {
+          seen.add(key)
+          yield project(point)
+        }
       }
-      seen.add(key)
-      points2D.push(project(point))
     }
+  }
+
+  for (const point of generateProjectedPoints()) {
+    points2D.push(point)
   }
 
   for (let [i, _x, _y] of orderFn(gridSizeX, gridSizeY)) {
