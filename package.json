@@ -1,9 +1,9 @@
 {
-    "name": "dirx-still-d",
+    "name": "dirx-still-c",
     "version": "1.0.0",
     "description": "Real-time deterministic svg image, flexible size, 2025",
-    "homepage": "https://github.com/dirx/fxhash-creations#still-d",
-    "repository": "https://github.com/dirx/fxhash-creations#still-d",
+    "homepage": "https://github.com/dirx/fxhash-creations#still-c",
+    "repository": "https://github.com/dirx/fxhash-creations#still-c",
     "author": {
         "id": "dirx",
         "name": "Dirk Adler",
@@ -11,10 +11,10 @@
     },
     "type": "module",
     "config": {
-        "id": "still-d",
-        "title": "Still D",
+        "id": "still-c",
+        "title": "Still C",
         "additionalDescription": "Be inspired. If you need help please press 'h'.",
-        "releasedAt": "THU, April 10, 2025, 19:00 UTC",
+        "releasedAt": "THU, May 15, 2025, 19:00 UTC",
         "releasedOn": "fxhash.xyz"
     },
     "scripts": {
@@ -24,7 +24,7 @@
         "bundle": "yarn build --config ./config/vite.config.build.ts"
     },
     "devDependencies": {
-        "@types/node": "22.13.10",
+        "@types/node": "22.15.17",
         "rollup-plugin-license": "^3.6.0",
         "typescript": "^5.5.4",
         "vite": "^6.2.0",
@@ -37,10 +37,9 @@
         "@thi.ng/dl-asset": "^2.3.88",
         "@thi.ng/geom": "^8.1.4",
         "@thi.ng/math": "^5.11.21",
-        "@thi.ng/matrices": "^2.4.35",
         "@thi.ng/random-fxhash": "^0.3.62",
         "@thi.ng/transducers": "^9.2.0",
-        "@thi.ng/vectors": "^7.12.24"
+        "@thi.ng/vectors": "^8.1.1"
     },
     "browsersList": [
         "last 3 chrome versions"

@@ -1,9 +1,29 @@
 // based on https://colorhunt.co/palettes/neon
 
-import { oklch } from '@thi.ng/color'
+import { oklch, srgb } from '@thi.ng/color'
+
+export const colorsSize = 4
 
 export const colors =
   [
+    [
+      '#4A102A',
+      '#85193C',
+      '#C5172E',
+      '#FCF259',
+    ],
+    [
+      '#000000',
+      '#CF0F47',
+      '#FF0B55',
+      '#FFDEDE',
+    ],
+    [
+      '#410445',
+      '#A5158C',
+      '#FF2DF1',
+      '#F6DC43',
+    ],
     [
       '#4934b8',
       '#c36dec',
@@ -964,4 +984,4 @@ export const colors =
       '#ffb100',
       '#661d83',
     ],
-  ].filter((cs) => cs.some((c) => oklch(c).l <= 0.7) && cs.every((c) => oklch(c).l > 0.0))
+  ].filter((cs) => cs.some((c) => oklch(srgb(c)).l <= 0.9) && cs.some((c) => oklch(srgb(c)).c >= 0.1))

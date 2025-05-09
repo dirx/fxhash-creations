@@ -1,4 +1,5 @@
 import { css, type ReadonlyColor } from '@thi.ng/color'
+import type { IRandom } from '@thi.ng/random/api'
 
 export const createImageFromSVG = (svgContent: string): Promise<HTMLImageElement> => {
   return new Promise((resolve) => {
@@ -24,3 +25,12 @@ export const logColor = (c: string | ReadonlyColor, msg: string = '') =>
     `%c${msg}       ${css(c)}`,
     `background-color: ${css(c)}; color:#ffffff; padding: 2px;`,
   )
+
+export function shuffle<T> (arr: T[], rnd: IRandom, limit: number | null = null): T[] {
+  const shuffled = [...arr]
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = rnd.minmaxInt(0, i)
+    ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+  }
+  return limit ? shuffled.slice(0, limit) : shuffled
+}

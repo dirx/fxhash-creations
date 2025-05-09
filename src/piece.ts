@@ -1,17 +1,41 @@
-import { asSvg, bounds, circle, extra, group, rect, scale, svgDoc, text, transform, translate } from '@thi.ng/geom'
-import { RND } from '@thi.ng/random-fxhash'
-import { map, repeatedly, repeatedly2d } from '@thi.ng/transducers'
-import { COLORS, DEBUG_VIEW, features, IMAGE_SIZE } from './settings'
+import { asSvg, bounds, Circle, circle, extra, group, Polygon, polygon, Rect, rect, scale, svgDoc, text, translate } from '@thi.ng/geom'
+import { filter, map, repeatedly } from '@thi.ng/transducers'
+import {
+  COLOR_BACKGROUND,
+  COLOR_LIGHT,
+  COLORS,
+  DEBUG_VIEW,
+  features,
+  fills,
+  IMAGE_SIZE,
+  kFunction,
+  traverserFunction,
+  sFunction,
+  SHAPE_CIRCLE,
+  SHAPE_HEXAGON,
+  SHAPE_QUAD,
+  strokes,
+  distributorFunction,
+  xFunction,
+  yFunction,
+} from './settings'
 import packageJson from './../package.json'
-import { type Attractor, flowMat, flowStrength } from './flow'
-import { css, oklch, srgb } from '@thi.ng/color'
+import { type Attractor, flowStrength, flowVec } from './flow'
+import { oklch, srgb } from '@thi.ng/color'
+import { colorsSize } from './colors'
+import type { Vec } from '@thi.ng/vectors'
+
+const off = oklch(srgb(COLORS[0]))
+const xOff = off.l
+const yOff = off.c
+const sOff = off.h
 
 const attractors: Attractor[] = [
   ...repeatedly(
-    () => ({
-      x: RND.minmax(0, features.gridSize),
-      y: RND.minmax(0, features.gridSize),
-      s: RND.minmax(-3, 3),
+    (i) => ({
+      x: (xFunction(i / features.attractors, kFunction(i / features.attractors * 2 - 1, xOff))) * features.gridSize,
+      y: (yFunction(i / features.attractors, kFunction(i / features.attractors * 2 - 1, yOff))) * features.gridSize,
+      s: (sFunction(i / features.attractors, kFunction(i / features.attractors * 2 - 1, sOff)) * 2 - 1) * colorsSize,
     }),
     features.attractors,
   ),
@@ -20,28 +44,50 @@ const attractors: Attractor[] = [
 const shapes = group(
   {
     'stroke': 'none',
+    'fill': 'none',
   },
   [
-    ...repeatedly2d((x, y) => {
-        let length = COLORS.length / 2
-        let oc = COLORS[Math.floor(flowStrength(attractors)([x, y]) * length + length)]
-        let c = oc
-        if (RND.probability(0.1)) {
-          let okc = oklch(oc)
-          okc.c += RND.minmax(-0.05, 0.05)
-          c = css(srgb(okc))
-        }
+    ...filter(
+      (x: any) => x !== null,
+      distributorFunction((x: number, y: number): Rect | Circle | Polygon | null => {
+          let s = flowStrength(attractors)([x, y])
+          let [xs, ys] = flowVec(attractors)([x, y])
+          let xso = xFunction(xs, xOff)
+          let yso = yFunction(ys, yOff)
+          let k = kFunction(s, sOff)
+          let ci = Math.floor(k * COLORS.length * features.repeat) % COLORS.length
+          let c = COLORS[ci]
 
-        const attr = {
-          'fill': c,
-          'filter': 'drop-shadow(2px 2px 4px rgb(0 0 0 / 0.4))',
-        }
+          const attr = {
+            'fill': fills[Math.floor(fills.length * xso)]((xs > ys), c, s),
+            'stroke': strokes[Math.floor(strokes.length * yso)]((xs > ys), c, s),
+            'stroke-width': k + 1.682,
+            'fill-opacity': xso * 0.682 + 0.328,
+            'stroke-opacity': yso * 0.682 + 0.328,
+          }
 
-        return transform(circle([x, y], features.dotSize * 0.5, attr), flowMat(attractors)([x, y]))
-      },
-      features.gridSize,
-      features.gridSize,
-    ),
+          let shape = null
+          if (features.shape === SHAPE_QUAD) {
+            shape = rect([x, y], features.dotSize * 0.5 * xso, attr)
+          } else if (features.shape === SHAPE_CIRCLE) {
+            shape = circle([x + features.dotSize * 0.2 * xso, y + features.dotSize * 0.2 * xso], features.dotSize * 0.4 * xso, attr)
+          } else if (features.shape === SHAPE_HEXAGON) {
+            const hexagon: Vec[] = []
+            for (let i = 0; i < 6; i++) {
+              const angle = i * Math.PI / 3
+              hexagon.push([
+                x + features.dotSize * 0.4 * xso * Math.cos(angle),
+                y + features.dotSize * 0.4 * xso * Math.sin(angle),
+              ])
+            }
+            shape = polygon(hexagon, attr)
+          }
+          return shape
+        },
+        features.gridSize,
+        features.gridSize,
+        traverserFunction,
+      )),
     ...DEBUG_VIEW
       ? map((attractor) => {
         return circle([attractor.x, attractor.y], Math.abs(attractor.s),
@@ -51,14 +97,23 @@ const shapes = group(
   ],
 )
 
-const backgroundBounds = bounds(group({}, shapes), 4)!
+const shapesBounds = bounds(group({}, shapes))!
+const backgroundBounds = bounds(group({}, shapes), Math.max(...shapesBounds.size) * 0.1)!
 
 const scaledShapes = [
   rect(
-    backgroundBounds.pos,
-    backgroundBounds.size,
+    backgroundBounds.size[0] > backgroundBounds.size[1]
+      ? [
+        backgroundBounds.pos[0],
+        backgroundBounds.pos[1] - (backgroundBounds.size[0] - backgroundBounds.size[1]) / 2,
+      ]
+      : [
+        backgroundBounds.pos[0] - (backgroundBounds.size[1] - backgroundBounds.size[0]) / 2,
+        backgroundBounds.pos[1],
+      ],
+    Math.max(...backgroundBounds.size),
     {
-      fill: 'none',
+      fill: COLOR_BACKGROUND,
       stroke: 'none',
     },
   ),
@@ -86,7 +141,7 @@ export const piece = asSvg(
       ].map(
         ([row, p, fontWeight]) => text([FONT_SIZE, row as number * FONT_SIZE],
           p, {
-            fill: '#000000',
+            fill: COLOR_LIGHT,
             stroke: 'none',
             'font-size': `${FONT_SIZE}`,
             'font-weight': fontWeight,
