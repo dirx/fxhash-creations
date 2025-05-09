@@ -10,7 +10,7 @@ Grab it @ https://www.fxhash.xyz/generative/slug/still-c
 
 ### About
 
-<img src="./public/preview.png" align="right" width="50%" style="margin: 0 20px 20px 20px" />
+<img src="./resources/preview.png" align="right" width="50%" style="margin: 0 20px 20px 20px" />
 
 
 Just a big dot with a lot of little dots inside.
