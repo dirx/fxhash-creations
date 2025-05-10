@@ -1,4 +1,20 @@
-import { asSvg, bounds, Circle, circle, extra, group, Polygon, polygon, Rect, rect, scale, svgDoc, text, translate } from '@thi.ng/geom'
+import {
+  asSvg,
+  type Attribs,
+  bounds,
+  Circle,
+  circle,
+  extra,
+  group,
+  Polygon,
+  polygon,
+  Rect,
+  rect,
+  scale,
+  svgDoc,
+  text,
+  translate,
+} from '@thi.ng/geom'
 import { filter, map, repeatedly } from '@thi.ng/transducers'
 import {
   COLOR_BACKGROUND,
@@ -50,39 +66,49 @@ const shapes = group(
     ...filter(
       (x: any) => x !== null,
       distributorFunction((x: number, y: number): Rect | Circle | Polygon | null => {
-          let s = flowStrength(attractors)([x, y])
-          let [xs, ys] = flowVec(attractors)([x, y])
-          let xso = xFunction(xs, xOff)
-          let yso = yFunction(ys, yOff)
-          let k = kFunction(s, sOff)
-          let ci = Math.floor(k * COLORS.length * features.repeat) % COLORS.length
-          let c = COLORS[ci]
+          const s = flowStrength(attractors)([x, y])
+          const [xs, ys] = flowVec(attractors)([x, y])
+          const xso = xFunction(xs, xOff)
+          const yso = yFunction(ys, yOff)
+          const k = kFunction(s, sOff)
+          const ci = Math.floor(k * COLORS.length * features.repeat) % COLORS.length
+          const color = COLORS[ci]
+          const fill = fills[Math.floor(fills.length * xso)]((xs > ys), color, s)
+          const stroke = strokes[Math.floor(strokes.length * yso)]((xs > ys), color, s)
+          const attr: Attribs = (fill === 'none' && stroke === 'none')
+            ? {
+              display: 'none',
+            }
+            : {
+              'fill': fill,
+              'stroke': stroke,
+              'stroke-width': k + 1.682,
+              'fill-opacity': xso * 0.682 + 0.328,
+              'stroke-opacity': yso * 0.682 + 0.328,
+            }
 
-          const attr = {
-            'fill': fills[Math.floor(fills.length * xso)]((xs > ys), c, s),
-            'stroke': strokes[Math.floor(strokes.length * yso)]((xs > ys), c, s),
-            'stroke-width': k + 1.682,
-            'fill-opacity': xso * 0.682 + 0.328,
-            'stroke-opacity': yso * 0.682 + 0.328,
-          }
-
-          let shape = null
           if (features.shape === SHAPE_QUAD) {
-            shape = rect([x, y], features.dotSize * 0.5 * xso, attr)
+            const points = [
+              [x, y],
+              [x, y + features.dotSize * 0.5 * xso],
+              [x + features.dotSize * 0.5 * xso, y + features.dotSize * 0.5 * xso],
+              [x + features.dotSize * 0.5 * xso, y],
+            ]
+            return polygon(points, attr)
           } else if (features.shape === SHAPE_CIRCLE) {
-            shape = circle([x + features.dotSize * 0.2 * xso, y + features.dotSize * 0.2 * xso], features.dotSize * 0.4 * xso, attr)
+            return circle([x + features.dotSize * 0.2 * xso, y + features.dotSize * 0.2 * xso], features.dotSize * 0.4 * xso, attr)
           } else if (features.shape === SHAPE_HEXAGON) {
-            const hexagon: Vec[] = []
+            const points: Vec[] = []
             for (let i = 0; i < 6; i++) {
               const angle = i * Math.PI / 3
-              hexagon.push([
+              points.push([
                 x + features.dotSize * 0.4 * xso * Math.cos(angle),
                 y + features.dotSize * 0.4 * xso * Math.sin(angle),
               ])
             }
-            shape = polygon(hexagon, attr)
+            return polygon(points, attr)
           }
-          return shape
+          return null
         },
         features.gridSize,
         features.gridSize,

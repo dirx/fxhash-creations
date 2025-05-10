@@ -5,7 +5,10 @@ import packageJson from './../package.json'
 import { createImageFromSVG, logColor, setupCanvas } from './utils'
 
 const init = async () => {
-  document.getElementById('container')!.innerHTML = piece
+  const parser = new DOMParser()
+  const doc = parser.parseFromString(piece, 'image/svg+xml')
+  const svgElement = doc.documentElement
+  document.getElementById('container')!.appendChild(svgElement)
 }
 
 const initPreview = async () => {
@@ -63,7 +66,7 @@ window.$fx.features({
   ...features,
   palettes: features.palettes.join(','),
   fills: features.fills.join(','),
-  strokes: features.strokes.join(',')
+  strokes: features.strokes.join(','),
 })
 
 document.body.style.backgroundColor = COLOR_BACKGROUND

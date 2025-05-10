@@ -12,7 +12,6 @@ Grab it @ https://www.fxhash.xyz/generative/slug/still-c
 
 <img src="./resources/preview.png" align="right" width="50%" style="margin: 0 20px 20px 20px" />
 
-
 Just a big dot with a lot of little dots inside.
 
 This piece arranges shapes with varied fill patterns and outlines, leveraging transformer and traversal algorithms while responding to an underlying flow field system.
